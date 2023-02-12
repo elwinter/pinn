@@ -108,7 +108,7 @@ def main():
         print("%s <= t <= %s" % (t_min, t_max))
         print("%s <= x <= %s" % (x_min, x_max))
         print("%s <= y <= %s" % (y_min, y_max))
-    
+
     # Create the (x, y) coordinate points for the initial conditions.
     # Points are either random or gridded.
     if random:
