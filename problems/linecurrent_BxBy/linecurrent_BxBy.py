@@ -66,8 +66,8 @@ n_var = len(dependent_variable_names)
 # Define the constant fluid flow field.
 Q = 60.0
 u0 = 1.0
-ux = u0*np.sin(np.radians(Q))
-uy = u0*np.cos(np.radians(Q))
+u0x = u0*np.sin(np.radians(Q))
+u0y = u0*np.cos(np.radians(Q))
 
 
 # NOTE: In the functions defined below for the differential equations, the
@@ -123,7 +123,7 @@ def pde_Bx(X, Y, del_Y):
     # dBy_dy = tf.reshape(del_By[:, 2], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = dBx_dt + ux*dBx_dx + uy*dBx_dy
+    G = dBx_dt + u0x*dBx_dx + u0y*dBx_dy
     return G
 
 
@@ -163,7 +163,7 @@ def pde_By(X, Y, del_Y):
     dBy_dy = tf.reshape(del_By[:, 2], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = dBy_dt + ux*dBy_dx + uy*dBy_dy
+    G = dBy_dt + u0x*dBy_dx + u0y*dBy_dy
     return G
 
 
@@ -184,5 +184,5 @@ if __name__ == "__main__":
 
     print("Q = %s" % Q)
     print("u0 = %s" % u0)
-    print("ux = %s" % ux)
-    print("uy = %s" % uy)
+    print("ux = %s" % u0x)
+    print("uy = %s" % u0y)
