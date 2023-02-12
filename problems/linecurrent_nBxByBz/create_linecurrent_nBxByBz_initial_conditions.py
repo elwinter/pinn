@@ -32,8 +32,8 @@ Q = 60.0   # Flow angle in degrees clockwise from +y axis.
 u0 = 1.0   # Initial flow speed.
 
 # Compute the constant velocity components.
-ux = u0*np.sin(np.radians(Q))
-uy = u0*np.cos(np.radians(Q))
+u0x = u0*np.sin(np.radians(Q))
+u0y = u0*np.cos(np.radians(Q))
 
 
 def create_command_line_argument_parser():
