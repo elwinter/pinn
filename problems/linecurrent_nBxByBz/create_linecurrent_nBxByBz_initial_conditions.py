@@ -20,7 +20,7 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute data for linecurrent_BxBy problem."
+description = "Compute data for linecurrent_nBxByBz problem."
 
 # Default random number generator seed.
 default_seed = 0
