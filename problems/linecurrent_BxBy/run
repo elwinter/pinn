@@ -8,10 +8,14 @@
 # create_linecurrent_BxBy_initial_conditions.py 0 1 50 -1 1 50 -1 1 50 > linecurrent_BxBy_initial_conditions.dat
 
 # Define problem location.
-PROBLEM_ROOT=$HOME/research_local/src/pinn/problems/linecurrent_BxBy
+PINN_ROOT=$HOME/research_local/src/pinn
+PROBLEM_ROOT=$PINN_ROOT/problems/linecurrent_BxBy
+
+# Define PINN command.
+PINN_CMD=$PINN_ROOT/pinn/pinn1.py
 
 # Run the network.
-pinn1.py -d -v \
+$PINN_CMD -d -v \
   --max_epochs=10000 \
   --n_layers=4 \
   --n_hid=100 \
