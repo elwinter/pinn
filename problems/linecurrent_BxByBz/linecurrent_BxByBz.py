@@ -239,5 +239,5 @@ if __name__ == "__main__":
 
     print("Q = %s" % Q)
     print("u0 = %s" % u0)
-    print("ux = %s" % u0x)
-    print("uy = %s" % u0y)
+    print("u0x = %s" % u0x)
+    print("u0y = %s" % u0y)
