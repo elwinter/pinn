@@ -130,7 +130,7 @@ def main():
             r = np.sqrt(x**2 + y**2)
             n = 1.0
             P = 1.0
-            ux = ux0
+            ux = u0x
             Bx = -mu0*I/(2*np.pi)*y/r**2
             By = mu0*I/(2*np.pi)*x/r**2
             Bz = 0.0
