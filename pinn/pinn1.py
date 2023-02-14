@@ -187,7 +187,6 @@ def import_problem(problem_path):
 
 def main():
     """Begin main program."""
-
     # Set up the command-line parser.
     parser = create_command_line_argument_parser()
 
@@ -285,7 +284,8 @@ def main():
     models = []
     for i in range(p.n_var):
         if verbose:
-            print("Creating neural network for %s." % p.dependent_variable_names[i])
+            print("Creating neural network for %s." %
+                  p.dependent_variable_names[i])
         model = common.build_model(n_layers, H, activation)
         models.append(model)
     if debug:

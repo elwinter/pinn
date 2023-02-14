@@ -212,7 +212,10 @@ def pde_P(X, Y, del_Y):
     # dBz_dy = tf.reshape(del_Bz[:, 2], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = -ɣ*P/n*(dn_dt + ux*dn_dx + u0y*dn_dy) + (dP_dt + ux*dP_dx + u0y*dP_dy)/m
+    G = (
+        -ɣ*P/n*(dn_dt + ux*dn_dx + u0y*dn_dy) +
+        (dP_dt + ux*dP_dx + u0y*dP_dy)/m
+    )
     return G
 
 
