@@ -44,7 +44,6 @@ Eric Winter (eric.winter62@gmail.com)
 # Import standard modules.
 
 # Import supplemental modules.
-import numpy as np
 import tensorflow as tf
 
 # Import project modules.

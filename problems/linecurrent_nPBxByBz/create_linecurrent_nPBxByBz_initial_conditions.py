@@ -27,7 +27,7 @@ default_seed = 0
 
 # Constants
 mu0 = 1.0  # Normalized vacuum permittivity.
-I = 1.0    # Normalized current.
+I_current = 1.0    # Normalized current.
 Q = 60.0   # Flow angle in degrees clockwise from +y axis.
 u0 = 1.0   # Initial flow speed.
 
@@ -63,17 +63,16 @@ def create_command_line_argument_parser():
         "--seed", type=int, default=default_seed,
         help="Seed for random number generator (default: %(default)s)"
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true",
-        help="Print verbose output (default: %(default)s)."
-    )
+    # parser.add_argument(
+    #     "-v", "--verbose", action="store_true",
+    #     help="Print verbose output (default: %(default)s)."
+    # )
     parser.add_argument('rest', nargs=argparse.REMAINDER)
     return parser
 
 
 def main():
     """Begin main program."""
-
     # Set up the command-line parser.
     parser = create_command_line_argument_parser()
 
@@ -82,7 +81,7 @@ def main():
     debug = args.debug
     random = args.random
     seed = args.seed
-    verbose = args.verbose
+    # verbose = args.verbose
     rest = args.rest
     if debug:
         print("args = %s" % args)
@@ -130,8 +129,8 @@ def main():
             r = np.sqrt(x**2 + y**2)
             n = 1.0
             P = 1.0
-            Bx = -mu0*I/(2*np.pi)*y/r**2
-            By = mu0*I/(2*np.pi)*x/r**2
+            Bx = -mu0*I_current/(2*np.pi)*y/r**2
+            By = mu0*I_current/(2*np.pi)*x/r**2
             Bz = 0.0
             print(t_min, x, y, n, P, Bx, By, Bz)
 
