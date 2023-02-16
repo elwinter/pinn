@@ -9,7 +9,8 @@ https://www.astro.princeton.edu/~jstone/Athena/tests/field-loop/Field-loop.html
 This case deals only with a line current in the +z direction (out of the
 screen). +x is to the right, +y is up.
 
-NOTE: This version of the code solves *only* the equations for Bx and By.
+NOTE: This version of the code solves *only* the equations for Bx and By. An
+additional constraint equation for div(B) = 0 is applied.
 
 NOTE: The functions in this module are defined using a combination of Numpy and
 TensorFlow operations, so they can be used efficiently by the TensorFlow
@@ -62,6 +63,16 @@ dependent_variable_labels = ["$B_x$", "$B_y$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
+
+# Names of constraints.
+constraint_names = ['div(B)']
+
+# Labels for constraints (may use LaTex) - use for plots.
+constraint_labels = [r"$\nabla \cdot B$"]
+
+# Number of constraints.
+n_constraints = len(constraint_names)
+
 
 # Define the constant fluid flow field.
 Q = 60.0
@@ -174,6 +185,54 @@ de = [
 ]
 
 
+# @tf.function
+def constraint_divB(X, Y, del_Y):
+    """Constraint equation for magnetic field divergence.
+
+    Evaluate the constraint equation for magnetic field divergence.
+    This equation is derived from Gauss' Law for magnetic fields,
+    which states that the divergence of a magnetic field is 0.
+
+
+    Parameters
+    ----------
+    X : tf.Variable, shape (n, n_dim)
+        Values of independent variables at each evaluation point.
+    Y : list of n_var tf.Tensor, each shape (n, 1)
+        Values of dependent variables at each evaluation point.
+    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+        Values of gradients of dependent variables wrt independent variables at
+        each evaluation point.
+
+    Returns
+    -------
+    G : tf.Tensor, shape (n, 1)
+        Value of differential equation at each evaluation point.
+    """
+    nX = X.shape[0]
+    # t = tf.reshape(X[:, 0], (nX, 1))
+    # x = tf.reshape(X[:, 1], (nX, 1))
+    # y = tf.reshape(X[:, 2], (nX, 1))
+    # (Bx, By) = Y
+    (del_Bx, del_By) = del_Y
+    # dBx_dt = tf.reshape(del_Bx[:, 0], (nX, 1))
+    dBx_dx = tf.reshape(del_Bx[:, 1], (nX, 1))
+    # dBx_dy = tf.reshape(del_Bx[:, 2], (nX, 1))
+    # dBy_dt = tf.reshape(del_By[:, 0], (nX, 1))
+    # dBy_dx = tf.reshape(del_By[:, 1], (nX, 1))
+    dBy_dy = tf.reshape(del_By[:, 2], (nX, 1))
+
+    # C is a Tensor of shape (n, 1).
+    C = dBx_dx + dBy_dy
+    return C
+
+
+# Make a list of all of the constraint equations.
+constraints = [
+    constraint_divB,
+]
+
+
 if __name__ == "__main__":
     print("independent_variable_names = %s" % independent_variable_names)
     print("independent_variable_labels = %s" % independent_variable_labels)
@@ -181,6 +240,9 @@ if __name__ == "__main__":
     print("dependent_variable_names = %s" % dependent_variable_names)
     print("dependent_variable_labels = %s" % dependent_variable_labels)
     print("n_var = %s" % n_var)
+    print("constraint_names = %s" % constraint_names)
+    print("constraint_labels = %s" % constraint_labels)
+    print("n_constraints = %s" % n_constraints)
 
     print("Q = %s" % Q)
     print("u0 = %s" % u0)
