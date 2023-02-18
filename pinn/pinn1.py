@@ -467,7 +467,7 @@ def main():
             optimizer.apply_gradients(zip(g, m.trainable_variables))
 
         if verbose and epoch % 1 == 0:
-            print("Ending epoch %s, (L, L_res, L_data) = (%f, %f, %f)" %
+            print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
                   (epoch, L.numpy(), L_res.numpy(), L_data.numpy()))
 
     # Count the last epoch.
