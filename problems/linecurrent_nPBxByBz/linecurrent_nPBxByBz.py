@@ -199,7 +199,7 @@ def pde_P(X, Y, del_Y):
     # G is a Tensor of shape (n, 1).
     G = (
         -ɣ*P/n*(dn_dt + u0x*dn_dx + u0y*dn_dy) +
-        (dP_dt + u0x*dP_dx + u0y*dP_dy)/m
+        dP_dt + u0x*dP_dx + u0y*dP_dy
     )
     return G
 
