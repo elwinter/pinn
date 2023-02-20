@@ -10,6 +10,7 @@ Eric Winter (eric.winter62@gmail.com)
 
 
 # Import standard modules.
+import math as m
 
 # Import supplemental modules.
 import matplotlib as mpl
@@ -25,6 +26,13 @@ import seaborn as sns
 # Default minimum and maximum loss function values to plot
 L_MIN_DEFAULT = 1e-9
 L_MAX_DEFAULT = 1
+
+# Specify the number of columns for the per-model plots.
+N_MODEL_COLS = 2
+
+# Specify the size (inches) for individual subplots.
+SUBPLOT_WIDTH = 5.0
+SUBPLOT_HEIGHT = 5.0
 
 
 def plot_loss_functions(
@@ -263,3 +271,76 @@ def plot_linear_heatmap(
         ax.set_yticks(y_tick_pos, y_tick_labels)
     ax.grid()
     ax.set_title(title)
+
+
+def plot_model_loss_functions(
+    losses_model_res, losses_model_data, losses_model, model_labels
+):
+    """Plot the loss history for each model.
+
+    Plot the loss history for each model.
+
+    Parameters
+    ----------
+    losses_model_res : np.ndarray of float, shape (n_epochs, n_models)
+        Residual equation losses for each model by epoch.
+    losses_data_res : np.ndarray of float, shape (n_epochs, n_models)
+        Data losses for each model by epoch.
+    losses_data : np.ndarray of float, shape (n_epochs, n_models)
+        Total losses for each model by epoch.
+    model_labels : list of str, length n_models
+        Label strings for each model. May contain LaTex notation.
+
+    Returns
+    -------
+    None
+    """
+    # Determine the number of models to plot.
+    n_models = losses_model_res.shape[1]
+
+    # Compute the number of rows of plots to produce.
+    n_rows = m.ceil(n_models/N_MODEL_COLS)
+
+    # Compute the figure size (in inches) for model loss plots.
+    model_loss_figsize = (SUBPLOT_WIDTH*N_MODEL_COLS, SUBPLOT_HEIGHT*n_rows)
+
+    # Create the figure to hold the plot.
+    fig = plt.figure(figsize=model_loss_figsize)
+    row = 0
+    col = 0
+    for i in range(n_models):
+
+        # Create the Axes object for this subplot.
+        ax = plt.subplot(n_rows, N_MODEL_COLS, i + 1)
+
+        # Only show the y-axis label in the far-left plots.
+        if col == 0:
+            show_ylabel = True
+        else:
+            show_ylabel = False
+
+        # Only show the x-axis label in the bottom plots.
+        if row == n_rows - 1:
+            show_xlabel = True
+        else:
+            show_xlabel = False
+
+        # Plot the loss functions for the current model.
+        plot_loss_functions(
+            [losses_model_res[:, i], losses_model_data[:, i], losses_model[:, i]],
+            ["$L_{res}$", "$L_{data}$", "$L$"],
+            ax, title=model_labels[i],
+            show_xlabel=show_xlabel, show_ylabel=show_ylabel
+        )
+
+        # Update row and column number for next plot.
+        col += 1
+        if col >= N_MODEL_COLS:
+            col = 0
+            row += 1
+
+    # Add the overall title at the top of the figure.
+    fig.suptitle("Loss function histories by model")
+
+    # Return the figure.
+    return fig
