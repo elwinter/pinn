@@ -293,7 +293,8 @@ def plot_model_loss_functions(
 
     Returns
     -------
-    None
+    fig : matplotlib.Figure
+        Figure object for plots.
     """
     # Determine the number of models to plot.
     n_models = losses_model_res.shape[1]
