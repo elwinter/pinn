@@ -327,7 +327,8 @@ def plot_model_loss_functions(
 
         # Plot the loss functions for the current model.
         plot_loss_functions(
-            [losses_model_res[:, i], losses_model_data[:, i], losses_model[:, i]],
+            [losses_model_res[:, i], losses_model_data[:, i],
+             losses_model[:, i]],
             ["$L_{res}$", "$L_{data}$", "$L$"],
             ax, title=model_labels[i],
             show_xlabel=show_xlabel, show_ylabel=show_ylabel
