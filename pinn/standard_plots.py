@@ -414,3 +414,98 @@ def plot_actual_predicted_B(
 
     # Return the figure.
     return fig
+
+
+# Default magnetic field magnitude limits.
+DEFAULT_B_VMIN = 1e-4
+DEFAULT_B_VMAX = 1
+
+# Default magnetic field magnitude error limits.
+DEFAULT_B_ERR_VMIN = -1e-3
+DEFAULT_B_ERR_VMAX = 1e-3
+
+
+def plot_actual_predicted_error_Bmag(
+    x, y, B_act, B_pred, B_err,
+    vmin=DEFAULT_B_VMIN, vmax=DEFAULT_B_VMAX,
+    err_vmin=DEFAULT_B_ERR_VMIN, err_vmax=DEFAULT_B_ERR_VMAX,
+    title="Magnetic field magnitude",
+    x_tick_pos=None, x_tick_labels=None,
+    y_tick_pos=None, y_tick_labels=None
+
+):
+    """Plot the actual and predicted magnetic field magnitudes, and errors.
+
+    Plot the actual and predicted magnetic field magnitudes, and errors.
+
+    Parameters
+    ----------
+    x, y : np.ndarray, shape (n,)
+        x and y coordinates for arrows.
+    B_act, B_pred, B_err : np.ndarray, shape (n,)
+        Actual, predicted, and errors in B magnitudes.
+    vmin : float, default None
+        Minimum mapped value for plot.
+    vmax : float, default None
+        Maximum mapped value for plot.
+    title : str, default "Magnetic field"
+        Title for plot
+    x_tick_pos : np.ndarray of float, default None
+        Positions in data coordinates for horizontal axis tick marks.
+    x_tick_labels : list of str, same length as x_tick_pos, default None
+        Strings for tick mark labels on horizontal axis.
+    y_tick_pos : np.ndarray of float, default None
+        Positions in data coordinates for vertical axis tick marks.
+    y_tick_labels : list of str, same length as y_tick_pos, default None
+        Strings for tick mark labels on vertical axis.
+
+    Returns
+    -------
+    fig : matplotlib.Figure
+        Figure object for plots.
+    """
+    # Compute the figure size for side-by-side-by-side actual, predicted,
+    # and error plots for the magnetic field magnitude.
+    B_magnitude_figsize = (SUBPLOT_WIDTH*3, SUBPLOT_HEIGHT)
+
+    # Create the figure.
+    fig = plt.figure(figsize=B_magnitude_figsize)
+
+    # Actual
+    ax = plt.subplot(1, 3, 1)
+    plot_logarithmic_heatmap(
+        B_act,
+        ax, title="Actual",
+        vmin=vmin, vmax=vmax,
+        show_ylabel=True,
+        x_tick_pos=x_tick_pos, x_tick_labels=x_tick_labels,
+        y_tick_pos=y_tick_pos, y_tick_labels=y_tick_labels,
+    )
+
+    # Predicted
+    ax = plt.subplot(1, 3, 2)
+    plot_logarithmic_heatmap(
+        B_pred,
+        ax, title="Predicted",
+        vmin=vmin, vmax=vmax,
+        show_ylabel=False,
+        x_tick_pos=x_tick_pos, x_tick_labels=x_tick_labels,
+        y_tick_pos=y_tick_pos, y_tick_labels=y_tick_labels,
+    )
+
+    # Absolute error
+    ax = plt.subplot(1, 3, 3)
+    plot_linear_heatmap(
+        B_err,
+        ax, title="Absolute error",
+        vmin=err_vmin, vmax=err_vmax,
+        show_ylabel=False,
+        x_tick_pos=x_tick_pos, x_tick_labels=x_tick_labels,
+        y_tick_pos=y_tick_pos, y_tick_labels=y_tick_labels,
+    )
+
+    # Add the overall title at the top of the figure.
+    fig.suptitle(title)
+
+    # Return the figure.
+    return fig
