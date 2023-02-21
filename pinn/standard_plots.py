@@ -346,3 +346,71 @@ def plot_model_loss_functions(
 
     # Return the figure.
     return fig
+
+
+def plot_actual_predicted_B(
+    x, y, Bx_act, By_act, Bx_pred, By_pred,
+    title="Magnetic field",
+    x_tick_pos=None, x_tick_labels=None,
+    y_tick_pos=None, y_tick_labels=None
+
+):
+    """Plot the actual and predicted magnetic fields.
+
+    Plot the actual and predicted magnetic fields.
+
+    Parameters
+    ----------
+    x, y : np.ndarray, shape (n,)
+        x and y coordinates for arrows.
+    Bx_act, By_act : np.ndarray, shape (n,)
+        Actual x- and y-components for arrows.
+    Bx_pred, By_pred : np.ndarray, shape (n,)
+        Predicted x- and y-components for arrows.
+    title : str, default "Magnetic field"
+        Title for plot
+    x_tick_pos : np.ndarray of float, default None
+        Positions in data coordinates for horizontal axis tick marks.
+    x_tick_labels : list of str, same length as x_tick_pos, default None
+        Strings for tick mark labels on horizontal axis.
+    y_tick_pos : np.ndarray of float, default None
+        Positions in data coordinates for vertical axis tick marks.
+    y_tick_labels : list of str, same length as y_tick_pos, default None
+        Strings for tick mark labels on vertical axis.
+
+    Returns
+    -------
+    fig : matplotlib.Figure
+        Figure object for plots.
+    """
+    # Compute the figure size for side-by-side actual and predicted quiver
+    # plots for the magnetic field vectors.
+    B_vector_figsize = (SUBPLOT_WIDTH*2, SUBPLOT_HEIGHT)
+
+    # Create the figure.
+    fig = plt.figure(figsize=B_vector_figsize)
+
+    # Actual
+    ax = plt.subplot(1, 2, 1)
+    plot_BxBy_quiver(
+        x, y, Bx_act, By_act,
+        ax, title="Actual",
+        x_tick_pos=x_tick_pos, x_tick_labels=x_tick_labels,
+        y_tick_pos=y_tick_pos, y_tick_labels=y_tick_labels,
+    )
+
+    # Predicted
+    ax = plt.subplot(1, 2, 2)
+    plot_BxBy_quiver(
+        x, y, Bx_pred, By_pred,
+        ax, title="Predicted",
+        show_ylabel=False,
+        x_tick_pos=x_tick_pos, x_tick_labels=x_tick_labels,
+        y_tick_pos=y_tick_pos, y_tick_labels=y_tick_labels,
+    )
+
+    # Add the overall title at the top of the figure.
+    fig.suptitle(title)
+
+    # Return the figure.
+    return fig
