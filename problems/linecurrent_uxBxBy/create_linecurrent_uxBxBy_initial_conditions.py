@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Compute initial conditions for linecurrent_nPuxuyuzBxByBz.
+"""Compute initial conditions for linecurrent_uxBxBy.
 
 Author
 ------
@@ -20,14 +20,14 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute data for linecurrent_nPuxuyuzBxByBz problem."
+description = "Compute data for linecurrent_uxBxBy problem."
 
 # Default random number generator seed.
 default_seed = 0
 
 # Constants
 mu0 = 1.0  # Normalized vacuum permittivity.
-I_current = 1e-3    # Normalized current.
+I_current = 1.0    # Normalized current.
 Q = 60.0   # Flow angle in degrees clockwise from +y axis.
 u0 = 1.0   # Initial flow speed.
 
@@ -123,19 +123,14 @@ def main():
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
-    # t_min x y n P ux uy uz Bx By Bz
+    # t_min x y ux Bx By
     for (i, x) in enumerate(xg):
         for (j, y) in enumerate(yg):
             r = np.sqrt(x**2 + y**2)
-            n = 1.0
-            P = 1.0
             ux = u0x
-            uy = u0y
-            uz = 0.0
             Bx = -mu0*I_current/(2*np.pi)*y/r**2
             By = mu0*I_current/(2*np.pi)*x/r**2
-            Bz = 0.0
-            print(t_min, x, y, n, P, ux, uy, uz, Bx, By, Bz)
+            print(t_min, x, y, ux, Bx, By)
 
 
 if __name__ == "__main__":

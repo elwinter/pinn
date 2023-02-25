@@ -26,10 +26,10 @@ description = "Compute data for linecurrent_BxBy problem."
 default_seed = 0
 
 # Constants
-mu0 = 1.0  # Normalized vacuum permittivity.
-I_current = 1.0    # Normalized current.
-Q = 60.0   # Flow angle in degrees clockwise from +y axis.
-u0 = 1.0   # Initial flow speed.
+mu0 = 1.0  # Normalized vacuum permittivity
+I_current = 1e-3    # Normalized current
+Q = 60.0   # Flow angle in degrees clockwise from +y axis
+u0 = 1.0   # Initial flow speed
 
 # Compute the constant velocity components.
 u0x = u0*np.sin(np.radians(Q))

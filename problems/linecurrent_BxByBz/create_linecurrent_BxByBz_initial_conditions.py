@@ -27,7 +27,7 @@ default_seed = 0
 
 # Constants
 mu0 = 1.0  # Normalized vacuum permittivity.
-I_current = 1.0    # Normalized current.
+I_current = 1e-3   # Normalized current.
 Q = 60.0   # Flow angle in degrees clockwise from +y axis.
 u0 = 1.0   # Initial flow speed.
 
