@@ -158,7 +158,7 @@ def plot_model_loss_functions(
             row += 1
 
     # Add the overall title at the top of the figure.
-    fig.suptitle("Loss function histories by model")
+    fig.suptitle("Loss function history by model")
 
     # Return the figure.
     return fig
@@ -685,11 +685,14 @@ def plot_actual_predicted_error(
         y_tick_pos=y_tick_pos, y_tick_labels=y_tick_labels,
     )
 
+    # Compute the RMS absolute error.
+    rms_error = np.sqrt(np.sum(z_err**2)/len(z_err))
+
     # Absolute error
     ax = plt.subplot(1, 3, 3)
     plot_linear_heatmap(
         z_err,
-        ax, title="Absolute error",
+        ax, title="Absolute error, RMS = %.2e" % rms_error,
         vmin=err_vmin, vmax=err_vmax,
         show_ylabel=False,
         x_tick_pos=x_tick_pos, x_tick_labels=x_tick_labels,
@@ -777,11 +780,14 @@ def plot_log_actual_predicted_error(
         y_tick_pos=y_tick_pos, y_tick_labels=y_tick_labels,
     )
 
+    # Compute the RMS absolute error.
+    rms_error = np.sqrt(np.sum(z_err**2)/len(z_err))
+
     # Absolute error
     ax = plt.subplot(1, 3, 3)
     plot_linear_heatmap(
         z_err,
-        ax, title="Absolute error",
+        ax, title="Absolute error, RMS = %.2e" % rms_error,
         vmin=err_vmin, vmax=err_vmax,
         show_ylabel=False,
         x_tick_pos=x_tick_pos, x_tick_labels=x_tick_labels,
