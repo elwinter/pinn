@@ -229,7 +229,7 @@ def pde_ux(X, Y, del_Y):
 
     # G is a Tensor of shape (n, 1).
     G = (
-        n*(dux_dt + ux*dux_dx + uy*dux_dy) + dP_dx/m +
+        n0*(dux_dt + ux*dux_dx + uy*dux_dy) + dP_dx/m +
         (By*(dBy_dx - dBx_dy) + Bz*dBz_dx)/(m*μ0)
     )
     return G
