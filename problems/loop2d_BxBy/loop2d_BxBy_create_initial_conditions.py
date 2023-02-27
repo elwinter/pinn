@@ -28,7 +28,7 @@ default_seed = 0
 # Constants
 Q = 60.0   # Flow angle in degrees clockwise from +y axis.
 u0 = 1.0   # Initial flow speed.
-A = 1      # Magnitude of magnetic vector potential.
+A = 1e-3   # Magnitude of magnetic vector potential.
 R0 = 0.3   # Radius of current cylinder.
 
 # Compute the constant velocity components.
