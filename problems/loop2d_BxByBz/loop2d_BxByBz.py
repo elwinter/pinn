@@ -1,13 +1,14 @@
 """Problem definition file for a simple 2-D MHD problem.
 
-This problem definition file describes the 2-D line current advection
+This problem definition file describes the 2-D current loop advection
 problem, which is based on the loop2d example in the Athena MHD test suite.
 Details are available at:
 
 https://www.astro.princeton.edu/~jstone/Athena/tests/field-loop/Field-loop.html
 
-NOTE: This case deals only with a line current in the +z direction (out of
-the screen). +x is to the right, +y is up.
+This case deals with a line current in the +z direction (out of the
+screen), with a return current toward -z at r = 0.3. +x is to the right,
++y is up.
 
 NOTE: This version of the code solves *only* the equations for Bx, By, and Bz.
 
