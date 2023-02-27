@@ -2,14 +2,14 @@
 # . use_research-3.10
 
 # Created 50x50x50 training grid.
-# create_training_points.py 0 1 50 -1 1 50 -1 1 50 > linecurrent_BxByBz_training_grid.dat
+# create_training_points.py 0 1 50 -1 1 50 -1 1 50 > loop2d_BxByBz_training_grid.dat
 
 # Create 50x50 initial conditions.
-# create_linecurrent_BxByBz_initial_conditions.py 0 1 50 -1 1 50 -1 1 50 > linecurrent_BxByBz_initial_conditions.dat
+# loop2d_BxByBz_create_initial_conditions.py 0 1 50 -1 1 50 -1 1 50 > loop2d_BxByBz_initial_conditions.dat
 
 # Define problem location.
 PINN_ROOT=$HOME/research_local/src/pinn
-PROBLEM_ROOT=$PINN_ROOT/problems/linecurrent_BxByBz
+PROBLEM_ROOT=$PINN_ROOT/problems/loop2d_BxByBz
 
 # Define PINN command.
 PINN_CMD=$PINN_ROOT/pinn/pinn1.py
@@ -19,10 +19,10 @@ $PINN_CMD -d -v \
   --max_epochs=10000 \
   --n_layers=4 \
   --n_hid=100 \
-  --data $PROBLEM_ROOT/linecurrent_BxByBz_initial_conditions.dat \
+  --data $PROBLEM_ROOT/loop2d_BxByBz_initial_conditions.dat \
   -w 0.95 \
-  $PROBLEM_ROOT/linecurrent_BxByBz.py \
-  $PROBLEM_ROOT/linecurrent_BxByBz_training_grid.dat \
+  $PROBLEM_ROOT/loop2d_BxByBz.py \
+  $PROBLEM_ROOT/loop2d_BxByBz_training_grid.dat \
   >& pinn1.out
 
 
