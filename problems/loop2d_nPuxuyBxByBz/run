@@ -1,0 +1,28 @@
+# Load environment.
+# . use_research-3.10
+
+# Created 50x50x50 training grid.
+# create_training_points.py 0 1 50 -1 1 50 -1 1 50 > loop2d_nPuxuyBxByBz_training_grid.dat
+
+# Create 50x50 initial conditions.
+# create_loop2d_nPuxuyBxByBz_initial_conditions.py 0 1 50 -1 1 50 -1 1 50 > loop2d_nPuxuyBxByBz_initial_conditions.dat
+
+# Define problem location.
+PINN_ROOT=$HOME/research_local/src/pinn
+PROBLEM_ROOT=$PINN_ROOT/problems/loop2d_nPuxuyBxByBz
+
+# Define PINN command.
+PINN_CMD=$PINN_ROOT/pinn/pinn1.py
+
+# Run the network.
+$PINN_CMD -d -v \
+  --max_epochs=10000 \
+  --n_layers=4 \
+  --n_hid=100 \
+  --data $PROBLEM_ROOT/loop2d_nPuxuyBxByBz_initial_conditions.dat \
+  -w 0.95 \
+  $PROBLEM_ROOT/loop2d_nPuxuyBxByBz.py \
+  $PROBLEM_ROOT/loop2d_nPuxuyBxByBz_training_grid.dat \
+  >& pinn1.out
+
+
