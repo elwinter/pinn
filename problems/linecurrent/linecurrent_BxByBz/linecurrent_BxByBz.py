@@ -323,9 +323,6 @@ def Bz_analytical(t, x, y):
     """Analytical solution for the z-component of the magnetic field.
 
     Compute the analytical solution for the z-component of the magnetic field.
-    (xp, yp) are the coordinates (x, y) translated back to the initial frame
-    for field computation, since the analytical solution is a simple linear
-    translation of the initial conditions.
 
     Parameters
     ----------
