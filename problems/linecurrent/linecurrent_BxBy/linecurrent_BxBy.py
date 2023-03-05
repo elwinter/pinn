@@ -6,8 +6,8 @@ Details are available at:
 
 https://www.astro.princeton.edu/~jstone/Athena/tests/field-loop/Field-loop.html
 
-This case deals only with a line current in the +z direction (out of the
-screen). +x is to the right, +y is up.
+This case deals with a line current in the +z direction (out of the screen).
++x is to the right, +y is up.
 
 NOTE: This version of the code solves *only* the equations for Bx and By.
 
@@ -48,7 +48,7 @@ import tensorflow as tf
 # Names of independent variables.
 independent_variable_names = ["t", "x", "y"]
 
-# Invert the independent variable list to map name to index.
+# Invert the independent variable name list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
@@ -65,7 +65,7 @@ n_dim = len(independent_variable_names)
 # Names of dependent variables.
 dependent_variable_names = ["Bx", "By"]
 
-# Invert the dependent variable list to map name to index.
+# Invert the dependent variable name list to map name to index.
 dependent_variable_index = {}
 for (i, s) in enumerate(dependent_variable_names):
     dependent_variable_index[s] = i
@@ -104,10 +104,10 @@ u0z = 0.0                       # z-component of flow velocity
 
 # @tf.function
 def pde_Bx(X, Y, del_Y):
-    """Differential equation for x-component of magnetic field.
+    """Differential equation for x-component of the magnetic field.
 
-    Evaluate the differential equation for x-component of magnetic field.
-    This equation is derived from the x-component of Faraday's Law.
+    Evaluate the differential equation for the x-component of the magnetic
+    field. This equation is derived from the x-component of Faraday's Law.
 
     Parameters
     ----------
@@ -116,8 +116,8 @@ def pde_Bx(X, Y, del_Y):
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
     del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
-        Values of gradients of dependent variables wrt independent variables at
-        each evaluation point.
+        Values of gradients of dependent variables wrt independent variables
+        at each evaluation point.
 
     Returns
     -------
@@ -144,10 +144,10 @@ def pde_Bx(X, Y, del_Y):
 
 # @tf.function
 def pde_By(X, Y, del_Y):
-    """Differential equation for y-component of magnetic field.
+    """Differential equation for y-component of the magnetic field.
 
-    Evaluate the differential equation for y-component of magnetic field.
-    This equation is derived from the y-component of Faraday's Law.
+    Evaluate the differential equation for the y-component of the magnetic
+    field. This equation is derived from the y-component of Faraday's Law.
 
     Parameters
     ----------
@@ -156,8 +156,8 @@ def pde_By(X, Y, del_Y):
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
     del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
-        Values of gradients of dependent variables wrt independent variables at
-        each evaluation point.
+        Values of gradients of dependent variables wrt independent variables
+        at each evaluation point.
 
     Returns
     -------
