@@ -20,20 +20,22 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute data for linecurrent_BxByBz problem."
+description = "Compute initial conditions for linecurrent_BxByBz problem."
 
 # Default random number generator seed.
 default_seed = 0
 
 # Constants
-mu0 = 1.0  # Normalized vacuum permittivity.
-I_current = 1e-3   # Normalized current.
-Q = 60.0   # Flow angle in degrees clockwise from +y axis.
-u0 = 1.0   # Initial flow speed.
+mu0 = 1.0  # Normalized vacuum permittivity
+I_current = 1e-3  # Normalized current
+C1 = mu0*I_current/(2*np.pi)  # Leading constant for Bx and By equation.
 
 # Compute the constant velocity components.
-u0x = u0*np.sin(np.radians(Q))
-u0y = u0*np.cos(np.radians(Q))
+Q = 60.0  # Angle in degrees clockwise from +y axis
+u0 = 1.0  # Flow speed
+u0x = u0*np.sin(np.radians(Q))  # x-component of flow velocity
+u0y = u0*np.cos(np.radians(Q))  # y-component of flow velocity
+u0z = 0.0                       # z-component of flow velocity
 
 
 def create_command_line_argument_parser():
@@ -63,10 +65,6 @@ def create_command_line_argument_parser():
         "--seed", type=int, default=default_seed,
         help="Seed for random number generator (default: %(default)s)"
     )
-    # parser.add_argument(
-    #     "-v", "--verbose", action="store_true",
-    #     help="Print verbose output (default: %(default)s)."
-    # )
     parser.add_argument('rest', nargs=argparse.REMAINDER)
     return parser
 
@@ -81,7 +79,6 @@ def main():
     debug = args.debug
     random = args.random
     seed = args.seed
-    # verbose = args.verbose
     rest = args.rest
     if debug:
         print("args = %s" % args)
@@ -90,45 +87,38 @@ def main():
     # They should be in 3 sets of 3:
     # t_min t_max n_t x_min x_max n_x y_min y_max n_y
     assert len(rest) == 9
-    X_min = np.array(rest[::3], dtype=float)
-    X_max = np.array(rest[1::3], dtype=float)
-    X_n = np.array(rest[2::3], dtype=int)
+    (t_min, x_min, y_min) = np.array(rest[::3], dtype=float)
+    (t_max, x_max, y_max) = np.array(rest[1::3], dtype=float)
+    (n_t, n_x, n_y) = np.array(rest[2::3], dtype=int)
     if debug:
-        print("X_min = %s" % X_min)
-        print("X_max = %s" % X_max)
-        print("X_n = %s" % X_n)
-    assert len(X_min) == len(X_max) == len(X_n)
+        print("%s <= t <= %s, n_t = %s" % (t_min, t_max, n_t))
+        print("%s <= x <= %s, n_x = %s" % (x_min, x_max, n_x))
+        print("%s <= y <= %s, n_y = %s" % (y_min, y_max, n_y))
 
-    # Extract limits for convenience.
-    (t_min, x_min, y_min) = X_min
-    (t_max, x_max, y_max) = X_max
-    (n_t, n_x, n_y) = X_n
-    if debug:
-        print("%s <= t <= %s" % (t_min, t_max))
-        print("%s <= x <= %s" % (x_min, x_max))
-        print("%s <= y <= %s" % (y_min, y_max))
-
-    # Create the (x, y) coordinate points for the initial conditions.
+    # Create the (t, x, y) coordinate points for the initial conditions.
     # Points are either random or gridded.
     if random:
-        np.random.seed(seed)
-        xg = x_min + np.random.random_sample((n_x,))*(x_max - x_min)
-        yg = y_min + np.random.random_sample((n_y,))*(y_max - y_min)
+        raise TypeError("Not ready for random!")
+        # np.random.seed(seed)
+        # xg = x_min + np.random.random_sample((n_x,))*(x_max - x_min)
+        # yg = y_min + np.random.random_sample((n_y,))*(y_max - y_min)
     else:
+        tg = np.linspace(t_min, t_max, n_t)
         xg = np.linspace(x_min, x_max, n_x)
         yg = np.linspace(y_min, y_max, n_y)
     if debug:
+        print("tg = %s" % tg)
         print("xg = %s" % xg)
         print("yg = %s" % yg)
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
     # t_min x y Bx By Bz
-    for (i, x) in enumerate(xg):
-        for (j, y) in enumerate(yg):
+    for x in xg:
+        for y in yg:
             r = np.sqrt(x**2 + y**2)
-            Bx = -mu0*I_current/(2*np.pi)*y/r**2
-            By = mu0*I_current/(2*np.pi)*x/r**2
+            Bx = -C1*y/r**2
+            By = C1*x/r**2
             Bz = 0.0
             print(t_min, x, y, Bx, By, Bz)
 

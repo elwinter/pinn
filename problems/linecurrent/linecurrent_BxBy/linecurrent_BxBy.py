@@ -28,7 +28,7 @@ dependent variables:
     0: Bx (x-component of magnetic field)
     1: By (y-component of magnetic field)
 
-NOTE: These equations were last verified on 2023-03-04.
+NOTE: These equations were last verified on 2023-03-05.
 
 Author
 ------
@@ -104,7 +104,7 @@ u0z = 0.0                       # z-component of flow velocity
 
 # @tf.function
 def pde_Bx(X, Y, del_Y):
-    """Differential equation for x-component of the magnetic field.
+    """Differential equation for the x-component of the magnetic field.
 
     Evaluate the differential equation for the x-component of the magnetic
     field. This equation is derived from the x-component of Faraday's Law.
@@ -144,7 +144,7 @@ def pde_Bx(X, Y, del_Y):
 
 # @tf.function
 def pde_By(X, Y, del_Y):
-    """Differential equation for y-component of the magnetic field.
+    """Differential equation for the y-component of the magnetic field.
 
     Evaluate the differential equation for the y-component of the magnetic
     field. This equation is derived from the y-component of Faraday's Law.
@@ -183,9 +183,143 @@ def pde_By(X, Y, del_Y):
 
 
 # Make a list of all of the differential equations.
+# Use same order as dependent_variable_names.
 de = [
     pde_Bx,
     pde_By,
+]
+
+
+# Define analytical solutions.
+
+# Constants
+mu0 = 1.0  # Normalized vacuum permittivity
+I = 1e-3   # Normalized current
+Q = 60.0   # Flow angle in degrees clockwise from +y axis
+C1 = mu0*I/(2*np.pi)  # Leading constant in analytical solutions.
+
+
+def Bx_analytical(t, x, y):
+    """Analytical solution for the x-component of the magnetic field.
+
+    Compute the analytical solution for the x-component of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    Bx : np.array of float, shape (n,)
+        Value of Bx for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    Bx = -C1*yp/r**2
+    return Bx
+
+
+def By_analytical(t, x, y):
+    """Analytical solution for the y-component of the magnetic field.
+
+    Compute the analytical solution for the y-component of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    By : np.array of float, shape (n,)
+        Value of By for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    By = C1*xp/r**2
+    return By
+
+
+def dBx_dx_analytical(t, x, y):
+    """Analytical solution for dBx/dx of the magnetic field.
+
+    Compute the analytical solution for dBx/dx of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    dBx_dx : np.array of float, shape (n,)
+        Value of dBx/dx for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    dBx_dx = 2*C1*xp*yp/r**4
+    return dBx_dx
+
+
+def dBy_dy_analytical(t, x, y):
+    """Analytical solution for dBy/dy of the magnetic field.
+
+    Compute the analytical solution for dBy/dy of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    dBy_dy : np.array of float, shape (n,)
+        Value of dBy/dy for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    dBy_dy = -2*C1*xp*yp/r**4
+    return dBy_dy
+
+
+# Gather the analytical solutions in a list.
+# Use same order as dependent_variable_names.
+analytical_solutions = [
+    Bx_analytical,
+    By_analytical,
 ]
 
 
