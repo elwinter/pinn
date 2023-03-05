@@ -97,6 +97,7 @@ u0 = 1.0  # Flow speed
 u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
 u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
 
+
 # NOTE: In the functions defined below for the differential equations, the
 # arguments can be unpacked as follows:
 # def pde_XXX(X, Y, del_Y):
