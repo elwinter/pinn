@@ -22,9 +22,6 @@ import numpy as np
 # Program description.
 description = "Compute initial conditions for linecurrent_BxBy problem."
 
-# Default random number generator seed.
-default_seed = 0
-
 # Physical constants
 μ0 = 1.0  # Normalized vacuum permeability
 
