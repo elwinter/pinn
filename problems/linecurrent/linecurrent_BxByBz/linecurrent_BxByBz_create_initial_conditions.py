@@ -35,7 +35,6 @@ Q = 60.0  # Angle in degrees clockwise from +y axis
 u0 = 1.0  # Flow speed
 u0x = u0*np.sin(np.radians(Q))  # x-component of flow velocity
 u0y = u0*np.cos(np.radians(Q))  # y-component of flow velocity
-u0z = 0.0                       # z-component of flow velocity
 
 
 def create_command_line_argument_parser():
@@ -120,7 +119,7 @@ def main():
             Bx = -C1*y/r**2
             By = C1*x/r**2
             Bz = 0.0
-            print(t_min, x, y, Bx, By, Bz)
+            print(tg[0], x, y, Bx, By, Bz)
 
 
 if __name__ == "__main__":

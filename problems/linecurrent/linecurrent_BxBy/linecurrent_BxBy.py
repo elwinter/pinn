@@ -78,12 +78,24 @@ dependent_variable_labels = ["$B_x$", "$B_y$"]
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
 
+# Physical constants
+μ0 = 1.0  # Normalized vacuum permeability
+
+# Plasma parameters
+m = 1.0    # Plasma article mass
+ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
+n0 = 1.0   # Number density
+P0 = 1.0   # Pressure
+u0z = 0.0  # z-component of velocity
+B0z = 0.0  # z-component of magnetic field
+I = 1e-3   # Normalized current
+C1 = μ0*I/(2*np.pi)  # Leading constant in analytical solutions for Bx, By.
+
 # Define the constant fluid flow field.
-Q = 60.0  # Angle in degrees clockwise from +y axis
+θ = 60.0  # Angle in degrees clockwise from +y axis
 u0 = 1.0  # Flow speed
-u0x = u0*np.sin(np.radians(Q))  # x-component of flow velocity
-u0y = u0*np.cos(np.radians(Q))  # y-component of flow velocity
-u0z = 0.0                       # z-component of flow velocity
+u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
+u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
 
 # NOTE: In the functions defined below for the differential equations, the
 # arguments can be unpacked as follows:
@@ -192,12 +204,6 @@ de = [
 
 # Define analytical solutions.
 
-# Constants
-mu0 = 1.0  # Normalized vacuum permittivity
-I = 1e-3   # Normalized current
-Q = 60.0   # Flow angle in degrees clockwise from +y axis
-C1 = mu0*I/(2*np.pi)  # Leading constant in analytical solutions.
-
 
 def Bx_analytical(t, x, y):
     """Analytical solution for the x-component of the magnetic field.
@@ -255,6 +261,17 @@ def By_analytical(t, x, y):
     r = np.sqrt(xp**2 + yp**2)
     By = C1*xp/r**2
     return By
+
+
+# Gather the analytical solutions in a list.
+# Use same order as dependent_variable_names.
+analytical_solutions = [
+    Bx_analytical,
+    By_analytical,
+]
+
+
+# Other useful analytical functions.
 
 
 def dBx_dx_analytical(t, x, y):
@@ -315,14 +332,6 @@ def dBy_dy_analytical(t, x, y):
     return dBy_dy
 
 
-# Gather the analytical solutions in a list.
-# Use same order as dependent_variable_names.
-analytical_solutions = [
-    Bx_analytical,
-    By_analytical,
-]
-
-
 if __name__ == "__main__":
     print("independent_variable_names = %s" % independent_variable_names)
     print("independent_variable_index = %s" % independent_variable_index)
@@ -334,8 +343,17 @@ if __name__ == "__main__":
     print("dependent_variable_labels = %s" % dependent_variable_labels)
     print("n_var = %s" % n_var)
 
-    print("Q = %s" % Q)
+    print("μ0 = %s" % μ0)
+    print("m = %s" % m)
+    print("ɣ = %s" % ɣ)
+    print("n0 = %s" % n0)
+    print("P0 = %s" % P0)
+    print("u0z = %s" % u0z)
+    print("B0z = %s" % B0z)
+    print("I = %s" % I)
+    print("C1 = %s" % C1)
+
+    print("θ = %s" % θ)
     print("u0 = %s" % u0)
     print("u0x = %s" % u0x)
     print("u0y = %s" % u0y)
-    print("u0z = %s" % u0z)

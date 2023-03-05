@@ -25,16 +25,24 @@ description = "Compute initial conditions for linecurrent_BxBy problem."
 # Default random number generator seed.
 default_seed = 0
 
-# Constants
-mu0 = 1.0  # Normalized vacuum permittivity
-I_current = 1e-3  # Normalized current
-C1 = mu0*I_current/(2*np.pi)  # Leading constant for Bx and By equation.
+# Physical constants
+μ0 = 1.0  # Normalized vacuum permeability
 
-# Compute the constant velocity components.
-Q = 60.0  # Angle in degrees clockwise from +y axis
+# Plasma parameters
+m = 1.0    # Plasma article mass
+ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
+n0 = 1.0   # Number density
+P0 = 1.0   # Pressure
+u0z = 0.0  # z-component of velocity
+B0z = 0.0  # z-component of magnetic field
+I = 1e-3   # Normalized current
+C1 = μ0*I/(2*np.pi)  # Leading constant in analytical solutions for Bx, By.
+
+# Define the constant fluid flow field.
+θ = 60.0  # Angle in degrees clockwise from +y axis
 u0 = 1.0  # Flow speed
-u0x = u0*np.sin(np.radians(Q))  # x-component of flow velocity
-u0y = u0*np.cos(np.radians(Q))  # y-component of flow velocity
+u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
+u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
 
 
 def create_command_line_argument_parser():
@@ -56,14 +64,6 @@ def create_command_line_argument_parser():
         "-d", "--debug", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
-    parser.add_argument(
-        "-r", "--random", action="store_true",
-        help="Select points randomly within domain (default: %(default)s)."
-    )
-    parser.add_argument(
-        "--seed", type=int, default=default_seed,
-        help="Seed for random number generator (default: %(default)s)"
-    )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
     return parser
 
@@ -76,8 +76,6 @@ def main():
     # Parse the command-line arguments.
     args = parser.parse_args()
     debug = args.debug
-    random = args.random
-    seed = args.seed
     rest = args.rest
     if debug:
         print("args = %s" % args)
@@ -94,17 +92,10 @@ def main():
         print("%s <= x <= %s, n_x = %s" % (x_min, x_max, n_x))
         print("%s <= y <= %s, n_y = %s" % (y_min, y_max, n_y))
 
-    # Create the (t, x, y) coordinate points for the initial conditions.
-    # Points are either random or gridded.
-    if random:
-        raise TypeError("Not ready for random!")
-        # np.random.seed(seed)
-        # xg = x_min + np.random.random_sample((n_x,))*(x_max - x_min)
-        # yg = y_min + np.random.random_sample((n_y,))*(y_max - y_min)
-    else:
-        tg = np.linspace(t_min, t_max, n_t)
-        xg = np.linspace(x_min, x_max, n_x)
-        yg = np.linspace(y_min, y_max, n_y)
+    # Create the (t, x, y) grid points for the initial conditions.
+    tg = np.linspace(t_min, t_max, n_t)
+    xg = np.linspace(x_min, x_max, n_x)
+    yg = np.linspace(y_min, y_max, n_y)
     if debug:
         print("tg = %s" % tg)
         print("xg = %s" % xg)
@@ -112,7 +103,7 @@ def main():
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
-    # t_min x y Bx By
+    # tg[0] x y Bx By
     for x in xg:
         for y in yg:
             r = np.sqrt(x**2 + y**2)
