@@ -15,20 +15,20 @@ NOTE: The functions in this module are defined using a combination of Numpy and
 TensorFlow operations, so they can be used efficiently by the TensorFlow
 code.
 
-NOTE: In all code, below, the following indices are assigned to physical
+NOTE: In all code below, the following indices are assigned to physical
 independent variables:
 
     0: t
     1: x
     2: y
 
-NOTE: In all code, below, the following indices are assigned to physical
+NOTE: In all code below, the following indices are assigned to physical
 dependent variables:
 
     0: Bx (x-component of magnetic field)
     1: By (y-component of magnetic field)
 
-NOTE: These equations were last verified on 2023-02-05.
+NOTE: These equations were last verified on 2023-03-04.
 
 Author
 ------
@@ -52,6 +52,9 @@ independent_variable_names = ["t", "x", "y"]
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
+it = independent_variable_index["t"]
+ix = independent_variable_index["x"]
+iy = independent_variable_index["y"]
 
 # Labels for independent variables (may use LaTex) - use for plots.
 independent_variable_labels = ["$t$", "$x$", "$y$"]
@@ -66,6 +69,8 @@ dependent_variable_names = ["Bx", "By"]
 dependent_variable_index = {}
 for (i, s) in enumerate(dependent_variable_names):
     dependent_variable_index[s] = i
+iBx = dependent_variable_index["Bx"]
+iBy = dependent_variable_index["By"]
 
 # Labels for dependent variables (may use LaTex) - use for plots.
 dependent_variable_labels = ["$B_x$", "$B_y$"]
@@ -74,35 +79,35 @@ dependent_variable_labels = ["$B_x$", "$B_y$"]
 n_var = len(dependent_variable_names)
 
 # Define the constant fluid flow field.
-Q = 60.0
-u0 = 1.0
-u0x = u0*np.sin(np.radians(Q))
-u0y = u0*np.cos(np.radians(Q))
-
+Q = 60.0  # Angle in degrees clockwise from +y axis
+u0 = 1.0  # Flow speed
+u0x = u0*np.sin(np.radians(Q))  # x-component of flow velocity
+u0y = u0*np.cos(np.radians(Q))  # y-component of flow velocity
+u0z = 0.0                       # z-component of flow velocity
 
 # NOTE: In the functions defined below for the differential equations, the
 # arguments can be unpacked as follows:
 # def pde_XXX(X, Y, del_Y):
 #     nX = X.shape[0]
-#     t = tf.reshape(X[:, 0], (nX, 1))
-#     x = tf.reshape(X[:, 1], (nX, 1))
-#     y = tf.reshape(X[:, 2], (nX, 1))
+#     t = tf.reshape(X[:, it], (nX, 1))
+#     x = tf.reshape(X[:, ix], (nX, 1))
+#     y = tf.reshape(X[:, iy], (nX, 1))
 #     (Bx, By) = Y
 #     (del_Bx, del_By) = del_Y
-#     dBx_dt = tf.reshape(del_Bx[:, 0], (nX, 1))
-#     dBx_dx = tf.reshape(del_Bx[:, 1], (nX, 1))
-#     dBx_dy = tf.reshape(del_Bx[:, 2], (nX, 1))
-#     dBy_dt = tf.reshape(del_By[:, 0], (nX, 1))
-#     dBy_dx = tf.reshape(del_By[:, 1], (nX, 1))
-#     dBy_dy = tf.reshape(del_By[:, 2], (nX, 1))
+#     dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
+#     dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
+#     dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
+#     dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
+#     dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
+#     dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
 
 
 # @tf.function
 def pde_Bx(X, Y, del_Y):
-    """Differential equation for x-magnetic field.
+    """Differential equation for x-component of magnetic field.
 
-    Evaluate the differential equation for x-magnetic field. This equation is
-    derived from the x-component of Faraday's Law.
+    Evaluate the differential equation for x-component of magnetic field.
+    This equation is derived from the x-component of Faraday's Law.
 
     Parameters
     ----------
@@ -120,17 +125,17 @@ def pde_Bx(X, Y, del_Y):
         Value of differential equation at each evaluation point.
     """
     nX = X.shape[0]
-    # t = tf.reshape(X[:, 0], (nX, 1))
-    # x = tf.reshape(X[:, 1], (nX, 1))
-    # y = tf.reshape(X[:, 2], (nX, 1))
+    # t = tf.reshape(X[:, it], (nX, 1))
+    # x = tf.reshape(X[:, ix], (nX, 1))
+    # y = tf.reshape(X[:, iy], (nX, 1))
     # (Bx, By) = Y
     (del_Bx, del_By) = del_Y
-    dBx_dt = tf.reshape(del_Bx[:, 0], (nX, 1))
-    dBx_dx = tf.reshape(del_Bx[:, 1], (nX, 1))
-    dBx_dy = tf.reshape(del_Bx[:, 2], (nX, 1))
-    # dBy_dt = tf.reshape(del_By[:, 0], (nX, 1))
-    # dBy_dx = tf.reshape(del_By[:, 1], (nX, 1))
-    # dBy_dy = tf.reshape(del_By[:, 2], (nX, 1))
+    dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
+    dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
+    dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
+    # dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
+    # dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
+    # dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
     G = dBx_dt + u0x*dBx_dx + u0y*dBx_dy
@@ -139,10 +144,10 @@ def pde_Bx(X, Y, del_Y):
 
 # @tf.function
 def pde_By(X, Y, del_Y):
-    """Differential equation for y-magnetic field.
+    """Differential equation for y-component of magnetic field.
 
-    Evaluate the differential equation for y-magnetic field. This equation is
-    derived from the y-component of Faraday's Law.
+    Evaluate the differential equation for y-component of magnetic field.
+    This equation is derived from the y-component of Faraday's Law.
 
     Parameters
     ----------
@@ -160,17 +165,17 @@ def pde_By(X, Y, del_Y):
         Value of differential equation at each evaluation point.
     """
     nX = X.shape[0]
-    # t = tf.reshape(X[:, 0], (nX, 1))
-    # x = tf.reshape(X[:, 1], (nX, 1))
-    # y = tf.reshape(X[:, 2], (nX, 1))
+    # t = tf.reshape(X[:, it], (nX, 1))
+    # x = tf.reshape(X[:, ix], (nX, 1))
+    # y = tf.reshape(X[:, iy], (nX, 1))
     # (Bx, By) = Y
     (del_Bx, del_By) = del_Y
-    # dBx_dt = tf.reshape(del_Bx[:, 0], (nX, 1))
-    # dBx_dx = tf.reshape(del_Bx[:, 1], (nX, 1))
-    # dBx_dy = tf.reshape(del_Bx[:, 2], (nX, 1))
-    dBy_dt = tf.reshape(del_By[:, 0], (nX, 1))
-    dBy_dx = tf.reshape(del_By[:, 1], (nX, 1))
-    dBy_dy = tf.reshape(del_By[:, 2], (nX, 1))
+    # dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
+    # dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
+    # dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
+    dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
+    dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
+    dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
     G = dBy_dt + u0x*dBy_dx + u0y*dBy_dy
@@ -189,6 +194,7 @@ if __name__ == "__main__":
     print("independent_variable_index = %s" % independent_variable_index)
     print("independent_variable_labels = %s" % independent_variable_labels)
     print("n_dim = %s" % n_dim)
+
     print("dependent_variable_names = %s" % dependent_variable_names)
     print("dependent_variable_index = %s" % dependent_variable_index)
     print("dependent_variable_labels = %s" % dependent_variable_labels)
@@ -198,3 +204,4 @@ if __name__ == "__main__":
     print("u0 = %s" % u0)
     print("u0x = %s" % u0x)
     print("u0y = %s" % u0y)
+    print("u0z = %s" % u0z)

@@ -67,7 +67,7 @@ def create_command_line_argument_parser():
     #     "-v", "--verbose", action="store_true",
     #     help="Print verbose output (default: %(default)s)."
     # )
-    parser.add_argument('rest', nargs=argparse.REMAINDER)
+    parser.add_argument("rest", nargs=argparse.REMAINDER)
     return parser
 
 
@@ -90,31 +90,23 @@ def main():
     # They should be in 3 sets of 3:
     # t_min t_max n_t x_min x_max n_x y_min y_max n_y
     assert len(rest) == 9
-    X_min = np.array(rest[::3], dtype=float)
-    X_max = np.array(rest[1::3], dtype=float)
-    X_n = np.array(rest[2::3], dtype=int)
+    (t_min, x_min, y_min) = np.array(rest[::3], dtype=float)
+    (t_max, x_max, y_max) = np.array(rest[1::3], dtype=float)
+    (n_t, n_x, n_y) = np.array(rest[2::3], dtype=int)
     if debug:
-        print("X_min = %s" % X_min)
-        print("X_max = %s" % X_max)
-        print("X_n = %s" % X_n)
-    assert len(X_min) == len(X_max) == len(X_n)
-
-    # Extract limits for convenience.
-    (t_min, x_min, y_min) = X_min
-    (t_max, x_max, y_max) = X_max
-    (n_t, n_x, n_y) = X_n
-    if debug:
-        print("%s <= t <= %s" % (t_min, t_max))
-        print("%s <= x <= %s" % (x_min, x_max))
-        print("%s <= y <= %s" % (y_min, y_max))
+        print("%s <= t <= %s, n_t = %s" % (t_min, t_max, n_t))
+        print("%s <= x <= %s, n_x = %s" % (x_min, x_max, n_x))
+        print("%s <= y <= %s, n_y = %s" % (y_min, y_max, n_y))
 
     # Create the (x, y) coordinate points for the initial conditions.
     # Points are either random or gridded.
     if random:
-        np.random.seed(seed)
-        xg = x_min + np.random.random_sample((n_x,))*(x_max - x_min)
-        yg = y_min + np.random.random_sample((n_y,))*(y_max - y_min)
+        raise TypeError("Not ready for random!")
+        # np.random.seed(seed)
+        # xg = x_min + np.random.random_sample((n_x,))*(x_max - x_min)
+        # yg = y_min + np.random.random_sample((n_y,))*(y_max - y_min)
     else:
+        tg = np.linspace(t_min, t_max, n_t)
         xg = np.linspace(x_min, x_max, n_x)
         yg = np.linspace(y_min, y_max, n_y)
     if debug:
@@ -124,12 +116,12 @@ def main():
     # Compute the initial conditions at spatial locations.
     # Each line is:
     # t_min x y Bx By
-    for (i, x) in enumerate(xg):
-        for (j, y) in enumerate(yg):
+    for x in xg:
+        for y in yg:
             r = np.sqrt(x**2 + y**2)
             Bx = -mu0*I_current/(2*np.pi)*y/r**2
             By = mu0*I_current/(2*np.pi)*x/r**2
-            print(t_min, x, y, Bx, By)
+            print(tg[0], x, y, Bx, By)
 
 
 if __name__ == "__main__":
