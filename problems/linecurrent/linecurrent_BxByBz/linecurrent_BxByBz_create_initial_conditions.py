@@ -61,7 +61,7 @@ def create_command_line_argument_parser():
         "-d", "--debug", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
-    parser.add_argument('rest', nargs=argparse.REMAINDER)
+    parser.add_argument("rest", nargs=argparse.REMAINDER)
     return parser
 
 
