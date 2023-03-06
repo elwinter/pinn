@@ -22,6 +22,9 @@ import numpy as np
 # Program description.
 description = "Compute initial conditions for linecurrent_nPuxuyuzBxByBz problem."
 
+# Physical constants
+μ0 = 1.0  # Normalized vacuum permeability
+
 # Plasma parameters
 m = 1.0    # Plasma article mass
 ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
