@@ -18,8 +18,8 @@ PINN_CMD=$PINN_ROOT/pinn/pinn1.py
 $PINN_CMD -d -v \
   --seed=0 \
   --max_epochs=10000 \
-  --save-model \
-  --save-weights \
+  --save_model \
+  --save_weights \
   --n_layers=4 \
   --n_hid=100 \
   --data $PROBLEM_ROOT/linecurrent_nPuxuyBxByBz_initial_conditions.dat \
