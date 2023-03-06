@@ -432,6 +432,7 @@ def Bz_analytical(t, x, y):
 # Gather the analytical solutions in a list.
 # Use same order as dependent_variable_names.
 analytical_solutions = [
+    n_analytical,
     Bx_analytical,
     By_analytical,
     Bz_analytical,

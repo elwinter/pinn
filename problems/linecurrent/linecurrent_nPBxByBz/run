@@ -20,7 +20,6 @@ $PINN_CMD -d -v \
   --max_epochs=10000 \
   --save-model \
   --save-weights \
-  --max_epochs=10000 \
   --n_layers=4 \
   --n_hid=100 \
   --data $PROBLEM_ROOT/linecurrent_nPBxByBz_initial_conditions.dat \

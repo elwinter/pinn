@@ -74,7 +74,7 @@ dependent_variable_index = {}
 for (i, s) in enumerate(dependent_variable_names):
     dependent_variable_index[s] = i
 i_n = dependent_variable_index["n"]
-i_P = dependent_variable_index["P"]
+iP = dependent_variable_index["P"]
 iBx = dependent_variable_index["Bx"]
 iBy = dependent_variable_index["By"]
 iBz = dependent_variable_index["Bz"]
@@ -525,6 +525,8 @@ def Bz_analytical(t, x, y):
 # Gather the analytical solutions in a list.
 # Use same order as dependent_variable_names.
 analytical_solutions = [
+    n_analytical,
+    P_analytical,
     Bx_analytical,
     By_analytical,
     Bz_analytical,
