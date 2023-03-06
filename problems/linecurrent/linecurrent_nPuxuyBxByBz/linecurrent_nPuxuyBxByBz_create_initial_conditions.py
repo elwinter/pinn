@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Compute initial conditions for linecurrent_nPuxBxByBz.
+"""Compute initial conditions for linecurrent_nPuxuyBxByBz.
 
 Author
 ------
@@ -20,7 +20,7 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute initial conditions for linecurrent_nPuxBxByBz problem."
+description = "Compute initial conditions for linecurrent_nPuxuyBxByBz problem."
 
 # Plasma parameters
 m = 1.0    # Plasma article mass
@@ -97,17 +97,18 @@ def main():
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
-    # t_min x y n P ux Bx By Bz
+    # tg[0] x y n P ux uy Bx By Bz
     for x in xg:
         for y in yg:
             r = np.sqrt(x**2 + y**2)
             n = n0
             P = P0
             ux = u0x
+            uy = u0y
             Bx = -C1*y/r**2
             By = C1*x/r**2
             Bz = B0z
-            print(tg[0], x, y, n, P, ux, Bx, By, Bz)
+            print(tg[0], x, y, n, P, ux, uy, Bx, By, Bz)
 
 
 if __name__ == "__main__":

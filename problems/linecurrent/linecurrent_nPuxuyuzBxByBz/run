@@ -5,18 +5,21 @@
 # create_training_points.py 0 1 50 -1 1 50 -1 1 50 > linecurrent_nPuxuyuzBxByBz_training_grid.dat
 
 # Create 50x50 initial conditions.
-# create_linecurrent_nPuxuyuzBxByBz_initial_conditions.py 0 1 50 -1 1 50 -1 1 50 > linecurrent_nPuxuyuzBxByBz_initial_conditions.dat
+# linecurrent_nPuxuyuzBxByBz_create_initial_conditions.py 0 1 50 -1 1 50 -1 1 50 > linecurrent_nPuxuyuzBxByBz_initial_conditions.dat
 
 # Define problem location.
 PINN_ROOT=$HOME/research_local/src/pinn
-PROBLEM_ROOT=$PINN_ROOT/problems/linecurrent_nPuxuyuzBxByBz
+PROBLEM_ROOT=$PINN_ROOT/problems/linecurrent_linecurrent_nPuxuyuzBxByBz
 
 # Define PINN command.
 PINN_CMD=$PINN_ROOT/pinn/pinn1.py
 
 # Run the network.
 $PINN_CMD -d -v \
+  --seed=0 \
   --max_epochs=10000 \
+  --save-model \
+  --save-weights \
   --n_layers=4 \
   --n_hid=100 \
   --data $PROBLEM_ROOT/linecurrent_nPuxuyuzBxByBz_initial_conditions.dat \
