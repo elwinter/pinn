@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Compute initial conditions for linecurrent_nBxByBz.
+"""Compute initial conditions for linecurrent_nPBxByBz.
 
 Author
 ------
@@ -20,10 +20,10 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute initial conditions for linecurrent_nBxByBz problem."
+description = "Compute initial conditions for linecurrent_nPBxByBz problem."
 
-# Physical constants
-μ0 = 1.0  # Normalized vacuum permeability
+# Default random number generator seed.
+default_seed = 0
 
 # Plasma parameters
 m = 1.0    # Plasma article mass
@@ -100,15 +100,16 @@ def main():
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
-    # tg[0] x y n Bx By Bz
+    # tg[0] x y n P Bx By Bz
     for x in xg:
         for y in yg:
             r = np.sqrt(x**2 + y**2)
             n = n0
+            P = P0
             Bx = -C1*y/r**2
             By = C1*x/r**2
             Bz = B0z
-            print(tg[0], x, y, n, Bx, By, Bz)
+            print(tg[0], x, y, n, P, Bx, By, Bz)
 
 
 if __name__ == "__main__":
