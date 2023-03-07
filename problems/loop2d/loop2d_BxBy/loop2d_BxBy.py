@@ -79,11 +79,19 @@ dependent_variable_labels = ["$B_x$", "$B_y$"]
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
 
+# Plasma parameters
+A = 1e-3   # Magnitude of magnetic vector potential.
+R0 = 0.3   # Radius of current cylinder.
+n0 = 1.0   # Number density
+P0 = 1.0   # Pressure
+u0z = 0.0  # z-component of velocity
+B0z = 0.0  # z-component of magnetic field
+
 # Define the constant fluid flow field.
-Q = 60.0
+θ = 60.0
 u0 = 1.0
-u0x = u0*np.sin(np.radians(Q))
-u0y = u0*np.cos(np.radians(Q))
+u0x = u0*np.sin(np.radians(θ))
+u0y = u0*np.cos(np.radians(θ))
 
 
 # NOTE: In the functions defined below for the differential equations, the
@@ -105,10 +113,10 @@ u0y = u0*np.cos(np.radians(Q))
 
 # @tf.function
 def pde_Bx(X, Y, del_Y):
-    """Differential equation for x-magnetic field.
+    """Differential equation for the x-component of the magnetic field.
 
-    Evaluate the differential equation for x-magnetic field. This equation is
-    derived from the x-component of Faraday's Law.
+    Evaluate the differential equation for the x-component of the magnetic
+    field. This equation is derived from the x-component of Faraday's Law.
 
     Parameters
     ----------
@@ -145,10 +153,10 @@ def pde_Bx(X, Y, del_Y):
 
 # @tf.function
 def pde_By(X, Y, del_Y):
-    """Differential equation for y-magnetic field.
+    """Differential equation for the y-component of the magnetic field.
 
-    Evaluate the differential equation for y-magnetic field. This equation is
-    derived from the y-component of Faraday's Law.
+    Evaluate the differential equation for the y-component of the magnetic
+    field. This equation is derived from the y-component of Faraday's Law.
 
     Parameters
     ----------
@@ -184,10 +192,149 @@ def pde_By(X, Y, del_Y):
 
 
 # Make a list of all of the differential equations.
+# Use same order as dependent_variable_names.
 de = [
     pde_Bx,
     pde_By,
 ]
+
+
+# Define analytical solutions.
+
+
+def Bx_analytical(t, x, y):
+    """Analytical solution for the x-component of the magnetic field.
+
+    Compute the analytical solution for the x-component of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    Bx : np.array of float, shape (n,)
+        Value of Bx for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    w = np.where(r < R0)
+    Bx = np.zeros(t.shape[0])
+    Bx[w] = -A*yp[w]/r[w]
+    return Bx
+
+
+def By_analytical(t, x, y):
+    """Analytical solution for the y-component of the magnetic field.
+
+    Compute the analytical solution for the y-component of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    By : np.array of float, shape (n,)
+        Value of By for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    w = np.where(r < R0)
+    By = np.zeros(t.shape[0])
+    By[w] = A*xp[w]/r[w]
+    return By
+
+
+# Gather the analytical solutions in a list.
+# Use same order as dependent_variable_names.
+analytical_solutions = [
+    Bx_analytical,
+    By_analytical,
+]
+
+
+# Other useful analytical functions.
+
+
+def dBx_dx_analytical(t, x, y):
+    """Analytical solution for dBx/dx of the magnetic field.
+
+    Compute the analytical solution for dBx/dx of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    dBx_dx : np.array of float, shape (n,)
+        Value of dBx/dx for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    w = np.where(r < R0)
+    dBx_dx = np.zeros(t.shape[0])
+    dBx_dx[w] = A*xp[w]*yp[w]/r[w]**3
+    return dBx_dx
+
+
+def dBy_dy_analytical(t, x, y):
+    """Analytical solution for dBy/dy of the magnetic field.
+
+    Compute the analytical solution for dBy/dy of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    dBy_dy : np.array of float, shape (n,)
+        Value of dBy/dy for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    w = np.where(r < R0)
+    dBy_dy = np.zeros(t.shape[0])
+    dBy_dy[w] = -A*xp[w]*yp[w]/r[w]**3
+    return dBy_dy
 
 
 if __name__ == "__main__":
@@ -195,12 +342,20 @@ if __name__ == "__main__":
     print("independent_variable_index = %s" % independent_variable_index)
     print("independent_variable_labels = %s" % independent_variable_labels)
     print("n_dim = %s" % n_dim)
+
     print("dependent_variable_names = %s" % dependent_variable_names)
     print("dependent_variable_index = %s" % dependent_variable_index)
     print("dependent_variable_labels = %s" % dependent_variable_labels)
     print("n_var = %s" % n_var)
 
-    print("Q = %s" % Q)
+    print("A = %s" % A)
+    print("R0 = %s" % R0)
+    print("n0 = %s" % n0)
+    print("P0 = %s" % P0)
+    print("u0z = %s" % u0z)
+    print("B0z = %s" % B0z)
+
+    print("θ = %s" % θ)
     print("u0 = %s" % u0)
     print("u0x = %s" % u0x)
     print("u0y = %s" % u0y)
