@@ -86,6 +86,7 @@ n0 = 1.0   # Number density
 P0 = 1.0   # Pressure
 u0z = 0.0  # z-component of velocity
 B0z = 0.0  # z-component of magnetic field
+ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
 
 # Define the constant fluid flow field.
 θ = 60.0
