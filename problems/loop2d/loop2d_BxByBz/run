@@ -9,14 +9,17 @@
 
 # Define problem location.
 PINN_ROOT=$HOME/research_local/src/pinn
-PROBLEM_ROOT=$PINN_ROOT/problems/loop2d_BxByBz
+PROBLEM_ROOT=$PINN_ROOT/problems/loop2d/loop2d_BxByBz
 
 # Define PINN command.
 PINN_CMD=$PINN_ROOT/pinn/pinn1.py
 
 # Run the network.
 $PINN_CMD -d -v \
+  --seed=0 \
   --max_epochs=10000 \
+  --save_model \
+  --save_weights \
   --n_layers=4 \
   --n_hid=100 \
   --data $PROBLEM_ROOT/loop2d_BxByBz_initial_conditions.dat \
