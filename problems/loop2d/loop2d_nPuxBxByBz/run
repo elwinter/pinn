@@ -9,7 +9,7 @@
 
 # Define problem location.
 PINN_ROOT=$HOME/research_local/src/pinn
-PROBLEM_ROOT=$PINN_ROOT/problems/loop2d_nPuxBxByBz
+PROBLEM_ROOT=$PINN_ROOT/problems/loop2d/loop2d_nPuxBxByBz
 
 # Define PINN command.
 PINN_CMD=$PINN_ROOT/pinn/pinn1.py
