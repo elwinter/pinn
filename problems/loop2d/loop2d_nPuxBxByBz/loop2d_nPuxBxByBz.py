@@ -50,7 +50,7 @@ import tensorflow as tf
 
 
 # Names of independent variables.
-independent_variable_names = ['t', 'x', 'y']
+independent_variable_names = ["t", "x", "y"]
 
 # Invert the independent variable list to map name to index.
 independent_variable_index = {}
