@@ -22,9 +22,6 @@ import numpy as np
 # Program description.
 description = "Compute initial conditions for loop2d_BxByBz problem."
 
-# Default random number generator seed.
-default_seed = 0
-
 # Constants
 A = 1e-3   # Magnitude of magnetic vector potential.
 R0 = 0.3   # Radius of current cylinder.
@@ -100,7 +97,7 @@ def main():
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
-    # tg[0] x y Bx By
+    # tg[0] x y Bx By Bz
     for x in xg:
         for y in yg:
             r = np.sqrt(x**2 + y**2)

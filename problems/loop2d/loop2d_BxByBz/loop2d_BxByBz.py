@@ -48,9 +48,9 @@ import tensorflow as tf
 
 
 # Names of independent variables.
-independent_variable_names = ['t', 'x', 'y']
+independent_variable_names = ["t", "x", "y"]
 
-# Invert the independent variable list to map name to index.
+# Invert the independent variable name list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
@@ -65,7 +65,7 @@ independent_variable_labels = ["$t$", "$x$", "$y$"]
 n_dim = len(independent_variable_names)
 
 # Names of dependent variables.
-dependent_variable_names = ['Bx', 'By', 'Bz']
+dependent_variable_names = ["Bx", "By", "Bz"]
 
 # Invert the dependent variable list to map name to index.
 dependent_variable_index = {}
