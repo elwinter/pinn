@@ -20,20 +20,23 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute data for loop2d_nPBxByBz problem."
-
-# Default random number generator seed.
-default_seed = 0
+description = "Compute initial conditions for loop2d_nPBxByBz problem."
 
 # Constants
-Q = 60.0   # Flow angle in degrees clockwise from +y axis.
-u0 = 1.0   # Initial flow speed.
 A = 1e-3   # Magnitude of magnetic vector potential.
 R0 = 0.3   # Radius of current cylinder.
+n0 = 1.0   # Number density
+P0 = 1.0   # Pressure
+B0x = 0.0
+B0y = 0.0
+B0z = 0.0  # z-component of magnetic field
 
 # Compute the constant velocity components.
-u0x = u0*np.sin(np.radians(Q))
-u0y = u0*np.cos(np.radians(Q))
+θ = 60.0  # Angle in degrees clockwise from +y axis
+u0 = 1.0  # Flow speed
+u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
+u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
+u0z = 0.0                       # z-component of velocity
 
 
 def create_command_line_argument_parser():
@@ -55,19 +58,7 @@ def create_command_line_argument_parser():
         "-d", "--debug", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
-    parser.add_argument(
-        "-r", "--random", action="store_true",
-        help="Select points randomly within domain (default: %(default)s)."
-    )
-    parser.add_argument(
-        "--seed", type=int, default=default_seed,
-        help="Seed for random number generator (default: %(default)s)"
-    )
-    # parser.add_argument(
-    #     "-v", "--verbose", action="store_true",
-    #     help="Print verbose output (default: %(default)s)."
-    # )
-    parser.add_argument('rest', nargs=argparse.REMAINDER)
+    parser.add_argument("rest", nargs=argparse.REMAINDER)
     return parser
 
 
@@ -79,9 +70,6 @@ def main():
     # Parse the command-line arguments.
     args = parser.parse_args()
     debug = args.debug
-    random = args.random
-    seed = args.seed
-    # verbose = args.verbose
     rest = args.rest
     if debug:
         print("args = %s" % args)
@@ -90,53 +78,39 @@ def main():
     # They should be in 3 sets of 3:
     # t_min t_max n_t x_min x_max n_x y_min y_max n_y
     assert len(rest) == 9
-    X_min = np.array(rest[::3], dtype=float)
-    X_max = np.array(rest[1::3], dtype=float)
-    X_n = np.array(rest[2::3], dtype=int)
+    (t_min, x_min, y_min) = np.array(rest[::3], dtype=float)
+    (t_max, x_max, y_max) = np.array(rest[1::3], dtype=float)
+    (n_t, n_x, n_y) = np.array(rest[2::3], dtype=int)
     if debug:
-        print("X_min = %s" % X_min)
-        print("X_max = %s" % X_max)
-        print("X_n = %s" % X_n)
-    assert len(X_min) == len(X_max) == len(X_n)
+        print("%s <= t <= %s, n_t = %s" % (t_min, t_max, n_t))
+        print("%s <= x <= %s, n_x = %s" % (x_min, x_max, n_x))
+        print("%s <= y <= %s, n_y = %s" % (y_min, y_max, n_y))
 
-    # Extract limits for convenience.
-    (t_min, x_min, y_min) = X_min
-    (t_max, x_max, y_max) = X_max
-    (n_t, n_x, n_y) = X_n
+    # Create the (t, x, y) grid points for the initial conditions.
+    tg = np.linspace(t_min, t_max, n_t)
+    xg = np.linspace(x_min, x_max, n_x)
+    yg = np.linspace(y_min, y_max, n_y)
     if debug:
-        print("%s <= t <= %s" % (t_min, t_max))
-        print("%s <= x <= %s" % (x_min, x_max))
-        print("%s <= y <= %s" % (y_min, y_max))
-
-    # Create the (x, y) coordinate points for the initial conditions.
-    # Points are either random or gridded.
-    if random:
-        np.random.seed(seed)
-        xg = x_min + np.random.random_sample((n_x,))*(x_max - x_min)
-        yg = y_min + np.random.random_sample((n_y,))*(y_max - y_min)
-    else:
-        xg = np.linspace(x_min, x_max, n_x)
-        yg = np.linspace(y_min, y_max, n_y)
-    if debug:
+        print("tg = %s" % tg)
         print("xg = %s" % xg)
         print("yg = %s" % yg)
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
-    # t_min x y n P Bx By Bz
-    for (i, x) in enumerate(xg):
-        for (j, y) in enumerate(yg):
+    # tg[0] x y n P Bx By Bz
+    for x in xg:
+        for y in yg:
             r = np.sqrt(x**2 + y**2)
-            n = 1.0
-            P = 1.0
+            n = n0
+            P = P0
             if r < R0:
                 Bx = -A*y/r
                 By = A*x/r
             else:
-                Bx = 0.0
-                By = 0.0
-            Bz = 0.0
-            print(t_min, x, y, n, P, Bx, By, Bz)
+                Bx = B0x
+                By = B0y
+            Bz = B0z
+            print(tg[0], x, y, n, P, Bx, By, Bz)
 
 
 if __name__ == "__main__":
