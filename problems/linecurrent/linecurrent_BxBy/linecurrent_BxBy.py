@@ -116,7 +116,7 @@ u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
 
 
 # @tf.function
-def pde_Bx(X, Y, del_Y):
+def pde_Bx(X, Y, delY):
     """Differential equation for the x-component of the magnetic field.
 
     Evaluate the differential equation for the x-component of the magnetic
@@ -126,37 +126,37 @@ def pde_Bx(X, Y, del_Y):
     ----------
     X : tf.Variable, shape (n, n_dim)
         Values of independent variables at each evaluation point.
-    Y : list of n_var tf.Tensor, each shape (n, 1)
+    Y : tf.Tensor, shape (n, n_var)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : tf.Tensor, shape (n, n_var, n_dim)
         Values of gradients of dependent variables wrt independent variables
         at each evaluation point.
 
     Returns
     -------
-    G : tf.Tensor, shape (n, 1)
+    G : tf.Tensor, shape (n,)
         Value of differential equation at each evaluation point.
     """
-    nX = X.shape[0]
-    # t = tf.reshape(X[:, it], (nX, 1))
-    # x = tf.reshape(X[:, ix], (nX, 1))
-    # y = tf.reshape(X[:, iy], (nX, 1))
-    # (Bx, By) = Y
-    (del_Bx, del_By) = del_Y
-    dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
-    dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
-    dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
-    # dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
-    # dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
-    # dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
+    # Each Tensor is shape (n,).
+    t = X[:, it]
+    x = X[:, ix]
+    y = X[:, iy]
+    Bx = Y[:, iBx]
+    By = Y[:, iBy]
+    dBx_dt = delY[:, iBx, it]
+    dBx_dx = delY[:, iBx, ix]
+    dBx_dy = delY[:, iBx, iy]
+    dBy_dt = delY[:, iBy, it]
+    dBy_dx = delY[:, iBy, ix]
+    dBy_dy = delY[:, iBy, iy]
 
-    # G is a Tensor of shape (n, 1).
+    # G is a Tensor of shape (n,).
     G = dBx_dt + u0x*dBx_dx + u0y*dBx_dy
     return G
 
 
 # @tf.function
-def pde_By(X, Y, del_Y):
+def pde_By(X, Y, delY):
     """Differential equation for the y-component of the magnetic field.
 
     Evaluate the differential equation for the y-component of the magnetic
@@ -166,31 +166,31 @@ def pde_By(X, Y, del_Y):
     ----------
     X : tf.Variable, shape (n, n_dim)
         Values of independent variables at each evaluation point.
-    Y : list of n_var tf.Tensor, each shape (n, 1)
+    Y : tf.Tensor, shape (n, n_var)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : tf.Tensor, shape (n, n_var, n_dim)
         Values of gradients of dependent variables wrt independent variables
         at each evaluation point.
 
     Returns
     -------
-    G : tf.Tensor, shape (n, 1)
+    G : tf.Tensor, shape (n,)
         Value of differential equation at each evaluation point.
     """
-    nX = X.shape[0]
-    # t = tf.reshape(X[:, it], (nX, 1))
-    # x = tf.reshape(X[:, ix], (nX, 1))
-    # y = tf.reshape(X[:, iy], (nX, 1))
-    # (Bx, By) = Y
-    (del_Bx, del_By) = del_Y
-    # dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
-    # dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
-    # dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
-    dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
-    dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
-    dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
+    # Each Tensor is shape (n,).
+    t = X[:, it]
+    x = X[:, ix]
+    y = X[:, iy]
+    Bx = Y[:, iBx]
+    By = Y[:, iBy]
+    dBx_dt = delY[:, iBx, it]
+    dBx_dx = delY[:, iBx, ix]
+    dBx_dy = delY[:, iBx, iy]
+    dBy_dt = delY[:, iBy, it]
+    dBy_dx = delY[:, iBy, ix]
+    dBy_dy = delY[:, iBy, iy]
 
-    # G is a Tensor of shape (n, 1).
+    # G is a Tensor of shape (n,).
     G = dBy_dt + u0x*dBy_dx + u0y*dBy_dy
     return G
 
