@@ -348,40 +348,43 @@ def main():
     n_batch = int(np.ceil(n_train/batch_size))
 
     # Print full arrays.
-    np.set_printoptions(threshold=np.inf)
+    # np.set_printoptions(threshold=np.inf)
 
     for epoch in range(max_epochs):
         print("*************************************************************")
         print("Starting epoch %d." % epoch)
 
-        # Run the forward pass.
+        # Run the forward pass for each batch.
         # tape0 is for computing gradients wrt network parameters.
         # tape1 is for computing 1st-order derivatives of outputs wrt inputs.
-        with tf.GradientTape(persistent=True) as tape0:
-            with tf.GradientTape(persistent=True) as tape1:
-                Y_batches = []
-                gradY_batches = []
-                for i_batch in range(n_batch):
-                    print("Starting batch %s." % i_batch)
+        Y_batches = []
+        gradY_batches = []
+        for i_batch in range(n_batch):
+            print("Starting batch %s." % i_batch)
+            i_start = i_batch*batch_size
+            i_stop = (i_batch + 1)*batch_size
+            with tf.GradientTape(persistent=True) as tape0:
+                with tf.GradientTape(persistent=True) as tape1:
 
                     # Compute the network outputs at batch training points.
+                    # X_batch is a tf.Tensor of shape (batch_size, p.n_dim).
                     # Y_batch is a tf.Tensor of shape (batch_size, p.n_var).
-                    i_start = i_batch*batch_size
-                    i_stop = (i_batch + 1)*batch_size
+                    # Y_batches is a list of Y_batch, one per batch.
                     X_batch = X_train[i_start:i_stop, :]
                     Y_batch = model(X_batch)
                     Y_batches.append(Y_batch)
 
                     # Compute the network outputs at the data points.
                     # Y_data is a tf.Tensor of shape (n_data, p.n_var).
-                    # print("X_data = %s" % X_data)
-                    # Y_data = model(X_data)
-                    # print("Y_data = %s" % Y_data)
+                    Y_data = model(X_data)
 
-                    # Compute the jacobian of the network outputs wrt inputs at batch points.
+                    # Compute the jacobian of the network outputs wrt inputs for the batch.
+                    # jacY_batch is a Tensor of shape (batch_size, p.n_var, batch_size, p.n_dim).
                     jacY_batch = tape1.jacobian(Y_batch, X_batch)
 
                     # Extract the gradients.
+                    # gradY_batch is a Tensor of shape (batch_size, p.n_var, p.n_dim).
+                    # gradY_batches is a llist of gradY_batch, one per batch.
                     gradY_batch = tf.stack(
                         [tf.stack(
                             [tf.linalg.diag_part(jacY_batch[:, i, :, j])
@@ -389,89 +392,82 @@ def main():
                             for i in range(p.n_var)], axis=1)
                     gradY_batches.append(gradY_batch)
 
-                # Convert the batched results to whole-training-set results.
-                Y_train = tf.reshape(tf.stack(Y_batches), (n_train, p.n_var))
-                gradY_train = tf.reshape(tf.stack(gradY_batches), (n_train, p.n_var, p.n_dim))
+                # Compute the estimates of the differential equations for the batch.
+                # G_batch is a Tensor of shape (batch_size, p.n_var).
+                G_batch = tf.stack([f(X_batch, Y_batch, gradY_batch) for f in p.de], axis=1)
 
-                # Compute the estimates of the differential equations at all
-                # training points.
-                # G_train is a Tensor of shape (n_train, p.n_var).
-                G_train = tf.stack([f(X_train, Y_train, gradY_train) for f in p.de], axis=1)
-                # print("G_train = %s" % G_train)
+                # The loss function is composed of 2 terms:
+                # L = (1 - w_data)*L_res + w_data*L_dat
+                # where:
+                # L = total loss function
+                # L_res = loss function from equation residuals at batch points
+                # L_dat = loss function for data residuals at batch points
+                # Similarly, for each modeled variable m, there is the per-variable loss:
+                # Lm = (1 - w_data)*Lm_res + w_data*Lm_dat
+                # Therefore (sums over p.nvar):
+                # L = SUM(Lm)
+                # L_res = SUM(Lm_res)
+                # L_dat = SUM(Lm_dat)
 
-    #         # The loss function is composed of 2 terms:
-    #         # L = (1 - w_data)*L_res + w_data*L_dat
-    #         # where:
-    #         # L = total loss function
-    #         # L_res = loss function from equation residuals at training points
-    #         # L_dat = loss function for data residuals at data points
-    #         # Similarly, for each modeled variable m, there is the per-variable loss:
-    #         # Lm = (1 - w_data)*Lm_res + w_data*Lm_dat
-    #         # Therefore (sums over p.nvar):
-    #         # L = SUM(Lm)
-    #         # L_res = SUM(Lm_res)
-    #         # L_dat = SUM(Lm_dat)
+                # Compute the loss function for the equation residuals for each variable,
+                # and the total.
+                # Tensor, shape (p.n_var,).
+                Lm_res = tf.math.sqrt(tf.reduce_sum(G_batch**2, axis=0)/batch_size)
+                # Tensor, shape () (scalar)
+                L_res = tf.reduce_sum(Lm_res)
 
-    #         # Compute the loss function for the equation residuals for each variable,
-    #         # and the total.
-    #         # Tensor, shape (p.n_var,).
-    #         Lm_res = tf.math.sqrt(tf.reduce_sum(G_train**2, axis=0)/n_train)
-    #         # Tensor, shape () (scalar)
-    #         L_res = tf.reduce_sum(Lm_res)
+                # Compute the loss function for the data residuals for each variable,
+                # and the total.
+                # Tensor, shape (n_data, p.n_var)
+                E_data = Y_data - Y_data0
+                # Tensor, shape (p.n_var,)
+                Lm_data = tf.math.sqrt(tf.reduce_sum(E_data**2, axis=0)/n_data)
+                # Tensor, shape () (scalar)
+                L_data = tf.reduce_sum(Lm_data)
 
-    #         # Compute the loss function for the data residuals for each variable,
-    #         # and the total.
-    #         # Tensor, shape (n_data, p.n_var)
-    #         E_data = Y_data - Y_data0
-    #         # Tensor, shape (p.n_var,)
-    #         Lm_data = tf.math.sqrt(tf.reduce_sum(E_data**2, axis=0)/n_data)
-    #         # Tensor, shape () (scalar)
-    #         L_data = tf.reduce_sum(Lm_data)
+                # Compute the weighted losses per variable, and overall.
+                # Tensor, shape (n_var,)
+                Lm = w_res*Lm_res + w_data*Lm_data
+                # Tensor, shape () (scalar)
+                L = w_res*L_res + w_data*L_data
 
-    #         # Compute the weighted losses per variable, and overall.
-    #         # Tensor, shape (n_var,)
-    #         Lm = w_res*Lm_res + w_data*Lm_data
-    #         # Tensor, shape () (scalar)
-    #         L = w_res*L_res + w_data*L_data
+                # Save the current losses.
+                losses_model_res.append(Lm_res.numpy())
+                losses_model_data.append(Lm_data.numpy())
+                losses_model.append(Lm.numpy())
+                losses_res.append(L_res.numpy())
+                losses_data.append(L_data.numpy())
+                losses.append(L.numpy())
 
-    #     # Save the current losses.
-    #     losses_model_res.append(Lm_res.numpy())
-    #     losses_model_data.append(Lm_data.numpy())
-    #     losses_model.append(Lm.numpy())
-    #     losses_res.append(L_res.numpy())
-    #     losses_data.append(L_data.numpy())
-    #     losses.append(L.numpy())
+            # Compute the gradient of the loss function wrt the network parameters.
+            # pgrad is a list of Tensor.
+            # There are 3 Tensors in each sub-list, with shapes:
+            # Input weights: (H, p.n_dim)
+            # Input biases: (H,)
+            # Output weights: (H, 1)
+            # Each Tensor is shaped based on model.trainable_variables.
+            pgrad = tape0.gradient(L, model.trainable_variables)
 
-    #     # Save the current model weights.
-    #     if save_weights:
-    #         model.save_weights(
-    #             os.path.join(output_dir, "weights", "weights_%06d" % epoch)
-    #         )
+            # Update the parameters for this epoch.
+            optimizer.apply_gradients(zip(pgrad, model.trainable_variables))
 
-    #     # Check for convergence.
-    #     if convcheck:
-    #         if epoch > 1:
-    #             loss_delta = losses[-1] - losses[-2]
-    #             if abs(loss_delta) <= tol:
-    #                 converged = True
-    #                 break
+    if verbose and epoch % 1 == 0:
+        print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
+                (epoch, L.numpy(), L_res.numpy(), L_data.numpy()))
 
-    #     # Compute the gradient of the loss function wrt the network parameters.
-    #     # pgrad is a list of lists of Tensor objects.
-    #     # There are p.n_var sub-lists in the top-level list.
-    #     # There are 3 Tensors in each sub-list, with shapes:
-    #     # Input weights: (H, p.n_dim)
-    #     # Input biases: (H,)
-    #     # Output weights: (H, 1)
-    #     # Each Tensor is shaped based on model.trainable_variables.
-    #     pgrad = tape0.gradient(L, model.trainable_variables)
+    # # Save the current model weights.
+    # if save_weights:
+    #     model.save_weights(
+    #         os.path.join(output_dir, "weights", "weights_%06d" % epoch)
+    #     )
 
-    #     # Update the parameters for this epoch.
-    #     optimizer.apply_gradients(zip(pgrad, model.trainable_variables))
-
-    #     if verbose and epoch % 1 == 0:
-    #         print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
-    #               (epoch, L.numpy(), L_res.numpy(), L_data.numpy()))
+    # # Check for convergence.
+    # if convcheck:
+    #     if epoch > 1:
+    #         loss_delta = losses[-1] - losses[-2]
+    #         if abs(loss_delta) <= tol:
+    #             converged = True
+    #             break
 
     # # Count the last epoch.
     # n_epochs = epoch + 1
