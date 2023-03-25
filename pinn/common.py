@@ -79,6 +79,54 @@ def build_model(n_layers, n_hidden, activation):
     return model
 
 
+def build_multi_output_model(n_inputs, n_outputs, n_layers, n_hidden,
+                             activation):
+    """Build a multi-output multi-layer neural network model.
+
+    Build a fully-connected, multi-layer neural network with multiple outputs.
+    Each layer will have n_hidden hidden nodes. Each hidden node has weights and
+    a bias, and uses the specified activation function.
+
+    Parameters
+    ----------
+    n_inputs : int
+        Number of inputs to the bottom layer.
+    n_outputs : int
+        Number of outputs from the top layer.
+    n_layers : int
+        Number of hidden layers to create.
+    n_hidden : int
+        Number of nodes to use in each hidden layer.
+    activation : str
+        Name of activation function (from TensorFlow) to use.
+
+    Returns
+    -------
+    model : tf.keras.Sequential
+        The neural network.
+    """
+    layers = []
+    input_layer = tf.keras.Input(shape=(n_inputs,))
+    layers.append(input_layer)
+    for i in range(n_layers):
+        hidden_layer = tf.keras.layers.Dense(
+            units=n_hidden, use_bias=True,
+            activation=tf.keras.activations.deserialize(activation),
+            kernel_initializer=tf.keras.initializers.RandomUniform(*w0_range),
+            bias_initializer=tf.keras.initializers.RandomUniform(*u0_range),
+        )
+        layers.append(hidden_layer)
+    output_layer = tf.keras.layers.Dense(
+        units=n_outputs,
+        activation=tf.keras.activations.linear,
+        kernel_initializer=tf.keras.initializers.RandomUniform(*v0_range),
+        use_bias=False,
+    )
+    layers.append(output_layer)
+    model = tf.keras.Sequential(layers)
+    return model
+
+
 def save_hyperparameters(args, output_dir):
     """Save the neural network hyperparameters.
 
