@@ -40,38 +40,44 @@ from pinn import common
 # Program constants
 
 # Program description.
-description = "Solve a set of coupled 1st-order PDE using the PINN method."
+DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
 
 # Program defaults
 
 # Default activation function to use in hidden nodes.
-default_activation = "sigmoid"
+DEFAULT_ACTIVATION = "sigmoid"
 
 # Default learning rate.
-default_learning_rate = 0.01
+DEFAULT_LEARNING_RATE = 0.01
 
 # Default maximum number of training epochs.
-default_max_epochs = 100
+DEFAULT_MAX_EPOCHS = 100
 
 # Default number of hidden nodes per layer.
-default_n_hid = 10
+DEFAULT_N_HID = 10
 
 # Default number of layers in the fully-connected network, each with n_hid
 # nodes.
-default_n_layers = 1
+DEFAULT_N_LAYERS = 1
 
 # Default TensorFlow precision for computations.
-default_precision = "float32"
+DEFAULT_PRECISION = "float32"
+
+# Default interval (in epochs) for saving the model.
+# 0 = do not save model
+# -1 = only save at end
+# n > 0: Save after every n epochs.
+DEFAULT_SAVE_MODEL = 0
 
 # Default random number generator seed.
-default_seed = 0
+DEFAULT_SEED = 0
 
 # Default absolute tolerance for consecutive loss function values to indicate
 # convergence.
-default_tolerance = 1e-6
+DEFAULT_TOLERANCE = 1e-6
 
 # Default normalized weight to apply to the boundary condition loss function.
-default_w_data = 0.0
+DEFAULT_W_DATA = 0.0
 
 
 def create_command_line_argument_parser():
@@ -88,9 +94,9 @@ def create_command_line_argument_parser():
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
     """
-    parser = argparse.ArgumentParser(description)
+    parser = argparse.ArgumentParser(DESCRIPTION)
     parser.add_argument(
-        "-a", "--activation", default=default_activation,
+        "-a", "--activation", default=DEFAULT_ACTIVATION,
         help="Specify activation function (default: %(default)s)."
     )
     parser.add_argument(
@@ -106,39 +112,40 @@ def create_command_line_argument_parser():
         help="Path to optional input data file (default: %(default)s)."
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=default_learning_rate,
+        "--learning_rate", type=float, default=DEFAULT_LEARNING_RATE,
         help="Learning rate for training (default: %(default)s)"
     )
     parser.add_argument(
-        "--max_epochs", type=int, default=default_max_epochs,
+        "--max_epochs", type=int, default=DEFAULT_MAX_EPOCHS,
         help="Maximum number of training epochs (default: %(default)s)"
     )
     parser.add_argument(
-        "--n_hid", type=int, default=default_n_hid,
+        "--n_hid", type=int, default=DEFAULT_N_HID,
         help="Number of hidden nodes per layer (default: %(default)s)"
     )
     parser.add_argument(
-        "--n_layers", type=int, default=default_n_layers,
+        "--n_layers", type=int, default=DEFAULT_N_LAYERS,
         help="Number of hidden layers (default: %(default)s)"
     )
     parser.add_argument(
-        "--precision", type=str, default=default_precision,
+        "--precision", type=str, default=DEFAULT_PRECISION,
         help="Precision to use in TensorFlow solution (default: %(default)s)"
     )
     parser.add_argument(
-        "--save_model", action="store_true",
-        help="Save the trained model (default: %(default)s)."
+        "--save_model", type=int, default=DEFAULT_SAVE_MODEL,
+        help="Save interval (epochs) for trained model (default: %(default)s)."
+        " 0 = do not save, -1 = save at end, n > 0 = save every n epochs."
     )
     parser.add_argument(
         "--save_weights", action="store_true",
         help="Save the model weights at each epoch (default: %(default)s)."
     )
     parser.add_argument(
-        "--seed", type=int, default=default_seed,
+        "--seed", type=int, default=DEFAULT_SEED,
         help="Seed for random number generator (default: %(default)s)"
     )
     parser.add_argument(
-        "--tolerance", type=float, default=default_tolerance,
+        "--tolerance", type=float, default=DEFAULT_TOLERANCE,
         help="Absolute loss function convergence tolerance "
              "(default: %(default)s)"
     )
@@ -147,7 +154,7 @@ def create_command_line_argument_parser():
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument(
-        "-w", "--w_data", type=float, default=default_w_data,
+        "-w", "--w_data", type=float, default=DEFAULT_W_DATA,
         help="Normalized weight for data loss function "
              "(default: %(default)s)."
     )
@@ -466,6 +473,15 @@ def main():
         for (g, m) in zip(pgrad, models):
             optimizer.apply_gradients(zip(g, m.trainable_variables))
 
+        # Save the trained models.
+        if save_model > 0 and epoch % save_model == 0:
+            for (i, model) in enumerate(models):
+                path = os.path.join(
+                    output_dir, "models", f"{epoch}",
+                    f"model_{p.dependent_variable_names[i]}"
+                )
+                model.save(path)
+
         if verbose and epoch % 1 == 0:
             print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
                   (epoch, L.numpy(), L_res.numpy(), L_data.numpy()))
@@ -521,10 +537,13 @@ def main():
                    p.dependent_variable_names[i]), dY_dX_train[i])
 
     # Save the trained models.
-    if save_model:
+    if save_model != 0:
         for (i, model) in enumerate(models):
-            model.save(os.path.join(output_dir, "model_" +
-                       p.dependent_variable_names[i]))
+            path = os.path.join(
+                output_dir, "models", f"{n_epochs}",
+                f"model_{p.dependent_variable_names[i]}"
+            )
+            model.save(path)
 
 
 if __name__ == "__main__":
