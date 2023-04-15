@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 
-"""Create a movie of the magnetic field as an animated quiver plot.
+"""Create a movie of the magnetic field magnitude as an animated heatmap.
 
-Create a movie of the magnetic field as an animated quiver plot.
+Create a movie of the magnetic field magnitude as an animated heatmap.
+The movie is created as an animated GIF. Individual frames are saved as
+PNG files in the frames/ subdirectory.
 """
 
 
@@ -11,12 +13,10 @@ Create a movie of the magnetic field as an animated quiver plot.
 import argparse
 import glob
 import os
-# import sys
 
 # Import 3rd-party modules.
 import matplotlib as mpl
 import numpy as np
-import seaborn as sns
 import tensorflow as tf
 
 # Import project-specific modules.
@@ -27,8 +27,8 @@ from pinn import training_data
 # Program constants and defaults
 
 # Program description.
-description = (
-    "Create a movie of the magnetic field as an animated quiver plot."
+DESCRIPTION = (
+    "Create a movie of the magnetic field magnitude as an animated heatmap."
 )
 
 # Default maximum and minimum values for B.
@@ -55,6 +55,11 @@ DEFAULT_YMAX = 1.0
 # Default path to results directory.
 DEFAULT_RESULTS_PATH = os.getcwd()
 
+# Tick counts for x- and y-axes in heatmap.
+HEATMAP_N_X_TICKS = 5
+HEATMAP_N_Y_TICKS = 5
+
+
 def create_command_line_parser():
     """Create the command-line argument parser.
 
@@ -69,7 +74,7 @@ def create_command_line_parser():
     parser : argparse.ArgumentParser
         Command-line argument parser for this script.
     """
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
         "--Bmax", type=float, default=DEFAULT_BMAX,
         help="Maximum B value to plot (default: %(default)s)."
@@ -238,11 +243,8 @@ def main():
     path = os.path.join(base_path, "model_By")
     model_By = tf.keras.models.load_model(path)
 
-    # Create the evaluation points for the movie frames.
+    # Create the evaluation grid for the movie frames.
     nxy = nx*ny
-    tmin, tmax = 0, 1
-    xmin, xmax = -1, 1
-    ymin, ymax = -1, 1
     ng = [nt, nx, ny]
     bg = [
         [tmin, tmax],
@@ -252,15 +254,13 @@ def main():
     txy = training_data.create_training_points_gridded(ng, bg)
 
     # Compute the heat map tick locations and labels.
-    HEATMAP_N_X_TICKS = 5
     heatmap_x_tick_pos = np.linspace(0, nx - 1, HEATMAP_N_X_TICKS)
     heatmap_x_tick_labels = [
-        "%.1f" % (xmin + x/(nx - 1)*(xmax - xmin)) for x in heatmap_x_tick_pos
+        f"{(xmin + x/(nx - 1)*(xmax - xmin)):0.1f}" for x in heatmap_x_tick_pos
     ]
-    HEATMAP_N_Y_TICKS = 5
     heatmap_y_tick_pos = np.linspace(0, ny - 1, HEATMAP_N_Y_TICKS)
     heatmap_y_tick_labels = [
-        "%.1f" % (ymin + y/(ny - 1)*(ymax - ymin)) for y in heatmap_y_tick_pos
+        f"{(ymin + y/(ny - 1)*(ymax - ymin)):0.1f}" for y in heatmap_y_tick_pos
     ]
     heatmap_y_tick_labels = list(reversed(heatmap_y_tick_labels))
 
@@ -275,8 +275,6 @@ def main():
         i1 = i0 + nxy
         if verbose:
             print(f"Creating frame {i} for time {txy[i0, 0]:0.2f}.")
-        x = txy[i0:i1, 1]
-        y = txy[i0:i1, 2]
         Bx = model_Bx(txy[i0:i1]).numpy()
         By = model_By(txy[i0:i1]).numpy()
         B = np.sqrt(Bx**2 + By**2)
