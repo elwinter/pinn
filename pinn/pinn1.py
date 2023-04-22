@@ -486,6 +486,12 @@ def main():
             print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
                   (epoch, L.numpy(), L_res.numpy(), L_data.numpy()))
 
+        # Cancel training if NaN is detected in the overall loss function.
+        if np.isnan(L):
+            if verbose:
+                print(f"L = {np.nan} at epoch {epoch}, aborting training.")
+            break
+
     # Count the last epoch.
     n_epochs = epoch + 1
 
