@@ -248,20 +248,13 @@ def main():
         print(f"problem_path = {problem_path}")
         print(f"training_points_path = {training_points_path}")
 
-    # If explicit random number generator seeds were specified, parse them.
-    if seeds_str == "CLOCK":
-        if verbose:
-            print("Random number generator seeds will be generated from the "
-                  "clock.")
-    else:
-        # NOTE: If seeds are provided, there must be at least as many seeds
-        # as are needed to provide for all of the models in the set.
-        if verbose:
-            print("Parsing random number generator seeds.")
-        seeds_str_list = seeds_str.split(",")
-        seeds = [int(s) for s in seeds_str_list]
-        if debug:
-            print(f"seeds = {seeds}")
+    # Parse the random number generator seeds.
+    if verbose:
+        print("Parsing random number generator seeds.")
+    seeds_str_list = seeds_str.split(",")
+    seeds = [int(s) for s in seeds_str_list]
+    if debug:
+        print(f"seeds = {seeds}")
 
     # If the top-level directory for training the set is not found, create it.
     if os.path.isdir(set_directory):
