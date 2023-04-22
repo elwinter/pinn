@@ -69,31 +69,29 @@ PINN_ROOT = os.environ["RESEARCH_INSTALL_DIR"]
 
 # Define the PINN command.
 PINN_CMD = os.path.join(PINN_ROOT, "pinn", "pinn1.py")
-print(f"PINN_CMD = {PINN_CMD}")
 
 # Define the jinja2 command template.
 CMD_TEMPLATE = (
     "{{ pinn_cmd }}"
     " --activation={{ activation }}"
-    " --convcheck={{ convcheck }}"
+    " {{ convcheck }}"
     " --data={{ data_path }}"
-    " --debug"
+    " {{ debug }}"
     " --learning_rate={{ learning_rate }}"
     " --max_epochs={{ max_epochs }}"
     " --n_hid={{ n_hid }}"
     " --n_layers={{ n_layers }}"
     " --precision={{ precision }}"
     " --save_model={{ save_model }}"
-    " --save_weights={{ save_weights }}"
+    " {{ save_weights }}"
     " --seed={{ seed }}"
     " --tolerance={{ tolerance }}"
-    " --verbose"
+    " {{ verbose }}"
     " --w_data={{ w_data }}"
     " {{ problem_path }}"
     " {{ training_points_path }}"
+    " >> pinn1.out"
 )
-# print(f"CMD_TEMPLATE = {CMD_TEMPLATE}")
-cmd_template = Template(CMD_TEMPLATE)
 
 
 def create_command_line_parser():
@@ -274,21 +272,57 @@ def main():
             print(f"Set directory {set_directory} does not exist, creating.")
         os.makedirs(set_directory)
 
-# original_cwd = os.getcwd()
+    # Create the command template.
+    cmd_template = Template(CMD_TEMPLATE)
+    if debug:
+        print(f"cmd_template = {cmd_template}")
 
-# for s in seeds:
-#     print("==========")
-#     print(f"Performing run for seed = {s}")
-#     run_path = str(s)
-#     os.mkdir(run_path)
-#     options["seed"] = s
-#     cmd = cmd_template.render(options)
-#     print(f"cmd = {cmd}")
-#     os.chdir(run_path)
-#     with open("cmd", "w") as f:
-#         f.write(cmd)
-#     os.system(cmd)
-#     os.chdir(original_cwd)
+    # Assemble the options dictionary.
+    options = {}
+    options["pinn_cmd"] = PINN_CMD
+    options["activation"] = activation
+    if convcheck:
+        options["convcheck"] = "--convcheck"
+    options["data_path"] = data_path
+    if debug:
+        options["debug"] = "--debug"
+    options["learning_rate"] = learning_rate
+    options["max_epochs"] = max_epochs
+    options["n_hid"] = n_hid
+    options["n_layers"] = n_layers
+    options["precision"] = precision
+    options["save_model"] = save_model
+    if save_weights:
+        options["save_weights"] = "--save_weights"
+    options["tolerance"] = tolerance
+    if verbose:
+        options["verbose"] = "--verbose"
+    options["w_data"] = w_data
+    options["problem_path"] = problem_path
+    options["training_points_path"] = training_points_path
+
+    # Train the model using each seed.
+    for seed in seeds:
+        print("==========")
+        print(f"Performing training for seed = {seed}")
+
+        # Create the directory to hold this run, then go there.
+        run_path = os.path.join(set_directory, str(seed))
+        if debug:
+            print(f"run_path = {run_path}")
+        os.makedirs(run_path)
+        os.chdir(run_path)
+
+        # Set the seed for this run.
+        options["seed"] = seed
+
+        # Render the template to create the command string.
+        cmd = cmd_template.render(options)
+        if debug:
+            print(f"cmd = {cmd}")
+
+        # Run the command.
+        os.system(cmd)
 
 
 if __name__ == "__main__":
