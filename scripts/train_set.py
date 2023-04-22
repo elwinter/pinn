@@ -14,10 +14,8 @@ Eric Winter (eric.winter62@gmail.com)
 # Import standard modules.
 import argparse
 import os
-# import subprocess
 
 # Import 3rd-party modules.
-# from jinja2 import Template
 
 # Import project modules.
 
@@ -27,6 +25,8 @@ import os
 # Program description string for help text.
 DESCRIPTION = "Train a set of PINN models."
 
+# Use clock to seed random number generator.
+DEFAULT_SEEDS = "CLOCK"
 
 # # Define the range of random number seeds to use.
 # seeds = list(range(5, 6))
@@ -138,6 +138,11 @@ def create_command_line_parser():
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
+        "--seeds", type=str, default=DEFAULT_SEEDS,
+        help="Random number generator seeds (comma-separated integers), or "
+             "'CLOCK' for time-based seeds (default: %(default)s)"
+    )
+    parser.add_argument(
         "--set_directory", type=str, default=os.getcwd(),
         help="Directory to contain trained models (default: %(default)s)"
     )
@@ -171,13 +176,30 @@ def main():
     # Parse the command-line arguments.
     args = parser.parse_args()
     debug = args.debug
+    seeds_str = args.seeds
     set_directory = args.set_directory
     verbose = args.verbose
     if debug:
         print(f"args = {args}")
         print(f"debug = {debug}")
+        print(f"seeds_str = {seeds_str}")
         print(f"set_directory = {set_directory}")
         print(f"verbose = {verbose}")
+
+    # If explicit random number generator seeds were specified, parse them.
+    if seeds_str == "CLOCK":
+        if verbose:
+            print("Random number generator seeds will be generated from the "
+                  "clock.")
+    else:
+        # NOTE: If seeds are provided, there must be at least as many seeds
+        # as are needed to provide for all of the models in the set.
+        if verbose:
+            print("Parsing random number generator seeds.")
+        seeds_str_list = seeds_str.split(",")
+        seeds = [int(s) for s in seeds_str_list]
+        if debug:
+            print(f"seeds = {seeds}")
 
     # If the top-level directory for training the set is not found, create it.
     if os.path.isdir(set_directory):
@@ -187,6 +209,7 @@ def main():
         if verbose:
             print(f"Set directory {set_directory} does not exist, creating.")
         os.makedirs(set_directory)
+
 
 if __name__ == "__main__":
     """Begin main program."""
