@@ -3,7 +3,9 @@
 
 """Train a set of PINN models.
 
-Train a set of PINN models.
+Train a set of PINN models. A "set" in this case means the same problem,
+trained multiple times, using the same network and training hyperparameters,
+each time using a different random number seed.
 
 Author
 ------
@@ -16,6 +18,7 @@ import argparse
 import os
 
 # Import 3rd-party modules.
+from jinja2 import Template
 
 # Import project modules.
 
@@ -25,93 +28,72 @@ import os
 # Program description string for help text.
 DESCRIPTION = "Train a set of PINN models."
 
-# Use clock to seed random number generator.
-DEFAULT_SEEDS = "CLOCK"
+# Default activation function to use in hidden nodes.
+DEFAULT_ACTIVATION = "sigmoid"
 
-# # Define the range of random number seeds to use.
-# seeds = list(range(5, 6))
-# print(f"seeds = {seeds}")
+# Default learning rate.
+DEFAULT_LEARNING_RATE = 0.01
 
-# # Define the PINN code root.
-# PINN_ROOT = os.path.join(
-#     os.environ["HOME"], "research_local", "src", "pinn"
-# )
-# print(f"PINN_ROOT = {PINN_ROOT}")
+# Default maximum number of training epochs.
+DEFAULT_MAX_EPOCHS = 100
 
-# # Specify the branch path.
-# BRANCH = "periodic_save_model"
-# BRANCH_PATH = os.path.join(PINN_ROOT, BRANCH, "pinn")
-# print(f"BRANCH_PATH = {BRANCH_PATH}")
+# Default number of hidden nodes per layer.
+DEFAULT_N_HID = 10
 
-# # Define problem location.
-# PROBLEM_CLASS = "loop2d"
-# PROBLEM_NAME = "loop2d_BxBy"
-# PROBLEM_ROOT = os.path.join(
-#     BRANCH_PATH, "problems", PROBLEM_CLASS, PROBLEM_NAME
-# )
-# print(f"PROBLEM_ROOT = {PROBLEM_ROOT}")
+# Default number of layers in the fully-connected network, each with n_hid
+# nodes.
+DEFAULT_N_LAYERS = 1
 
-# # Define PINN command.
-# PINN_CMD = os.path.join(BRANCH_PATH, "pinn", "pinn1.py")
-# print(f"PINN_CMD = {PINN_CMD}")
+# Default TensorFlow precision for computations.
+DEFAULT_PRECISION = "float32"
 
-# # Specify the command template.
-# CMD_TEMPLATE = (
-#     "{{ pinn_cmd }}"
-#     " --debug"
-#     " --verbose"
-#     " --seed={{ seed }}"
-#     " --max_epochs={{ max_epochs }}"
-#     " --save_model={{ save_model }}"
-#     " --n_layers={{ n_layers }}"
-#     " --n_hid={{ n_hid }}"
-#     " --data={{ data_path }}"
-#     " -w={{ w }}"
-#     " {{ problem_path }}"
-#     " {{ training_points_path }}"
-# )
+# Default interval (in epochs) for saving the model.
+# 0 = do not save model
+# -1 = only save at end
+# n > 0: Save after every n epochs.
+DEFAULT_SAVE_MODEL = -1
+
+# Seeds for random number generator.
+DEFAULT_SEEDS = "0"
+
+# Default absolute tolerance for consecutive loss function values to indicate
+# convergence.
+DEFAULT_TOLERANCE = 1e-6
+
+# Default normalized weight to apply to the boundary condition loss function.
+DEFAULT_W_DATA = 0.0
+
+
+# Define the PINN code root.
+PINN_ROOT = os.environ["RESEARCH_INSTALL_DIR"]
+
+# Define the PINN command.
+PINN_CMD = os.path.join(PINN_ROOT, "pinn", "pinn1.py")
+print(f"PINN_CMD = {PINN_CMD}")
+
+# Define the jinja2 command template.
+CMD_TEMPLATE = (
+    "{{ pinn_cmd }}"
+    " --activation={{ activation }}"
+    " --convcheck={{ convcheck }}"
+    " --data={{ data_path }}"
+    " --debug"
+    " --learning_rate={{ learning_rate }}"
+    " --max_epochs={{ max_epochs }}"
+    " --n_hid={{ n_hid }}"
+    " --n_layers={{ n_layers }}"
+    " --precision={{ precision }}"
+    " --save_model={{ save_model }}"
+    " --save_weights={{ save_weights }}"
+    " --seed={{ seed }}"
+    " --tolerance={{ tolerance }}"
+    " --verbose"
+    " --w_data={{ w_data }}"
+    " {{ problem_path }}"
+    " {{ training_points_path }}"
+)
 # print(f"CMD_TEMPLATE = {CMD_TEMPLATE}")
-# cmd_template = Template(CMD_TEMPLATE)
-
-# # Specify problem files.
-# data_path = os.path.join(
-#     PROBLEM_ROOT, f"{PROBLEM_NAME}_initial_conditions.dat"
-# )
-# problem_path = os.path.join(
-#     PROBLEM_ROOT, f"{PROBLEM_NAME}.py"
-# )
-# training_points_path = os.path.join(
-#     PROBLEM_ROOT, f"{PROBLEM_NAME}_training_grid.dat"
-# )
-
-# # Specify standard options for the set.
-# options = {
-#     "pinn_cmd": PINN_CMD,
-#     "max_epochs": 100,
-#     "save_model": 50,
-#     "n_layers": 4,
-#     "n_hid": 100,
-#     "data": data_path,
-#     "w": 0.95,
-#     "problem_path": problem_path,
-#     "training_points_path": training_points_path,
-# }
-
-# original_cwd = os.getcwd()
-
-# for s in seeds:
-#     print("==========")
-#     print(f"Performing run for seed = {s}")
-#     run_path = str(s)
-#     os.mkdir(run_path)
-#     options["seed"] = s
-#     cmd = cmd_template.render(options)
-#     print(f"cmd = {cmd}")
-#     os.chdir(run_path)
-#     with open("cmd", "w") as f:
-#         f.write(cmd)
-#     os.system(cmd)
-#     os.chdir(original_cwd)
+cmd_template = Template(CMD_TEMPLATE)
 
 
 def create_command_line_parser():
@@ -134,22 +116,76 @@ def create_command_line_parser():
     """
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
-        "-d", "--debug", action="store_true", default=False,
+        "--activation", "-a", default=DEFAULT_ACTIVATION,
+        help="Specify activation function (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--convcheck", action="store_true",
+        help="Perform convergence check (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--data_path", default=None,
+        help="Path to optional input data file (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--debug", "-d", action="store_true", default=False,
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
+        "--learning_rate", type=float, default=DEFAULT_LEARNING_RATE,
+        help="Learning rate for training (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--max_epochs", type=int, default=DEFAULT_MAX_EPOCHS,
+        help="Maximum number of training epochs (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--n_hid", type=int, default=DEFAULT_N_HID,
+        help="Number of hidden nodes per layer (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--n_layers", type=int, default=DEFAULT_N_LAYERS,
+        help="Number of hidden layers (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--precision", type=str, default=DEFAULT_PRECISION,
+        help="Precision to use in TensorFlow solution (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--save_model", type=int, default=DEFAULT_SAVE_MODEL,
+        help="Save interval (epochs) for trained model (default: %(default)s)."
+        " 0 = do not save, -1 = save at end, n > 0 = save every n epochs."
+    )
+    parser.add_argument(
+        "--save_weights", action="store_true",
+        help="Save the model weights at each epoch (default: %(default)s)."
+    )
+    parser.add_argument(
         "--seeds", type=str, default=DEFAULT_SEEDS,
-        help="Random number generator seeds (comma-separated integers), or "
-             "'CLOCK' for time-based seeds (default: %(default)s)"
+        help="Random number generator seeds (comma-separated integers)"
+             " (default: %(default)s)"
     )
     parser.add_argument(
         "--set_directory", type=str, default=os.getcwd(),
-        help="Directory to contain trained models (default: %(default)s)"
+        help="Path to directory to contain trained models "
+             "(default: %(default)s)"
     )
     parser.add_argument(
-        "-v", "--verbose", action="store_true", default=False,
+        "--tolerance", type=float, default=DEFAULT_TOLERANCE,
+        help="Absolute loss function convergence tolerance "
+             "(default: %(default)s)"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", default=False,
         help="Print verbose output (default: %(default)s)."
     )
+    parser.add_argument(
+        "--w_data", "-w", type=float, default=DEFAULT_W_DATA,
+        help="Normalized weight for data loss function "
+             "(default: %(default)s)."
+    )
+    parser.add_argument("problem_path", type=str)
+    parser.add_argument("training_points_path", type=str)
     return parser
 
 
@@ -175,16 +211,44 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    activation = args.activation
+    convcheck = args.convcheck
+    data_path = args.data_path
     debug = args.debug
+    learning_rate = args.learning_rate
+    max_epochs = args.max_epochs
+    n_hid = args.n_hid
+    n_layers = args.n_layers
+    precision = args.precision
+    save_model = args.save_model
+    save_weights = args.save_weights
     seeds_str = args.seeds
     set_directory = args.set_directory
+    tolerance = args.tolerance
     verbose = args.verbose
+    w_data = args.w_data
+    problem_path = args.problem_path
+    training_points_path = args.training_points_path
     if debug:
         print(f"args = {args}")
+        print(f"activation = {activation}")
+        print(f"convcheck = {convcheck}")
+        print(f"data_path = {data_path}")
         print(f"debug = {debug}")
+        print(f"learning_rate = {learning_rate}")
+        print(f"max_epochs = {max_epochs}")
+        print(f"n_hid = {n_hid}")
+        print(f"n_layers = {n_layers}")
+        print(f"precision = {precision}")
+        print(f"save_model = {save_model}")
+        print(f"save_weights = {save_weights}")
         print(f"seeds_str = {seeds_str}")
         print(f"set_directory = {set_directory}")
+        print(f"tolerance = {tolerance}")
         print(f"verbose = {verbose}")
+        print(f"w_data = {w_data}")
+        print(f"problem_path = {problem_path}")
+        print(f"training_points_path = {training_points_path}")
 
     # If explicit random number generator seeds were specified, parse them.
     if seeds_str == "CLOCK":
@@ -209,6 +273,22 @@ def main():
         if verbose:
             print(f"Set directory {set_directory} does not exist, creating.")
         os.makedirs(set_directory)
+
+# original_cwd = os.getcwd()
+
+# for s in seeds:
+#     print("==========")
+#     print(f"Performing run for seed = {s}")
+#     run_path = str(s)
+#     os.mkdir(run_path)
+#     options["seed"] = s
+#     cmd = cmd_template.render(options)
+#     print(f"cmd = {cmd}")
+#     os.chdir(run_path)
+#     with open("cmd", "w") as f:
+#         f.write(cmd)
+#     os.system(cmd)
+#     os.chdir(original_cwd)
 
 
 if __name__ == "__main__":
