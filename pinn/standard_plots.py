@@ -275,8 +275,11 @@ def plot_logarithmic_heatmap(
         ax = plt.gca()
 
     # Plot the data as a logarithmic heat map.
-    sns.heatmap(z, ax=ax, norm=mpl.colors.LogNorm(), square=True,
-                vmin=vmin, vmax=vmax)
+    sns.heatmap(z, ax=ax, norm=mpl.colors.LogNorm(vmin, vmax), square=True,
+                vmin=vmin, vmax=vmax,
+                cbar_kws={
+                    "extend": "both",
+                })
 
     # Decorate the plot.
     if show_xlabel:
