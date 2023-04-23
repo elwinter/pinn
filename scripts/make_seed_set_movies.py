@@ -65,12 +65,16 @@ def create_command_line_parser():
     """
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
-        "--debug", "-d", action="store_true", default=False,
+        "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true", default=False,
         help="Print verbose output (default: %(default)s)."
+    )
+    parser.add_argument(
+        "seed_set_path", type=str,
+        help="Path to directory containing seed set"
     )
     return parser
 
@@ -99,10 +103,12 @@ def main():
     args = parser.parse_args()
     debug = args.debug
     verbose = args.verbose
+    seed_set_path = args.seed_set_path
     if debug:
         print(f"args = {args}")
         print(f"debug = {debug}")
         print(f"verbose = {verbose}")
+        print(f"seed_set_path = {seed_set_path}")
 
     # Create the command template.
     cmd_template = Template(CMD_TEMPLATE)
@@ -117,17 +123,17 @@ def main():
         options["verbose"] = "--verbose"
 
     # Create the movie sets for each seed.
-    for seed in seeds:
-        print("==========")
-        print(f"Making movies for seed = {seed}")
+    # for seed in seeds:
+    #     print("==========")
+    #     print(f"Making movies for seed = {seed}")
 
-        # Render the template to create the command string.
-        cmd = cmd_template.render(options)
-        if debug:
-            print(f"cmd = {cmd}")
+    #     # Render the template to create the command string.
+    #     cmd = cmd_template.render(options)
+    #     if debug:
+    #         print(f"cmd = {cmd}")
 
-        # Run the command.
-        os.system(cmd)
+    #     # Run the command.
+    #     os.system(cmd)
 
 
 if __name__ == "__main__":
