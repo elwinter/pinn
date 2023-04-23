@@ -6,20 +6,24 @@
 Create a movie of the magnetic field divergence as an animated heatmap.
 The movie is created as an animated GIF. Individual frames are saved as
 PNG files in the frames/ subdirectory.
+
+The frames subdirectory, and the movie file, will be created in the current
+directory.
 """
 
 
 # Import standard modules.
 import argparse
-import glob
 import os
 
 # Import 3rd-party modules.
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
 # Import project-specific modules.
+from pinn import common
 from pinn import standard_plots
 from pinn import training_data
 
@@ -52,9 +56,6 @@ DEFAULT_XMAX = 1.0
 DEFAULT_YMIN = -1.0
 DEFAULT_YMAX = 1.0
 
-# Default path to results directory.
-DEFAULT_RESULTS_PATH = os.getcwd()
-
 # Tick counts for x- and y-axes in heatmap.
 HEATMAP_N_X_TICKS = 5
 HEATMAP_N_Y_TICKS = 5
@@ -76,7 +77,7 @@ def create_command_line_parser():
     """
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
-        "-d", "--debug", action="store_true", default=False,
+        "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
@@ -88,7 +89,7 @@ def create_command_line_parser():
         help="Minimum divB value to plot (default: %(default)s)."
     )
     parser.add_argument(
-        "-e", "--epoch", type=int, default=DEFAULT_EPOCH,
+        "--epoch", "-e", type=int, default=DEFAULT_EPOCH,
         help="Epoch for trained model to use for movie "
              "(default: %(default)s)."
     )
@@ -105,7 +106,7 @@ def create_command_line_parser():
         help="Number of y points to use in movie (default: %(default)s)."
     )
     parser.add_argument(
-        "-r", "--results_path", type=str, default=DEFAULT_RESULTS_PATH,
+        "--results_path", "-r", type=str, default=os.getcwd(),
         help="Directory containing model results (default: %(default)s)."
     )
     parser.add_argument(
@@ -117,7 +118,7 @@ def create_command_line_parser():
         help="Minimum time value for movie (default: %(default)s)."
     )
     parser.add_argument(
-        "-v", "--verbose", action="store_true", default=False,
+        "--verbose", "-v", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument(
@@ -137,45 +138,6 @@ def create_command_line_parser():
         help="Minimum y value for movie (default: %(default)s)."
     )
     return parser
-
-
-def find_last_epoch(results_path):
-    """Find the last epoch for a model in the results directory.
-
-    Find the last epoch for a model in the results directory.
-
-    Parameters
-    ----------
-    results_path : str
-        Path to results directory.
-
-    Returns
-    -------
-    last_epoch : int
-        Number for last epoch found in results directory.
-    """
-    # Save the current directory.
-    original_directory = os.getcwd()
-
-    # Construct the path to the saved models.
-    models_directory = os.path.join(results_path, "models")
-
-    # Move to the saved models directory.
-    os.chdir(models_directory)
-
-    # Make a list of all subdirectories with names starting with digits.
-    # These digits represent epoch numbers at which the models were saved.
-    epoch_directories = glob.glob("[0-9]*")
-
-    # Return to the original directory.
-    os.chdir(original_directory)
-
-    # Find the largest epoch number.
-    epochs = [int(s) for s in epoch_directories]
-    last_epoch = max(epochs)
-
-    # Return the largest epoch number.
-    return last_epoch
 
 
 def main():
@@ -232,16 +194,26 @@ def main():
 
     # If -1 was specified for the model epoch, determine the last epoch.
     if epoch == -1:
-        epoch = find_last_epoch(results_path)
+        epoch = common.find_last_epoch(results_path)
     if debug:
         print(f"epoch = {epoch}")
 
     # Load the models for the specified epoch.
     base_path = os.path.join(results_path, "models", str(epoch))
+    if debug:
+        print(f"base_path = {base_path}")
     path = os.path.join(base_path, "model_Bx")
+    if debug:
+        print(f"path = {path}")
     model_Bx = tf.keras.models.load_model(path)
+    if debug:
+        print(f"model_Bx = {model_Bx}")
     path = os.path.join(base_path, "model_By")
+    if debug:
+        print(f"path = {path}")
     model_By = tf.keras.models.load_model(path)
+    if debug:
+        print(f"model_By = {model_By}")
 
     # Create the evaluation grid for the movie frames.
     nxy = nx*ny
@@ -284,7 +256,7 @@ def main():
         divB = dBx_dx + dBy_dy
         divB = np.flip(divB.reshape(nx, ny).T, axis=0)
         title = f"Magnetic field divergence at t = {txy[i0, 0]:0.2f}"
-        mpl.pyplot.clf()
+        plt.clf()
         standard_plots.plot_linear_heatmap(
             divB, title=title,
             vmin=divBmin, vmax=divBmax,
@@ -295,7 +267,7 @@ def main():
         )
         frame_name = f"frame_{i:06d}.png"
         frame_path = os.path.join(frame_dir, frame_name)
-        mpl.pyplot.savefig(frame_path)
+        plt.savefig(frame_path)
 
     # Create the movie.
     os.system(f"convert -delay 10 -loop 0 {frame_dir}/frame_00*.png divB.gif")

@@ -337,7 +337,8 @@ def plot_linear_heatmap(
         ax = plt.gca()
 
     # Plot the data as a linear heat map.
-    sns.heatmap(z, ax=ax, square=True, vmin=vmin, vmax=vmax)
+    sns.heatmap(z, ax=ax, square=True, vmin=vmin, vmax=vmax,
+                cbar_kws={"extend": "both"})
 
     # Decorate the plot.
     if show_xlabel:
