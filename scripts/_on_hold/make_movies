@@ -1,0 +1,84 @@
+#!/bin/bash -l
+
+# Fetch the code branch.
+code_branch=$1
+# echo "code_branch=$code_branch"
+
+# Fetch the movie type.
+movie_type=$2
+# echo "movie_type=$movie_type"
+
+# Fetch the problems to process.
+problems=(${@:3})
+# echo "problems=${problems[@]}"
+
+# Set up the environment.
+# echo "Configuring run environment."
+source ~/bin/use_research $code_branch 3.10
+
+# Compute the path to the movie script.
+movie_script="$RESEARCH_INSTALL_DIR/scripts/make_${movie_type}_movie.py"
+# echo "movie_script=$movie_script"
+
+# Name of movie collection directory.
+movie_collection_subdir="${movie_type}_movies"
+
+# Problem subtree to process
+problem_subtree="004x100/050x050x050/0.95/100000"
+
+# Save the starting directory.
+starting_directory=`pwd`
+# echo "starting_directory=$starting_directory"
+
+# Make a set of movies for each problem.
+for problem in ${problems[@]}; do
+    echo "************************************************************"
+    echo "Making movies for problem $problem"
+
+    # Move to the directory for this problem.
+    problem_directory="$starting_directory/$code_branch/$problem/$problem_subtree"
+    cd $problem_directory
+    # echo "pwd=`pwd`"
+
+    # Get list of directories named after random number seeds.
+    seeds=`ls | grep "^[0123456789]*$"`
+    # echo "seeds=$seeds"
+
+    # Create the set of movies for this problem and seed.
+    for seed in ${seeds[@]}; do
+
+	# Move to the directory for this random number seed..
+        # echo "seed=$seed"
+        cd $seed
+        # echo "pwd=`pwd`"
+	echo "Making movies for problem $problem, seed $seed"
+
+        # Find the training epochs available for this problem and seed.
+        epochs=`ls $problem/models | grep "^[0123456789]*$" | sort -n`
+        # echo "epochs=$epochs"
+
+        # Create the movie for each model epoch and save in a separate directory.
+        for epoch in ${epochs[@]}; do
+            # echo "epoch=$epoch"
+	    echo "Making movies for problem $problem, seed $seed, epoch $epoch"
+            cmd="$movie_script -v -r $problem -e $epoch"
+            echo $cmd
+            eval $cmd
+            cmd="mkdir -p ${movie_collection_subdir}/$epoch"
+            echo $cmd
+            eval $cmd
+            movie_file=${movie_type}.gif
+            cmd="mv $movie_file frames ${movie_collection_subdir}/$epoch/"
+            echo $cmd
+            eval $cmd
+        done
+
+        # Move back up to the problem directory.
+        cd ..
+
+    done
+
+    # Move back to the starting directory.
+    cd $starting_directory
+
+done

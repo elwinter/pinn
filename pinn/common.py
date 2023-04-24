@@ -11,6 +11,7 @@ Eric Winter (eric.winter62@gmail.com)
 
 # Import standard modules.
 import datetime
+import glob
 import os
 import platform
 import shutil
@@ -160,6 +161,45 @@ def save_system_information(output_dir):
                 platform.python_implementation())
         f.write("NumPy version: %s\n" % np.__version__)
         f.write("TensorFlow version: %s\n" % tf.__version__)
+
+
+def find_last_epoch(results_path):
+    """Find the last epoch for a model in the results directory.
+
+    Find the last epoch for a model in the results directory.
+
+    Parameters
+    ----------
+    results_path : str
+        Path to results directory.
+
+    Returns
+    -------
+    last_epoch : int
+        Number for last epoch found in results directory.
+    """
+    # Save the current directory.
+    original_directory = os.getcwd()
+
+    # Construct the path to the saved models.
+    models_directory = os.path.join(results_path, "models")
+
+    # Move to the saved models directory.
+    os.chdir(models_directory)
+
+    # Make a list of all subdirectories with names starting with digits.
+    # These digits represent epoch numbers at which the models were saved.
+    epoch_directories = glob.glob("[0-9]*")
+
+    # Return to the original directory.
+    os.chdir(original_directory)
+
+    # Find the largest epoch number.
+    epochs = [int(s) for s in epoch_directories]
+    last_epoch = max(epochs)
+
+    # Return the largest epoch number.
+    return last_epoch
 
 
 if __name__ == '__main__':
