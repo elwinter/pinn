@@ -249,7 +249,7 @@ def main():
         plt.savefig(frame_path)
 
     # Create the movie.
-    os.system(f"convert -delay 10 -loop 0 {frame_dir}/frame_00*.png B.gif")
+    os.system(f"convert -delay 10 -loop 0 {frame_dir}/frame_00*.png BxBy.gif")
 
 
 if __name__ == "__main__":
