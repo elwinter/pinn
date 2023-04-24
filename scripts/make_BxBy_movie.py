@@ -35,10 +35,6 @@ DESCRIPTION = (
     "Create a movie of the magnetic field as an animated quiver plot."
 )
 
-# Default maximum and minimum values for B.
-DEFAULT_BMIN = 1e-4
-DEFAULT_BMAX = 1e-2
-
 # Default epoch to use when selecting a trained model.
 # -1 = use last epoch in results.
 DEFAULT_EPOCH = -1
@@ -76,14 +72,6 @@ def create_command_line_parser():
         Command-line argument parser for this script.
     """
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument(
-        "--Bmax", type=float, default=DEFAULT_BMAX,
-        help="Maximum B value to plot (default: %(default)s)."
-    )
-    parser.add_argument(
-        "--Bmin", type=float, default=DEFAULT_BMIN,
-        help="Minimum B value to plot (default: %(default)s)."
-    )
     parser.add_argument(
         "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
@@ -159,8 +147,6 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
-    Bmax = args.Bmax
-    Bmin = args.Bmin
     debug = args.debug
     epoch = args.epoch
     nt = args.nt
@@ -176,8 +162,6 @@ def main():
     ymin = args.ymin
     if debug:
         print(f"args = {args}")
-        print(f"Bmax = {Bmax}")
-        print(f"Bmin = {Bmin}")
         print(f"debug = {debug}")
         print(f"epoch = {epoch}")
         print(f"nt = {nt}")
