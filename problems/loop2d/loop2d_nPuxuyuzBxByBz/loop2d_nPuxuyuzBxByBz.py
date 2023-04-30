@@ -604,8 +604,8 @@ def pde_Bz(X, Y, del_Y):
     # duy_dx = tf.reshape(del_uy[:, ix], (nX, 1))
     duy_dy = tf.reshape(del_uy[:, iy], (nX, 1))
     # duz_dt = tf.reshape(del_uz[:, it], (nX, 1))
-    # duz_dx = tf.reshape(del_uz[:, ix], (nX, 1))
-    # duz_dy = tf.reshape(del_uz[:, iy], (nX, 1))
+    duz_dx = tf.reshape(del_uz[:, ix], (nX, 1))
+    duz_dy = tf.reshape(del_uz[:, iy], (nX, 1))
     # dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
     # dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
     # dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
@@ -617,7 +617,10 @@ def pde_Bz(X, Y, del_Y):
     dBz_dy = tf.reshape(del_Bz[:, iy], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = dBz_dt + ux*dBz_dx + uy*dBz_dy + Bz*(dux_dx + duy_dy)
+    G = (
+        dBz_dt + ux*dBz_dx + uy*dBz_dy + Bz*(dux_dx + duy_dy) -
+        Bx*duz_dx - By*duz_dy
+    )
     return G
 
 
