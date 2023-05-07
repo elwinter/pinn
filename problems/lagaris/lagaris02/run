@@ -2,14 +2,14 @@
 # . use_research main 3.10
 
 # Create 10-point training grid.
-# create_training_points.py 0 1 10 > lagaris01_training_grid.dat
+# create_training_points.py 0 2 10 > lagaris02_training_grid.dat
 
 # Create single initial condition.
-# lagaris01_create_initial_conditions.py 0 1 10 > lagaris01_initial_conditions.dat
+# lagaris02_create_initial_conditions.py 0 1 10 > lagaris02_initial_conditions.dat
 
 # Define problem location.
 PINN_ROOT=$HOME/research_local/src/pinn
-PROBLEM_ROOT=$PINN_ROOT/problems/lagaris/lagaris01
+PROBLEM_ROOT=$PINN_ROOT/problems/lagaris/lagaris02
 
 # Define PINN command.
 PINN_CMD=$PINN_ROOT/pinn/pinn1.py
@@ -21,8 +21,8 @@ $PINN_CMD -d -v \
   --save_model \
   --n_layers=1 \
   --n_hid=10 \
-  --data $PROBLEM_ROOT/lagaris01_initial_conditions.dat \
+  --data $PROBLEM_ROOT/lagaris02_initial_conditions.dat \
   -w 0.10 \
-  $PROBLEM_ROOT/lagaris01.py \
-  $PROBLEM_ROOT/lagaris01_training_grid.dat \
+  $PROBLEM_ROOT/lagaris02.py \
+  $PROBLEM_ROOT/lagaris02_training_grid.dat \
   >& pinn1.out
