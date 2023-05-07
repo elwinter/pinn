@@ -110,7 +110,7 @@ def ode_Ψ(X, Y, delY):
     nX = X.shape[0]
     x = tf.reshape(X[:, ix], (nX, 1))
     (Ψ,) = Y
-    (delΨ,) = del_Y
+    (delΨ,) = delY
     dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
