@@ -8,7 +8,7 @@
 # square_wave_n_create_initial_conditions.py 0 1.6 201 0 2 201 > square_wave_n_initial_conditions.dat
 
 # Define problem location.
-PINN_ROOT=$HOME/research_local/src/pinn
+PINN_ROOT=$HOME/research_local/src/pinn/development/pinn
 PROBLEM_NAME=square_wave_n
 PROBLEM_ROOT=$PINN_ROOT/problems/advection/$PROBLEM_NAME
 
@@ -16,17 +16,14 @@ PROBLEM_ROOT=$PINN_ROOT/problems/advection/$PROBLEM_NAME
 PINN_CMD=$PINN_ROOT/pinn/pinn1.py
 
 # Run the network.
-$PINN_CMD -d -v \
+$PINN_CMD -v \
   --seed=0 \
   --max_epochs=10000 \
-  --save_model \
-  --save_weights \
+  --save_model=10000 \
   --n_layers=4 \
   --n_hid=100 \
   --data $PROBLEM_ROOT/$PROBLEM_NAME}_initial_conditions.dat \
-  -w 0.95 \
+  -w 0.5 \
   $PROBLEM_ROOT/$PROBLEM_NAME}.py \
   $PROBLEM_ROOT/$PROBLEM_NAME}_training_grid.dat \
   >& pinn1.out
-
-
