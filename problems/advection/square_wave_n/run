@@ -2,10 +2,10 @@
 # . use_research-3.10
 
 # Created training grid.
-# create_training_points.py 0 2 201 0 2 201 > square_wave_n_training_grid.dat
+# create_training_points.py 0 1.6 201 0 2 201 > square_wave_n_training_grid.dat
 
 # Create 50x50 initial conditions.
-# square_wave_n_create_initial_conditions.py 0 2 201 0 2 201 > square_wave_n_initial_conditions.dat
+# square_wave_n_create_initial_conditions.py 0 1.6 201 0 2 201 > square_wave_n_initial_conditions.dat
 
 # Define problem location.
 PINN_ROOT=$HOME/research_local/src/pinn

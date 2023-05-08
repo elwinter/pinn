@@ -151,9 +151,8 @@ def n_analytical(t, x):
         Value of n for each evaluation point.
     """
     n = np.full(t.shape, n0)
-    xx = x - u0x*t
-    ge = x >= x0
-    le = x <= x1
+    ge = x >= x0 + u0x*t
+    le = x <= x1 + u0x*t
     mask = np.logical_and(ge, le)
     n[mask] = n_wave
     return n
