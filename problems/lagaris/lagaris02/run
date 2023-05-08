@@ -5,7 +5,7 @@
 # create_training_points.py 0 2 10 > lagaris02_training_grid.dat
 
 # Create single initial condition.
-# lagaris02_create_initial_conditions.py 0 1 10 > lagaris02_initial_conditions.dat
+# lagaris02_create_initial_conditions.py > lagaris02_initial_conditions.dat
 
 # Define problem location.
 PINN_ROOT=$HOME/research_local/src/pinn

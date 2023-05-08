@@ -1,4 +1,4 @@
-"""Problem definition file for simple ODE (Lagaris problem 1).
+"""Problem definition file for simple ODE (Lagaris problem 2).
 
 This is a first-order, nonlinear ODE, defined on the domain [0, 2], with the
 initial condition Ψ(0) = 0.
