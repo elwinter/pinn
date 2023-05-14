@@ -2,14 +2,14 @@
 # . use_research-3.10
 
 # Created training grid.
-# create_training_points.py 0 1 101 0 1 101 > static1d_training_grid.dat
+# create_training_points.py 0 1 11 0 1 11 0 1 11 0 1 11 > static3d_training_grid.dat
 
 # Create initial conditions.
-# static1d_create_initial_conditions.py 0 1 101 0 1 101 > static1d_initial_conditions.dat
+# static3d_create_initial_conditions.py 0 1 11 0 1 11 0 1 11 0 1 11 > static3d_initial_conditions.dat
 
 # Define problem location.
 PROBLEM_CLASS=static
-PROBLEM_NAME=static1d
+PROBLEM_NAME=static3d
 PINN_ROOT=$HOME/research_local/src/pinn
 PROBLEM_ROOT=$PINN_ROOT/problems/$problem_class/$problem_name
 PROBLEM_PATH=$PINN_ROOT/problems/$problem_class/$problem_name/${problem_name}.py
