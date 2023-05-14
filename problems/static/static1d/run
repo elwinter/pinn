@@ -31,5 +31,3 @@ $PINN_CMD -v \
   $PROBLEM_PATH \
   $TRAINING_GRID_PATH \
   >& pinn1.out
-
-
