@@ -1,0 +1,33 @@
+# Load environment.
+# . use_research-3.10
+
+# Created 101x101x101 training grid.
+# create_training_points.py 0 1 101 0 1 101 0 1 101 > static2d_training_grid.dat
+
+# Create 101x1 initial conditions.
+# static2d_create_initial_conditions.py 0 1 101 0 1 101 0 1 101 > static2d_initial_conditions.dat
+
+# Define problem location.
+PROBLEM_CLASS=static
+PROBLEM_NAME=static2d
+PINN_ROOT=$HOME/research_local/src/pinn
+PROBLEM_ROOT=$PINN_ROOT/problems/$problem_class/$problem_name
+PROBLEM_PATH=$PINN_ROOT/problems/$problem_class/$problem_name/${problem_name}.py
+INITIAL_CONDITIONS_PATH=$PINN_ROOT/problems/$problem_class/$problem_name/${problem_name}_initial_conditions.dat
+TRAINING_GRID_PATH=$PINN_ROOT/problems/$problem_class/$problem_name/${problem_name}_training_grid.dat
+
+# Define PINN command.
+PINN_CMD=$PINN_ROOT/pinn/pinn1.py
+
+# Run the network.
+$PINN_CMD -v \
+  --seed=0 \
+  --max_epochs=1000 \
+  --save_model=1000 \
+  --n_layers=4 \
+  --n_hid=100 \
+  --data $INITIAL_CONDITIONS_PATH \
+  -w 0.95 \
+  $PROBLEM_PATH \
+  $TRAINING_GRID_PATH \
+  >& pinn1.out
