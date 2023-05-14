@@ -88,7 +88,7 @@ def main():
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
-    # tg[0] x y n P ux uy uz Bx By Bz
+    # tg[0] x n P ux uy uz Bx By Bz
     for x in xg:
         n = n0
         P = P0
