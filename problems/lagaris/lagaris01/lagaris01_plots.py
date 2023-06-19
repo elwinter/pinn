@@ -107,3 +107,24 @@ ax1.set_ylabel(p.dependent_variable_labels[0])
 ax1.set_title(f"Trained and analytical solutions for {runid}")
 plt.savefig("trained_actual_error.png")
 
+# Extract the trained derivative.
+dy_dx_train = delψ[0]
+
+# Compute the analytical solution at the training points.
+dy_dx_analytical = p.dΨ_dx_analytical(x_train)
+
+# Compute the error in the trained derivative.
+dy_dx_err = dy_dx_train - dy_dx_analytical
+
+# Plot the actual, predicted, and absolute error in the derivative.
+plt.clf()
+ax1 = plt.gca()
+ax1.plot(x_train, dy_dx_train, label="$d\psi_t/dx$")
+ax1.plot(x_train, dy_dx_analytical, label="$d\psi_a/dx$")
+ax1.plot(x_train, y_err, label="$d\psi/dx (err)$")
+ax1.legend()
+ax1.set_xlabel(p.independent_variable_labels[0])
+ax1.set_ylabel("$d\psi/dx$")
+ax1.set_title(f"Trained and analytical derivative for {runid}")
+plt.savefig("trained_actual_derivative_error.png")
+
