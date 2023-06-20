@@ -87,13 +87,15 @@ n_start = n_x_train_vals
 x0 = XY_data[0]
 y0 = XY_data[-1]
 
+# Extract the trained solution.
+y_train = ψ[0]
+
 # Compute the analytical solution at the training points.
 y_analytical = p.Ψ_analytical(x_train)
 
-y_train = ψ[0]
-
-# Compute the error in the trained solution.
+# Compute the error and RMS error in the trained solution.
 y_err = y_train - y_analytical
+y_rms_err = np.sqrt(np.sum(y_err**2)/len(y_err))
 
 # Plot the actual, predicted, and absolute error in the solution.
 plt.clf()
@@ -104,7 +106,8 @@ ax1.plot(x_train, y_err, label="$\psi_{err}$")
 ax1.legend()
 ax1.set_xlabel(p.independent_variable_labels[0])
 ax1.set_ylabel(p.dependent_variable_labels[0])
-ax1.set_title(f"Trained and analytical solutions for {runid}")
+ax1.set_title(f"Trained and analytical solutions for {runid}\n"
+              f"RMS error = {y_rms_err:.2e}")
 plt.savefig("trained_actual_error.png")
 
 # Extract the trained derivative.
@@ -113,8 +116,9 @@ dy_dx_train = delψ[0]
 # Compute the analytical solution at the training points.
 dy_dx_analytical = p.dΨ_dx_analytical(x_train)
 
-# Compute the error in the trained derivative.
+# Compute the error and RMS error in the trained derivative.
 dy_dx_err = dy_dx_train - dy_dx_analytical
+dy_dx_rms_err = np.sqrt(np.sum(dy_dx_err**2)/len(dy_dx_err))
 
 # Plot the actual, predicted, and absolute error in the derivative.
 plt.clf()
@@ -125,6 +129,7 @@ ax1.plot(x_train, y_err, label="$d\psi/dx (err)$")
 ax1.legend()
 ax1.set_xlabel(p.independent_variable_labels[0])
 ax1.set_ylabel("$d\psi/dx$")
-ax1.set_title(f"Trained and analytical derivative for {runid}")
+ax1.set_title(f"Trained and analytical derivative for {runid}\n"
+              f"RMS error = {dy_dx_rms_err:.2e}")
 plt.savefig("trained_actual_derivative_error.png")
 
