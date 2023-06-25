@@ -1,0 +1,30 @@
+# Load environment.
+# . use_research-3.10
+
+# Created training grid.
+# create_training_points.py 0 1 201 0 1 101 > alfven1d_training_grid.dat
+
+# Create 50x50 initial conditions.
+# alfvwn1d_create_initial_conditions.py 0 1 201 0 1 101 > alfven1d_initial_conditions.dat
+
+# Define problem location.
+PINN_ROOT=$HOME/research_local/src/pinn/development/pinn
+PROBLEM_CLASS=waves1d
+PROBLEM_NAME=alfven1d
+PROBLEM_ROOT=$PINN_ROOT/problems/$PROBLEM_CLASS/$PROBLEM_NAME
+
+# Define PINN command.
+PINN_CMD=$PINN_ROOT/pinn/pinn1.py
+
+# Run the network.
+$PINN_CMD -v \
+  --seed=0 \
+  --max_epochs=1000 \
+  --save_model=-1 \
+  --n_layers=1 \
+  --n_hid=10 \
+  --data $PROBLEM_ROOT/$PROBLEM_NAME}_initial_conditions.dat \
+  -w 0.5 \
+  $PROBLEM_ROOT/$PROBLEM_NAME}.py \
+  $PROBLEM_ROOT/$PROBLEM_NAME}_training_grid.dat \
+  >& pinn1.out
