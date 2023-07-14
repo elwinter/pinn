@@ -73,12 +73,12 @@ cmd="$pinn_cmd -v --save_model={{ save_model }} --seed={{ seed }} --max_epochs={
 echo "cmd=$cmd"
 eval $cmd >& {{ run_id }}.out
 
-# # Generate the plots.
-# plot_cmd="$problem_root/${problem_name}_plots.py"
-# echo "plot_cmd=$plot_cmd"
-# cmd="python $plot_cmd"
-# echo "cmd=$cmd"
-# # eval $cmd
+# Generate the plots.
+plot_cmd="$problem_root/${problem_name}_plots.py"
+echo "plot_cmd=$plot_cmd"
+cmd="python $plot_cmd"
+echo "cmd=$cmd"
+eval $cmd >& {{ run_id }}_plots.out
 
 # Note the end time of the run.
 echo "Run '$run_id' ended at `date` on `hostname`."

@@ -93,13 +93,13 @@ P0 = 1.0  # Ambient equilibrium pressure
 T = 1.0   # Ambient temperature
 
 # Wavelength and wavenumber of initial n/vx/Ex perturbations.
-wavelengths = np.array([0.5, 1.0, 2.0])
+wavelengths = np.array([1.0])
 kx = 2*np.pi/wavelengths
 nc = len(kx)  # Number of wave components.
 
 # Steady-state value and perturbation amplitudes for number density.
 n0 = 1.0
-n1_amp = np.array([0.1, 0.1, 0.1])
+n1_amp = np.array([0.1])
 
 # Compute the electron plasma wave angular frequency for each component.                           
 w = plasma.electron_plasma_wave_angular_frequency(n0, T, kx, normalize=True)
