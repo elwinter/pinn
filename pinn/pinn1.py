@@ -154,6 +154,10 @@ def create_command_line_argument_parser():
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument(
+        "--validation_points", default=None,
+        help="Path to optional validation point file (default: %(default)s)."
+    )
+    parser.add_argument(
         "-w", "--w_data", type=float, default=DEFAULT_W_DATA,
         help="Normalized weight for data loss function "
              "(default: %(default)s)."
@@ -213,6 +217,7 @@ def main():
     seed = args.seed
     tol = args.tolerance
     verbose = args.verbose
+    validation_points = args.validation_points
     w_data = args.w_data
     problem_path = args.problem_path
     training_points_path = args.training_points_path
@@ -274,6 +279,19 @@ def main():
             XY_data = XY_data.reshape(1, XY_data.shape[0])
         np.savetxt(os.path.join(output_dir, "XY_data.dat"), XY_data)
 
+    # If provided, read the validation points.
+    if validation_points:
+        if verbose:
+            print("Reading validation points from %s." % validation_points)
+        # Shape is (n, n_dim)
+        X_val = np.loadtxt(validation_points, dtype=precision)
+        # If the data shape is 1-D (only one dimension), reshape to 2-D,
+        # to make compatible with later calls.
+        if len(X_val.shape) == 1:
+            X_val = X_val.reshape(1, X_val.shape[0])
+        np.savetxt(os.path.join(output_dir, "X_val.dat"), X_val)
+        n_val = X_val.shape[0]
+
     # Count the data points.
     n_data = XY_data.shape[0]
     if debug:
@@ -331,6 +349,8 @@ def main():
     # Extract the locations of the supplied data points.
     # Shape (n_data, n_dim)
     X_data = tf.Variable(XY_data[:, :p.n_dim], dtype=precision)
+    if validation_points:
+        X_val = tf.Variable(X_val, dtype=precision)
 
     # Clear the convergence flag to start.
     converged = False
@@ -362,6 +382,14 @@ def main():
                 # Each Tensor has shape (n_data, 1).
                 Y_data = [model(X_data) for model in models]
 
+                # If available, compute the network outputs at all
+                # validation points.
+                # Y_val is a list of tf.Tensor objects.
+                # There are p.n_var Tensors in the list.
+                # Each Tensor has shape (n_val, 1).
+                if validation_points:
+                    Y_val = [model(X_val) for model in models]
+
             # Compute the gradients of the network outputs wrt inputs at all
             # *training* points.
             # dY_dX is a list of tf.Tensor objects.
@@ -369,12 +397,28 @@ def main():
             # Each Tensor has shape (n_train, p.n_dim).
             dY_dX_train = [tape1.gradient(Y, X_train) for Y in Y_train]
 
+            # If available, compute the gradients of the network outputs wrt
+            # inputs at all *validation* points.
+            # dY_dX_val is a list of tf.Tensor objects.
+            # There are p.n_var Tensors in the list.
+            # Each Tensor has shape (n_val, p.n_dim).
+            if validation_points:
+                dY_dX_val = [tape1.gradient(Y_val, X_val) for Y in Y_val]
+
             # Compute the estimates of the differential equations at all
             # training points.
             # G is a list of Tensor objects.
             # There are p.n_var Tensors in the list.
             # Each Tensor has shape (n_train, 1).
             G_train = [f(X_train, Y_train, dY_dX_train) for f in p.de]
+
+            # If available, compute the estimates of the differential equations
+            # at all validation points.
+            # G_val is a list of Tensor objects.
+            # There are p.n_var Tensors in the list.
+            # Each Tensor has shape (n_train, 1).
+            if validation_points:
+                G_val = [f(X_val, Y_val, dY_dX_val) for f in p.de]
 
             # Compute the loss function for the equation residuals at the
             # training points for each model.
@@ -384,6 +428,16 @@ def main():
             Lm_res_train = [
                 tf.math.sqrt(tf.reduce_sum(G**2)/n_train) for G in G_train
             ]
+
+            # If available, compute the loss function for the equation residuals
+            # at the validation points for each model.
+            # Lm_res_val is a list of Tensor objects.
+            # There are p.n_var Tensors in the list.
+            # Each Tensor has shape () (scalar).
+            if validation_points:
+                Lm_res_val = [
+                    tf.math.sqrt(tf.reduce_sum(G**2)/n_val) for G in G_val
+                ]
 
             # Compute the errors for the data points for each model.
             # Em_data is a list of tf.Tensor objects.
@@ -416,6 +470,11 @@ def main():
             # collection.
             # Tensor shape () (scalar).
             L_res = tf.math.reduce_sum(Lm_res_train)
+
+            # If available, compute the total loss for all validation points
+            # for the model collection.
+            # Tensor shape () (scalar).
+            L_res_val = tf.math.reduce_sum(Lm_res_val)
 
             # Compute the total loss for data points for the model collection.
             # Tensor shape () (scalar).
@@ -483,8 +542,12 @@ def main():
                 model.save(path)
 
         if verbose and epoch % 1 == 0:
-            print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
-                  (epoch, L.numpy(), L_res.numpy(), L_data.numpy()))
+            if validation_points:
+                print("Ending epoch %s, (L, L_res, L_data, L_res_val) = (%e, %e, %e, %e)" %
+                      (epoch, L.numpy(), L_res.numpy(), L_data.numpy(), L_res_val.numpy()))
+            else:
+                print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
+                      (epoch, L.numpy(), L_res.numpy(), L_data.numpy()))
 
         # Cancel training if NaN is detected in the overall loss function.
         if np.isnan(L):
