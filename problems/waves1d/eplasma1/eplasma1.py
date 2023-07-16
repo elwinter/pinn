@@ -227,7 +227,7 @@ def pde_E1x(X, Y, del_Y):
     dE1x_dx = tf.reshape(del_E1x[:, 1], (n, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = dE1x_dx + e/eps0*n1
+    G = dE1x_dx - e/eps0*n1
     return G
 
 
