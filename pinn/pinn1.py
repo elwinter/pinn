@@ -474,7 +474,8 @@ def main():
             # If available, compute the total loss for all validation points
             # for the model collection.
             # Tensor shape () (scalar).
-            L_res_val = tf.math.reduce_sum(Lm_res_val)
+            if validation_points:
+                L_res_val = tf.math.reduce_sum(Lm_res_val)
 
             # Compute the total loss for data points for the model collection.
             # Tensor shape () (scalar).
