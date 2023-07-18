@@ -120,6 +120,8 @@ def pde_n1(X, Y, del_Y):
     Evaluate the differential equation for number density perturbation. This
     equation is derived from the linearized equation of mass continuity.
 
+    Reference: Greenwald notes, equation (4.25)
+
     Parameters
     ----------
     X : tf.Variable, shape (n, n_dim)
@@ -160,6 +162,7 @@ def pde_u1x(X, Y, del_Y):
     equation is derived from the linearized equation of conservation of
     x-momentum.
 
+    Reference: Greenwald notes, equation (4.24)
     Parameters
     ----------
     X : tf.Variable, shape (n, n_dim)
@@ -199,6 +202,8 @@ def pde_E1x(X, Y, del_Y):
     Evaluate the differential equation for x-electric field perturbation.
     This equation is derived from the linearized x-component of ???.
 
+    Reference: Greenwald notes, equation (4.23)
+
     Parameters
     ----------
     X : tf.Variable, shape (n, n_dim)
@@ -227,7 +232,7 @@ def pde_E1x(X, Y, del_Y):
     dE1x_dx = tf.reshape(del_E1x[:, 1], (n, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = dE1x_dx - e/eps0*n0*u1x
+    G = dE1x_dx + e/eps0*n1
     return G
 
 
