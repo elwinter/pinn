@@ -93,7 +93,7 @@ P0 = 1.0  # Ambient equilibrium pressure
 T = 1.0   # Ambient temperature
 
 # Wavelength and wavenumber of initial n/vx/Ex perturbations.
-wavelengths = np.array([1.0, 2.0, 3.0])
+wavelengths = np.array([0.5, 1.0, 2.0])
 kx = 2*np.pi/wavelengths
 nc = len(kx)  # Number of wave components.
 
@@ -227,7 +227,7 @@ def pde_E1x(X, Y, del_Y):
     dE1x_dx = tf.reshape(del_E1x[:, 1], (n, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = dE1x_dx - e/eps0*n1
+    G = dE1x_dx + e/eps0*n1
     return G
 
 
