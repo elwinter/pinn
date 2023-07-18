@@ -19,7 +19,7 @@ import numpy as np
 import scipy.constants as spc
 
 
-def electron_plasma_angular_frequency(n:float, normalize:bool=False):
+def electron_plasma_angular_frequency(n: float, normalize: bool = False):
     """Compute the electron plasma angular frequency.
 
     Compute the electron plasma angular frequency.
@@ -43,7 +43,7 @@ def electron_plasma_angular_frequency(n:float, normalize:bool=False):
     return wp
 
 
-def electron_thermal_speed(T:float, normalize:bool=False):
+def electron_thermal_speed(T: float, normalize: bool = False):
     """Compute the electron thermal speed.
 
     Compute the electron thermal speed. This is defined as the RMS
@@ -69,7 +69,8 @@ def electron_thermal_speed(T:float, normalize:bool=False):
     return vth
 
 
-def electron_plasma_wave_angular_frequency(n:float, T:float, k:float, normalize:bool=False):
+def electron_plasma_wave_angular_frequency(n: float, T: float, k: float,
+                                           normalize: bool = False):
     """Compute the electron plasma wave angular frequency.
 
     Compute the electron plasma wave angular frequency.
@@ -96,7 +97,8 @@ def electron_plasma_wave_angular_frequency(n:float, T:float, k:float, normalize:
     return w
 
 
-def electron_plasma_wave_phase_speed(n:float, T:float, k:float, normalize:bool=False):
+def electron_plasma_wave_phase_speed(n: float, T: float, k: float,
+                                     normalize: bool = False):
     """Compute the electron plasma wave phase speed.
 
     Compute the electron plasma wave phase speed.
