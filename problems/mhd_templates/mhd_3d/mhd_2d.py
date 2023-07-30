@@ -15,7 +15,6 @@ independent variables:
     0: t
     1: x
     2: y
-    3: z
 
 NOTE: In all code, below, the following indices are assigned to physical
 dependent variables describing the plasma:
