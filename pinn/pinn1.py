@@ -336,6 +336,8 @@ def main():
     losses_data = []
     # Total loss for all models.
     losses = []
+    # Total loss for all constraints.
+    # losses_constraints = []
 
     # Set the random number seed for reproducibility.
     if verbose:
@@ -457,6 +459,22 @@ def main():
                 for E in Em_data
             ]
 
+            # Compute the estimates of the constraint equations at all
+            # training points.
+            # C_train is a list of Tensor objects.
+            # There are p.n_constraints Tensors in the list.
+            # Each Tensor has shape (n_train, 1).
+            # C_train = [f(X_train, Y_train, dY_dX_train) for f in p.constraints]
+
+            # Compute the loss function for the constraint residuals at the
+            # training points for each constraint.
+            # Lc_train is a list of Tensor objects.
+            # There are p.n_constraints Tensors in the list.
+            # Each Tensor has shape () (scalar).
+            # Lc_train = [
+            #     tf.math.sqrt(tf.reduce_sum(C**2)/n_train) for C in C_train
+            # ]
+
             # Compute the total losses for each model.
             # Lm is a list of Tensor objects.
             # There are p.n_var Tensors in the list.
@@ -481,9 +499,14 @@ def main():
             # Tensor shape () (scalar).
             L_data = tf.math.reduce_sum(Lm_data)
 
+            # Compute the total loss for all training points for the
+            # constraints.
+            # Tensor shape () (scalar).
+            # L_constraints = tf.math.reduce_sum(Lc_train)
+
             # Compute the total loss for all points for the model collection.
             # Tensor shape () (scalar).
-            L = tf.math.reduce_sum(Lm)
+            L = tf.math.reduce_sum(Lm)  # + L_constraints
 
         # Save the current losses.
         # The per-model loss histories are lists of lists of Tensors.
@@ -496,6 +519,7 @@ def main():
         # The total loss histories are lists of scalars.
         losses_res.append(L_res.numpy())
         losses_data.append(L_data.numpy())
+        # losses_constraints.append(L_constraints.numpy())
         losses.append(L.numpy())
 
         # Save the current model weights.
@@ -543,6 +567,7 @@ def main():
                 model.save(path)
 
         if verbose and epoch % 1 == 0:
+            # Include L_constraints if needed.
             if validation_points:
                 print("Ending epoch %s, (L, L_res, L_data, L_res_val) = (%e, %e, %e, %e)" %
                       (epoch, L.numpy(), L_res.numpy(), L_data.numpy(), L_res_val.numpy()))
@@ -577,6 +602,7 @@ def main():
     losses_model = np.array(losses_model)
     losses_res = np.array(losses_res)
     losses_data = np.array(losses_data)
+    # losses_constraints = np.array(losses_constraints)
     losses = np.array(losses)
 
     # Save the loss function histories.
@@ -589,6 +615,10 @@ def main():
     np.savetxt(os.path.join(output_dir, 'losses_model.dat'), losses_model)
     np.savetxt(os.path.join(output_dir, 'losses_res.dat'), losses_res)
     np.savetxt(os.path.join(output_dir, 'losses_data.dat'), losses_data)
+    # np.savetxt(
+    #     os.path.join(output_dir, 'losses_constraints.dat'),
+    #     losses_constraints
+    # )
     np.savetxt(os.path.join(output_dir, 'losses.dat'), losses)
 
     # Compute and save the trained results at training points.
