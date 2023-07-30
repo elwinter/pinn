@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+CODE_BRANCH=waves1d
+echo "CODE_BRANCH =" $CODE_BRANCH
+PINN_ROOT=$HOME/research_local/src/pinn/$CODE_BRANCH/pinn
+echo "PINN_ROOT =" $PINN_ROOT
+PINN_CMD=$PINN_ROOT/pinn/pinn1.py
+echo "PINN_CMD =" $PINN_CMD
+
+PROBLEM_CLASS=linecurrent
+echo "PROBLEM_CLASS =" $PROBLEM_CLASS
+
+NET_ARCHITECTURE=004x100
+echo "NET_ARCHITECTURE =" $NET_ARCHITECTURE
+TRAINING_GRID=050x050x050
+echo "TRAINING_GRID =" $TRAINING_GRID
+W_DATA=0.95
+echo "W_DATA =" $W_DATA
+MAX_EPOCHS=100000
+echo "MAX_EPOCHS =" $MAX_EPOCHS
+SAVE_MODEL=10000
+echo "SAVE_MODEL =" $SAVE_MODEL
+N_LAYERS=4
+N_HID=100
+
+start_dir=`pwd`
+
+# linecurrent_BxBy
+PROBLEM_NAME=linecurrent_BxBy
+echo "PROBLEM_NAME =" $PROBLEM_NAME
+PROBLEM_ROOT=$PINN_ROOT/problems/$PROBLEM_CLASS/$PROBLEM_NAME
+echo "PROBLEM_ROOT =" $PROBLEM_ROOT
+path=$CODE_BRANCH/$PROBLEM_NAME/$NET_ARCHITECTURE/$TRAINING_GRID/$W_DATA/$MAX_EPOCHS
+echo "path =" $path
+mkdir -p $path
+cd $path
+seeds=(60 61 62 63 64)
+for seed in ${seeds[@]}; do
+    echo "Running case for seed =" $seed
+    mkdir $seed
+    cd $seed
+    cmd="$PINN_CMD \
+      --verbose \
+      --seed=$seed \
+      --max_epochs=$MAX_EPOCHS \
+      --save_model=$SAVE_MODEL \
+      --n_layers=$N_LAYERS \
+      --n_hid=$N_HID \
+      --data $PROBLEM_ROOT/${PROBLEM_NAME}_initial_conditions.dat \
+      --w_data=$W_DATA \
+      $PROBLEM_ROOT/${PROBLEM_NAME}.py \
+      $PROBLEM_ROOT/${PROBLEM_NAME}_training_grid.dat \
+      >& pinn1.out"
+    echo $cmd
+    eval "$cmd"
+    cd ..
+done
+cd $start_dir
+pwd

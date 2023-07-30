@@ -1,0 +1,84 @@
+#!/bin/bash
+
+#PBS -N {{ pbs_jobid }}
+#PBS -j oe
+#PBS -l walltime={{ pbs_walltime }}
+#PBS -m abe
+#PBS -M eric.winter@jhuapl.edu
+#PBS -A {{ pbs_account }}
+#PBS -q {{ pbs_queue }}
+#PBS -l {{ pbs_select }}
+
+# Perform PBS-only tasks.
+run_id={{ run_id }}
+if [ "$PBS_JOBID" ]; then
+#  run_id="$PBS_JOBID"
+  echo "The following modules are loaded:"
+  module list
+fi
+
+# Note the start time of the job.
+echo "Run '$run_id' started at `date` on `hostname`."
+
+# Define the run platform and software identifiers.
+run_platform="{{ run_platform }}"
+run_python_environment="{{ run_python_environment }}"
+pinn_branch="{{ run_code_branch }}"
+echo "run_platform=$run_platform"
+echo "run_python_environment=$run_python_environment"
+echo "pinn_branch=$pinn_branch"
+
+# Define the problem identifiers.
+problem_class="{{ run_problem_class }}"
+problem_name="{{ run_problem_name }}"
+echo "problem_class=$problem_class"
+echo "problem_name=$problem_name"
+
+# Define paths.
+research_root="$HOME/$run_platform/research"
+research_src="$research_root/src"
+pinn_root="$research_src/pinn/$pinn_branch/pinn"
+problems_root="$pinn_root/problems"
+problem_class_root="$problems_root/$problem_class"
+problem_root="$problem_class_root/$problem_name"
+echo "research_root=$research_root"
+echo "research_src=$research_src"
+echo "pinn_root=$pinn_root"
+echo "problems_root=$problems_root"
+echo "problem_class_root=$problem_class_root"
+echo "problem_root=$problem_root"
+
+# Load the python environment.
+source $HOME/bin/launch_conda $run_platform
+conda activate $run_python_environment
+echo "The active python environment is:"
+echo $CONDA_PREFIX
+export PYTHONPATH="$PINN_ROOT:$PYTHONPATH"
+
+echo "The active environment variables are:"
+printenv
+
+# Determine input files.
+problem_file="$problem_root/${problem_name}.py"
+problem_data_file="$problem_root/${problem_name}_data.dat"
+problem_training_point_file="$problem_root/${problem_name}_training_grid.dat"
+echo "problem_file=$problem_file"
+echo "problem_data_file=$problem_data_file"
+echo "problem_training_point_file=$problem_training_point_file"
+
+# Run the network.
+pinn_cmd="$pinn_root/pinn/pinn1.py"
+echo "pinn_cmd=$pinn_cmd"
+cmd="$pinn_cmd -v --save_model={{ save_model }} --seed={{ seed }} --max_epochs={{ max_epochs }} --n_layers={{ n_layers }} --n_hid={{ n_hid }} --w_data={{ w }} --data $problem_data_file $problem_file  $problem_training_point_file"
+echo "cmd=$cmd"
+eval $cmd >& {{ run_id }}.out
+
+# Generate the plots.
+plot_cmd="$problem_root/${problem_name}_plots.py"
+echo "plot_cmd=$plot_cmd"
+cmd="python $plot_cmd"
+echo "cmd=$cmd"
+eval $cmd
+
+# Note the end time of the run.
+echo "Run '$run_id' ended at `date` on `hostname`."

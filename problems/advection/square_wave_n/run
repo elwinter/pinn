@@ -1,0 +1,29 @@
+# Load environment.
+# . use_research-3.10
+
+# Created training grid.
+# create_training_points.py 0 1.6 201 0 2 201 > square_wave_n_training_grid.dat
+
+# Create 50x50 initial conditions.
+# square_wave_n_create_initial_conditions.py 0 1.6 201 0 2 201 > square_wave_n_initial_conditions.dat
+
+# Define problem location.
+PINN_ROOT=$HOME/research_local/src/pinn/development/pinn
+PROBLEM_NAME=square_wave_n
+PROBLEM_ROOT=$PINN_ROOT/problems/advection/$PROBLEM_NAME
+
+# Define PINN command.
+PINN_CMD=$PINN_ROOT/pinn/pinn1.py
+
+# Run the network.
+$PINN_CMD -v \
+  --seed=0 \
+  --max_epochs=10000 \
+  --save_model=10000 \
+  --n_layers=4 \
+  --n_hid=100 \
+  --data $PROBLEM_ROOT/$PROBLEM_NAME}_initial_conditions.dat \
+  -w 0.5 \
+  $PROBLEM_ROOT/$PROBLEM_NAME}.py \
+  $PROBLEM_ROOT/$PROBLEM_NAME}_training_grid.dat \
+  >& pinn1.out

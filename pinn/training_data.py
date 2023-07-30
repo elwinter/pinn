@@ -62,37 +62,38 @@ def create_training_points_gridded(ng: np.ndarray, bg: np.ndarray):
     return Xg
 
 
-def create_training_points_random(nr: np.ndarray, br: np.ndarray):
+def create_training_points_random(n: int, b: np.ndarray):
     """Create randomly-spaced training points.
 
     Create a set of training points randomly spaced in n orthogonal dimensions.
-    Flatten the data to a list of of n-dimensional points.
+    Return the data as a ndarray of shape (n, n_dim).
 
     Parameters
     ----------
-    nr : np.ndarray of int, shape (n_dim,)
-        Number of randomly-spaceed points along each dimension.
-    br : np.ndarray of float, shape (n_dim, 2)
+    n : int
+        Number of randomly-spaceed points to create in the domaim.
+    b : np.ndarray of float, shape (n_dim, 2)
         Minimum and maximum (boundary) values for each dimension.
 
     Returns
     -------
-    Xr : np.ndarray, shape (np.prod(ng), n_dim)
+    X : np.ndarray, shape (n, n_dim)
         Array of all training points.
     """
     # Determine the number of dimensions.
-    n_dim = len(nr)
+    n_dim = b.shape[0]
 
-    # Compute the total number of points to create.
-    Nr = np.prod(nr)
+    # Create n random points in each dimension.
+    x_random = []
+    for i in range(n_dim):
+        x = np.random.uniform(low=b[i][0], high=b[i][1], size=n)
+        x_random.append(x)
 
-    # Create Nr random points, each with n_dim coordinates.
-    # These points are from the uniform random half-open interval [0, 1).]
-    # Then map these random points to the corresponding ranges defined in br.
-    Xr = np.random.random(size=(Nr, n_dim))*(br[:, 1] - br[:, 0]) + br[:, 0]
+    # Stack the vectors to get a single array of shape (n, n_dim).
+    X = np.vstack(x_random).T
 
     # Return the training points.
-    return Xr
+    return X
 
 
 if __name__ == '__main__':
