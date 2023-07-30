@@ -87,7 +87,7 @@ n_var = len(dependent_variable_names)
 
 
 # Plasma parameters
-ɣ = 5/3   # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
+ɣ = 5/3   # Adiabatic index = (N + 2)/N, N = # DOF = 3
 m = 1.0   # Plasma article mass
 μ0 = 1.0  # Normalized vacuum permeability
 
