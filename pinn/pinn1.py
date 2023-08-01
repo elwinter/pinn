@@ -47,6 +47,9 @@ DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
 # Default activation function to use in hidden nodes.
 DEFAULT_ACTIVATION = "sigmoid"
 
+# Default number of training samples in batch.
+DEFAULT_BATCH_SIZE = -1
+
 # Default learning rate.
 DEFAULT_LEARNING_RATE = 0.01
 
@@ -98,6 +101,10 @@ def create_command_line_argument_parser():
     parser.add_argument(
         "-a", "--activation", default=DEFAULT_ACTIVATION,
         help="Specify activation function (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=DEFAULT_BATCH_SIZE,
+        help=f"Size of training batches ({DEFAULT_BATCH_SIZE} for single batch)  (default: %(default)s)"
     )
     parser.add_argument(
         "--convcheck", action="store_true",
@@ -204,6 +211,7 @@ def main():
     # Parse the command-line arguments.
     args = parser.parse_args()
     activation = args.activation
+    batch_size = args.batch_size
     convcheck = args.convcheck
     debug = args.debug
     data_points_path = args.data
@@ -357,7 +365,25 @@ def main():
     # Clear the convergence flag to start.
     converged = False
 
-    # Train the models.
+    # Split the training data into randomized batches.
+    batches = []
+    training_point_indices = np.arange(n_train)
+    np.random.shuffle(training_point_indices)
+    i_start = i_stop = 0
+    i_batch = 0
+    while i_stop < n_train:
+        i_stop = i_start + batch_size
+        if i_stop > n_train:
+            i_stop = n_train
+        if verbose:
+            print(f"Creating training batch {i_batch} from {i_start} to {i_stop}.")        
+        batch_indices = training_point_indices[i_start:i_stop]
+        batch_points = X_train.numpy()[batch_indices]
+        batches.append(batch_points)
+        i_start = i_stop
+        i_batch += 1
+
+    # Train the models one batch at a time.
 
     # Record the training start time.
     t_start = datetime.datetime.now()
@@ -570,10 +596,12 @@ def main():
             # Include L_constraints if needed.
             if validation_points:
                 print("Ending epoch %s, (L, L_res, L_data, L_res_val) = (%e, %e, %e, %e)" %
-                      (epoch, L.numpy(), L_res.numpy(), L_data.numpy(), L_res_val.numpy()))
+                      (epoch, L.numpy(), L_res.numpy(), L_data.numpy(), L_res_val.numpy()),
+                      flush=True)
             else:
                 print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
-                      (epoch, L.numpy(), L_res.numpy(), L_data.numpy()))
+                      (epoch, L.numpy(), L_res.numpy(), L_data.numpy()),
+                      flush=True)
 
         # Cancel training if NaN is detected in the overall loss function.
         if np.isnan(L):
