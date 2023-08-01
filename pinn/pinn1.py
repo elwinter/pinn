@@ -379,7 +379,7 @@ def main():
             print(f"Creating training batch {i_batch} from {i_start} to {i_stop}.")        
         batch_indices = training_point_indices[i_start:i_stop]
         batch_points = X_train.numpy()[batch_indices]
-        batches.append(batch_points)
+        batches.append(tf.Variable(batch_points))
         i_start = i_stop
         i_batch += 1
 
