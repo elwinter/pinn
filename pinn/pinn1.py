@@ -40,7 +40,7 @@ from pinn import common
 # Program constants
 
 # Program description.
-DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
+DESCRIPTION = "Solve a set of 1st-order DE using the PINN method."
 
 # Program defaults
 
@@ -70,14 +70,10 @@ DEFAULT_PRECISION = "float32"
 # 0 = do not save model
 # -1 = only save at end
 # n > 0: Save after every n epochs.
-DEFAULT_SAVE_MODEL = 0
+DEFAULT_SAVE_MODEL = -1
 
 # Default random number generator seed.
 DEFAULT_SEED = 0
-
-# Default absolute tolerance for consecutive loss function values to indicate
-# convergence.
-DEFAULT_TOLERANCE = 1e-6
 
 # Default normalized weight to apply to the boundary condition loss function.
 DEFAULT_W_DATA = 0.0
@@ -96,6 +92,10 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(DESCRIPTION)
     parser.add_argument(
@@ -104,11 +104,8 @@ def create_command_line_argument_parser():
     )
     parser.add_argument(
         "--batch_size", type=int, default=DEFAULT_BATCH_SIZE,
-        help=f"Size of training batches ({DEFAULT_BATCH_SIZE} for single batch)  (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--convcheck", action="store_true",
-        help="Perform convergence check (default: %(default)s)."
+        help=f"Size of training batches ({DEFAULT_BATCH_SIZE} "
+        "for single batch)  (default: %(default)s)"
     )
     parser.add_argument(
         "-d", "--debug", action="store_true",
@@ -152,17 +149,12 @@ def create_command_line_argument_parser():
         help="Seed for random number generator (default: %(default)s)"
     )
     parser.add_argument(
-        "--tolerance", type=float, default=DEFAULT_TOLERANCE,
-        help="Absolute loss function convergence tolerance "
-             "(default: %(default)s)"
+        "--validation", default=None,
+        help="Path to optional validation point file (default: %(default)s)."
     )
     parser.add_argument(
         "-v", "--verbose", action="store_true",
         help="Print verbose output (default: %(default)s)."
-    )
-    parser.add_argument(
-        "--validation_points", default=None,
-        help="Path to optional validation point file (default: %(default)s)."
     )
     parser.add_argument(
         "-w", "--w_data", type=float, default=DEFAULT_W_DATA,
@@ -170,11 +162,11 @@ def create_command_line_argument_parser():
              "(default: %(default)s)."
     )
     parser.add_argument(
-        "problem_path",
+        "problem",
         help="Path to problem description file."
     )
     parser.add_argument(
-        "training_points_path",
+        "training_points",
         help="Path to file containing training points."
     )
     return parser
@@ -194,6 +186,10 @@ def import_problem(problem_path):
     -------
     p : module
         Module object for problem definition.
+
+    Raises
+    ------
+    None
     """
     problem_name = os.path.splitext(os.path.split(problem_path)[-1])[-2]
     spec = importlib.util.spec_from_file_location(problem_name, problem_path)
@@ -212,9 +208,8 @@ def main():
     args = parser.parse_args()
     activation = args.activation
     batch_size = args.batch_size
-    convcheck = args.convcheck
     debug = args.debug
-    data_points_path = args.data
+    data = args.data
     learning_rate = args.learning_rate
     max_epochs = args.max_epochs
     H = args.n_hid
@@ -223,33 +218,32 @@ def main():
     save_model = args.save_model
     save_weights = args.save_weights
     seed = args.seed
-    tol = args.tolerance
+    validation = args.validation
     verbose = args.verbose
-    validation_points = args.validation_points
     w_data = args.w_data
-    problem_path = args.problem_path
-    training_points_path = args.training_points_path
+    problem_path = args.problem
+    training_points = args.training_points
     if debug:
-        print("args = %s" % args)
+        print(f"args = {args}")
 
     # Set the backend TensorFlow precision.
     if verbose:
-        print("Setting TensorFlow precision to %s." % precision)
+        print(f"Setting TensorFlow precision to {precision}.")
     tf.keras.backend.set_floatx(precision)
 
     # Import the problem to solve.
     if verbose:
-        print("Importing module for problem '%s'." % problem_path)
+        print(f"Importing module for problem {problem_path}.")
     p = import_problem(problem_path)
     if debug:
-        print("p = %s" % p)
+        print(f"p = {p}")
 
     # Set up the output directory under the current directory.
     # An exception is raised if the directory already exists.
     output_dir = os.path.join(".", p.__name__)
     if debug:
-        print("output_dir = %s" % output_dir)
-    os.mkdir(output_dir)
+        print(f"output_dir = {output_dir}")
+    # os.mkdir(output_dir)
 
     # Record system information, network parameters, and problem definition.
     if verbose:
@@ -261,111 +255,112 @@ def main():
 
     # Read the training points.
     if verbose:
-        print("Reading training points from %s." % training_points_path)
-    # Shape is (n_train, n_dim)
-    X_train = np.loadtxt(training_points_path, dtype=precision)
+        print(f"Reading training points from {training_points}.")
+    # X_train is np.ndarray of shape (n_train, n_dim) OR (n_train,)
+    X_train = np.loadtxt(training_points, dtype=precision)
+    if debug:
+        print(f"X_train = {X_train}")
     # If the data shape is 1-D (only one dimension), reshape to 2-D,
     # to make compatible with later calls.
     if len(X_train.shape) == 1:
         X_train = X_train.reshape(X_train.shape[0], 1)
+        if debug:
+            print(f"Reshaped X_train = {X_train}")
     np.savetxt(os.path.join(output_dir, "X_train.dat"), X_train)
 
     # Count the training points.
     n_train = X_train.shape[0]
     if debug:
-        print("n_train = %s" % n_train)
+        print(f"n_train = {n_train}")
 
-    # If provided, read the known data, including boundary conditions.
-    if data_points_path:
+    # Determine the number of problem dimensions.
+    n_dim = X_train.shape[1]
+    if debug:
+        print(f"n_dim = {n_dim}")
+
+    # If provided, read and count the additional training data, including
+    # boundary conditions.
+    if data:
         if verbose:
-            print("Reading known data from %s." % data_points_path)
+            print(f"Reading additional training data from {data}.")
         # Shape is (n_data, n_dim + n_var)
-        XY_data = np.loadtxt(data_points_path, dtype=precision)
-        # If the data shape is 1-D (only one dimension), reshape to 2-D,
+        XY_data = np.loadtxt(data, dtype=precision)
+        if debug:
+            print(f"XY_data = {XY_data}")
+        # If the data shape is 1-D (only one data point), reshape to 2-D,
         # to make compatible with later calls.
         if len(XY_data.shape) == 1:
             XY_data = XY_data.reshape(1, XY_data.shape[0])
+            if debug:
+                print(f"Reshaped XY_data = {XY_data}")
         np.savetxt(os.path.join(output_dir, "XY_data.dat"), XY_data)
+        # Extract the locations of the supplied data points.
+        # Shape (n_data, n_dim)
+        X_data = XY_data[:, :p.n_dim]
+        if debug:
+            print(f"X_data = {X_data}")
+        n_data = XY_data.shape[0]
+        if debug:
+            print(f"n_data = {n_data}")
 
-    # If provided, read the validation points.
-    if validation_points:
+    # If provided, read and count the validation points.
+    if validation:
         if verbose:
-            print("Reading validation points from %s." % validation_points)
+            print(f"Reading validation points from {validation}.")
         # Shape is (n, n_dim)
-        X_val = np.loadtxt(validation_points, dtype=precision)
+        X_val = np.loadtxt(validation, dtype=precision)
+        if debug:
+            print(f"X_val = {X_val}")
         # If the data shape is 1-D (only one dimension), reshape to 2-D,
         # to make compatible with later calls.
         if len(X_val.shape) == 1:
-            X_val = X_val.reshape(1, X_val.shape[0])
+            X_val = X_val.reshape(X_val.shape[0], 1)
+            if debug:
+                print(f"Reshaped X_val = {X_val}")
         np.savetxt(os.path.join(output_dir, "X_val.dat"), X_val)
         n_val = X_val.shape[0]
 
-    # Count the data points.
-    n_data = XY_data.shape[0]
-    if debug:
-        print("n_data = %s" % n_data)
-
-    # Compute the normalized weight for the equation residuals.
+    # Compute the normalized weight for the equation residuals, based on the
+    # value of the data weight.
     w_res = 1.0 - w_data
     if debug:
-        print("w_data = %s" % w_data)
-        print("w_res = %s" % w_res)
+        print(f"w_res = {w_res}")
+        print(f"w_data = {w_data}")
 
-    # Build one model for each equation.
+    # Build one model for each differential equation defined in the problem.
     if verbose:
-        print("Creating neural networks.")
+        print("Creating neural networks models.")
     models = []
     for i in range(p.n_var):
         if verbose:
-            print("Creating neural network for %s." %
-                  p.dependent_variable_names[i])
+            print(f"Creating model for {p.dependent_variable_names[i]}.")
         model = common.build_model(n_layers, H, activation)
         models.append(model)
     if debug:
-        print("models = %s" % models)
+        print(f"models = {models}")
 
     # Create the optimizer.
     if verbose:
         print("Creating Adam optimizer.")
     optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=learning_rate)
     if debug:
-        print("optimizer = %s" % optimizer)
-
-    # Create loss history variables.
-    # Loss for each model for equation residuals.
-    losses_model_res = []
-    # Loss for each model for data points.
-    losses_model_data = []
-    # Total loss for each model.
-    losses_model = []
-    # Total loss for all models for equation residuals.
-    losses_res = []
-    # Total loss for all models for data points.
-    losses_data = []
-    # Total loss for all models.
-    losses = []
-    # Total loss for all constraints.
-    # losses_constraints = []
+        print(f"optimizer = {optimizer}")
 
     # Set the random number seed for reproducibility.
     if verbose:
-        print("Seeding random number generator with %s." % seed)
+        print(f"Seeding random number generator with {seed}.")
     tf.random.set_seed(seed)
 
-    # Convert the training data Variables for convenience.
-    # The NumPy arrays must be converted to TensorFlow.
-    # Shape (n_train, n_dim)
-    X_train = tf.Variable(X_train, dtype=precision)
-    # Extract the locations of the supplied data points.
-    # Shape (n_data, n_dim)
-    X_data = tf.Variable(XY_data[:, :p.n_dim], dtype=precision)
-    if validation_points:
-        X_val = tf.Variable(X_val, dtype=precision)
-
-    # Clear the convergence flag to start.
-    converged = False
+    # If a single bach was requested, compute the batch size.
+    if batch_size == -1:
+        batch_size = n_train
+        if debug:
+            print(f"Computed batch_size = {batch_size}")
 
     # Split the training data into randomized batches.
+    # Convert each batch to a tf.Variable for use in gradients.
+    # I verified separately that this algorithm results in the original
+    # training set being equally distributed among the batches.
     batches = []
     training_point_indices = np.arange(n_train)
     np.random.shuffle(training_point_indices)
@@ -376,278 +371,186 @@ def main():
         if i_stop > n_train:
             i_stop = n_train
         if verbose:
-            print(f"Creating training batch {i_batch} from {i_start} to {i_stop}.")        
+            print(f"Creating training batch {i_batch} from "
+                  f"{i_start} to {i_stop}.")
         batch_indices = training_point_indices[i_start:i_stop]
-        batch_points = X_train.numpy()[batch_indices]
+        batch_points = X_train[batch_indices]
+        path = os.path.join(output_dir, f"batch_{i_batch:04d}.dat")
+        np.savetxt(path, batch_points)
         batches.append(tf.Variable(batch_points))
         i_start = i_stop
         i_batch += 1
 
-    # Train the models one batch at a time.
+    # Convert additional data locations to tf.Variable.
+    if data:
+        X_data = tf.Variable(X_data)
+
+    # Convert validation locations to tf.Variable.
+    if validation:
+        X_val = tf.Variable(X_val)
 
     # Record the training start time.
     t_start = datetime.datetime.now()
     if verbose:
-        print("Training started at", t_start)
+        print(f"Training started at {t_start}.")
 
     for epoch in range(max_epochs):
+        if debug:
+            print(f"Starting epoch {epoch}.")
 
-        # Run the forward pass.
-        # tape0 is for computing gradients wrt network parameters.
-        # tape1 is for computing 1st-order derivatives of outputs wrt inputs.
-        with tf.GradientTape(persistent=True) as tape0:
-            with tf.GradientTape(persistent=True) as tape1:
+        # Step 1: Train using the residuals at each training point.
+        for (i_batch, X_batch) in enumerate(batches):
+            if debug:
+                print(f"Starting training with batch {i_batch}.")
 
-                # Compute the network outputs at all training points.
-                # Y is a list of tf.Tensor objects.
-                # There are p.n_var Tensors in the list.
-                # Each Tensor has shape (n_train, 1).
-                Y_train = [model(X_train) for model in models]
+            # Determine the length of this batch.
+            n_batch = X_batch.shape[0]
+            if debug:
+                print(f"n_batch = {n_batch}")
+
+            # Run the forward pass for this batch.
+            # tape0 is for computing gradients wrt network parameters.
+            # tape1 is for computing 1st-order derivatives of outputs wrt
+            # inputs.
+            with tf.GradientTape(persistent=True) as tape0:
+                with tf.GradientTape(persistent=True) as tape1:
+
+                    # Compute the network outputs at all batch points.
+                    # Y_batch is a list of tf.Tensor objects.
+                    # There are p.n_var Tensors in the list (one per model).
+                    # Each Tensor has shape (n_batch, 1).
+                    Y_batch = [model(X_batch) for model in models]
+                    if debug:
+                        print(f"Y_batch = {Y_batch}")
+
+                # Compute the gradients of the network outputs wrt inputs for
+                # this batch.
+                # dY_dX_batch is a list of tf.Tensor objects.
+                # There are p.n_var Tensors in the list (one per model).
+                # Each Tensor has shape (n_batch, p.n_dim).
+                dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
+                if debug:
+                    print(f"dY_dX_batch = {dY_dX_batch}")
+
+                # Compute the values of the differential equations at all
+                # batch points.
+                # G_batch is a list of Tensor objects.
+                # There are p.n_var Tensors in the list (one per model).
+                # Each Tensor has shape (n_batch, 1).
+                G_batch = [f(X_batch, Y_batch, dY_dX_batch) for f in p.de]
+                if debug:
+                    print(f"G_batch = {G_batch}")
+
+                # Compute the loss function for the equation residuals at the
+                # batch training points for each model.
+                # loss_model_residual_batch is a list of Tensor objects.
+                # There are p.n_var Tensors in the list (one per model).
+                # Each Tensor has shape () (scalar).
+                loss_model_residual_batch = [
+                    tf.math.sqrt(tf.reduce_sum(G**2)/n_batch) for G in G_batch
+                ]
+                if debug:
+                    print(f"loss_model_residual_batch = "
+                          f"{loss_model_residual_batch}")
+
+                # Compute the aggregate loss over all models.
+                L_batch = w_res*tf.math.reduce_sum(loss_model_residual_batch)
+                if debug:
+                    print(f"L_batch = {L_batch}")
+
+            # Compute the gradient of the loss function wrt the network
+            # parameters.
+            # pgrad is a list of lists of Tensor objects.
+            # There are p.n_var sub-lists in the top-level list.
+            # There are 3 Tensors in each sub-list, with shapes:
+            # Input weights: (H, p.n_dim)
+            # Input biases: (H,)
+            # Output weights: (H, 1)
+            # Each Tensor is shaped based on model.trainable_variables.
+            pgrad_batch = [
+                tape0.gradient(L_batch, model.trainable_variables)
+                for model in models
+            ]
+            if debug:
+                print(f"pgrad_batch = {pgrad_batch}")
+
+            # Update the parameters for this epoch.
+            for (g, m) in zip(pgrad_batch, models):
+                optimizer.apply_gradients(zip(g, m.trainable_variables))
+
+        # Step 2: Train using any additional data points.
+        if data:
+
+            # Run the forward pass for the data points in a single batch.
+            # tape0 is for computing gradients wrt network parameters.
+            with tf.GradientTape(persistent=True) as tape0:
 
                 # Compute the network outputs at the data points.
                 # Y_data is a list of tf.Tensor objects.
-                # There are p.n_var Tensors in the list.
+                # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_data, 1).
                 Y_data = [model(X_data) for model in models]
 
-                # If available, compute the network outputs at all
-                # validation points.
-                # Y_val is a list of tf.Tensor objects.
+                # Compute the errors for the data points for each model.
+                # Em_data is a list of tf.Tensor objects.
                 # There are p.n_var Tensors in the list.
-                # Each Tensor has shape (n_val, 1).
-                if validation_points:
-                    Y_val = [model(X_val) for model in models]
-
-            # Compute the gradients of the network outputs wrt inputs at all
-            # *training* points.
-            # dY_dX is a list of tf.Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape (n_train, p.n_dim).
-            dY_dX_train = [tape1.gradient(Y, X_train) for Y in Y_train]
-
-            # If available, compute the gradients of the network outputs wrt
-            # inputs at all *validation* points.
-            # dY_dX_val is a list of tf.Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape (n_val, p.n_dim).
-            if validation_points:
-                dY_dX_val = [tape1.gradient(Y_val, X_val) for Y in Y_val]
-
-            # Compute the estimates of the differential equations at all
-            # training points.
-            # G is a list of Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape (n_train, 1).
-            G_train = [f(X_train, Y_train, dY_dX_train) for f in p.de]
-
-            # If available, compute the estimates of the differential equations
-            # at all validation points.
-            # G_val is a list of Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape (n_train, 1).
-            if validation_points:
-                G_val = [f(X_val, Y_val, dY_dX_val) for f in p.de]
-
-            # Compute the loss function for the equation residuals at the
-            # training points for each model.
-            # Lm_res_train is a list of Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape () (scalar).
-            Lm_res_train = [
-                tf.math.sqrt(tf.reduce_sum(G**2)/n_train) for G in G_train
-            ]
-
-            # If available, compute the loss function for the equation residuals
-            # at the validation points for each model.
-            # Lm_res_val is a list of Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape () (scalar).
-            if validation_points:
-                Lm_res_val = [
-                    tf.math.sqrt(tf.reduce_sum(G**2)/n_val) for G in G_val
+                # Each Tensor has shape (n_data, 1).
+                Em_data = [
+                    Y_data[i] - tf.reshape(XY_data[:, p.n_dim + i], (n_data, 1))
+                    for i in range(p.n_var)
                 ]
 
-            # Compute the errors for the data points for each model.
-            # Em_data is a list of tf.Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape (n_data, 1).
-            Em_data = [
-                Y_data[i] - tf.reshape(XY_data[:, p.n_dim + i], (n_data, 1))
-                for i in range(p.n_var)
+                # Compute the loss functions for the data points for each
+                # model.
+                # Lm_data is a list of Tensor objects.
+                # There are p.n_var Tensors in the list.
+                # Each Tensor has shape () (scalar).
+                Lm_data = [
+                    tf.math.sqrt(tf.reduce_sum(E**2)/n_data)
+                    for E in Em_data
+                ]
+
+                # Compute the total data loss function.
+                L_data = w_data*tf.reduce_sum(Lm_data)
+
+            # Compute the gradient of the data loss wrt the network parameters.
+            # pgrad_data is a list of lists of Tensor objects.
+            # There are p.n_var sub-lists in the top-level list.
+            # There are 3 Tensors in each sub-list, with shapes:
+            # Input weights: (H, p.n_dim)
+            # Input biases: (H,)
+            # Output weights: (H, 1)
+            # Each Tensor is shaped based on model.trainable_variables.
+            pgrad_data = [
+                tape0.gradient(L_data, model.trainable_variables)
+                for model in models
             ]
+            if debug:
+                print(f"pgrad_data = {pgrad_data}")
 
-            # Compute the loss functions for the data points for each model.
-            # Lm_data is a list of Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape () (scalar).
-            Lm_data = [
-                tf.math.sqrt(tf.reduce_sum(E**2)/n_data)
-                for E in Em_data
-            ]
+            # Update the parameters for this data.
+            for (g, m) in zip(pgrad_data, models):
+                optimizer.apply_gradients(zip(g, m.trainable_variables))
 
-            # Compute the estimates of the constraint equations at all
-            # training points.
-            # C_train is a list of Tensor objects.
-            # There are p.n_constraints Tensors in the list.
-            # Each Tensor has shape (n_train, 1).
-            # C_train = [f(X_train, Y_train, dY_dX_train) for f in p.constraints]
+        if verbose:
+            print(f"epoch = {epoch}, L_batch = {L_batch}, L_data = {L_data}")
 
-            # Compute the loss function for the constraint residuals at the
-            # training points for each constraint.
-            # Lc_train is a list of Tensor objects.
-            # There are p.n_constraints Tensors in the list.
-            # Each Tensor has shape () (scalar).
-            # Lc_train = [
-            #     tf.math.sqrt(tf.reduce_sum(C**2)/n_train) for C in C_train
-            # ]
-
-            # Compute the total losses for each model.
-            # Lm is a list of Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape () (scalar).
-            Lm = [
-                w_res*loss_res + w_data*loss_data
-                for (loss_res, loss_data) in zip(Lm_res_train, Lm_data)
-            ]
-
-            # Compute the total loss for all training points for the model
-            # collection.
-            # Tensor shape () (scalar).
-            L_res = tf.math.reduce_sum(Lm_res_train)
-
-            # If available, compute the total loss for all validation points
-            # for the model collection.
-            # Tensor shape () (scalar).
-            if validation_points:
-                L_res_val = tf.math.reduce_sum(Lm_res_val)
-
-            # Compute the total loss for data points for the model collection.
-            # Tensor shape () (scalar).
-            L_data = tf.math.reduce_sum(Lm_data)
-
-            # Compute the total loss for all training points for the
-            # constraints.
-            # Tensor shape () (scalar).
-            # L_constraints = tf.math.reduce_sum(Lc_train)
-
-            # Compute the total loss for all points for the model collection.
-            # Tensor shape () (scalar).
-            L = tf.math.reduce_sum(Lm)  # + L_constraints
-
-        # Save the current losses.
-        # The per-model loss histories are lists of lists of Tensors.
-        # The top-level list has length n_epochs.
-        # Each sub-list has length p.n_var.
-        # Each Tensor is shape () (scalar).
-        losses_model_res.append(Lm_res_train)
-        losses_model_data.append(Lm_data)
-        losses_model.append(Lm)
-        # The total loss histories are lists of scalars.
-        losses_res.append(L_res.numpy())
-        losses_data.append(L_data.numpy())
-        # losses_constraints.append(L_constraints.numpy())
-        losses.append(L.numpy())
-
-        # Save the current model weights.
-        if save_weights:
-            for (i, model) in enumerate(models):
-                model.save_weights(
-                    os.path.join(
-                        output_dir, "weights_" + p.dependent_variable_names[i],
-                        "weights_%06d" % epoch
-                    )
-                )
-
-        # Check for convergence.
-        if convcheck:
-            if epoch > 1:
-                loss_delta = losses[-1] - losses[-2]
-                if abs(loss_delta) <= tol:
-                    converged = True
-                    break
-
-        # Compute the gradient of the loss function wrt the network parameters.
-        # pgrad is a list of lists of Tensor objects.
-        # There are p.n_var sub-lists in the top-level list.
-        # There are 3 Tensors in each sub-list, with shapes:
-        # Input weights: (H, p.n_dim)
-        # Input biases: (H,)
-        # Output weights: (H, 1)
-        # Each Tensor is shaped based on model.trainable_variables.
-        pgrad = [
-            tape0.gradient(L, model.trainable_variables)
-            for model in models
-        ]
-
-        # Update the parameters for this epoch.
-        for (g, m) in zip(pgrad, models):
-            optimizer.apply_gradients(zip(g, m.trainable_variables))
-
-        # Save the trained models.
-        if save_model > 0 and epoch % save_model == 0:
-            for (i, model) in enumerate(models):
-                path = os.path.join(
-                    output_dir, "models", f"{epoch}",
-                    f"model_{p.dependent_variable_names[i]}"
-                )
-                model.save(path)
-
-        if verbose and epoch % 1 == 0:
-            # Include L_constraints if needed.
-            if validation_points:
-                print("Ending epoch %s, (L, L_res, L_data, L_res_val) = (%e, %e, %e, %e)" %
-                      (epoch, L.numpy(), L_res.numpy(), L_data.numpy(), L_res_val.numpy()),
-                      flush=True)
-            else:
-                print("Ending epoch %s, (L, L_res, L_data) = (%e, %e, %e)" %
-                      (epoch, L.numpy(), L_res.numpy(), L_data.numpy()),
-                      flush=True)
-
-        # Cancel training if NaN is detected in the overall loss function.
-        if np.isnan(L):
-            if verbose:
-                print(f"L = {np.nan} at epoch {epoch}, aborting training.")
-            break
+        if debug:
+            print(f"Ending epoch {epoch}.")
 
     # Count the last epoch.
     n_epochs = epoch + 1
+    if debug:
+        print(f"n_epochs = {n_epochs}")
 
     # Record the training end time.
     t_stop = datetime.datetime.now()
     t_elapsed = t_stop - t_start
     if verbose:
-        print("Training stopped at", t_stop)
-        print(
-            "Total training time was %s seconds." % t_elapsed.total_seconds()
-        )
-        print("Epochs: %d" % n_epochs)
-        print("Final value of loss function: %f" % L)
-        print("converged = %s" % converged)
-
-    # Convert the loss function histories to numpy arrays.
-    losses_model_res = np.array(losses_model_res)
-    losses_model_data = np.array(losses_model_data)
-    losses_model = np.array(losses_model)
-    losses_res = np.array(losses_res)
-    losses_data = np.array(losses_data)
-    # losses_constraints = np.array(losses_constraints)
-    losses = np.array(losses)
-
-    # Save the loss function histories.
-    if verbose:
-        print("Saving loss function histories.")
-    np.savetxt(os.path.join(output_dir, 'losses_model_res.dat'),
-               losses_model_res)
-    np.savetxt(os.path.join(output_dir, 'losses_model_data.dat'),
-               losses_model_data)
-    np.savetxt(os.path.join(output_dir, 'losses_model.dat'), losses_model)
-    np.savetxt(os.path.join(output_dir, 'losses_res.dat'), losses_res)
-    np.savetxt(os.path.join(output_dir, 'losses_data.dat'), losses_data)
-    # np.savetxt(
-    #     os.path.join(output_dir, 'losses_constraints.dat'),
-    #     losses_constraints
-    # )
-    np.savetxt(os.path.join(output_dir, 'losses.dat'), losses)
+        print(f"Training stopped at {t_stop}.")
+        print(f"Total training time: {t_elapsed.total_seconds()} seconds")
+        print(f"Epochs: {n_epochs}")
+        # print(f"Final value of loss function: {loss_residual_batch}")
 
     # Compute and save the trained results at training points.
     if verbose:
@@ -656,22 +559,13 @@ def main():
     with tf.GradientTape(persistent=True) as tape1:
         Y_train = [model(X_train) for model in models]
     # Shapes are (n_train, n_dim)
-    dY_dX_train = [tape1.gradient(Y, X_train) for Y in Y_train]
+    # dY_dX_train = [tape1.gradient(Y, X_train) for Y in Y_train]
     for i in range(p.n_var):
         np.savetxt(os.path.join(output_dir, "%s_train.dat" %
                    p.dependent_variable_names[i]),
                    tf.reshape(Y_train[i], (n_train,)))
-        np.savetxt(os.path.join(output_dir, "del_%s_train.dat" %
-                   p.dependent_variable_names[i]), dY_dX_train[i])
-
-    # Save the trained models.
-    if save_model != 0:
-        for (i, model) in enumerate(models):
-            path = os.path.join(
-                output_dir, "models", f"{n_epochs}",
-                f"model_{p.dependent_variable_names[i]}"
-            )
-            model.save(path)
+        # np.savetxt(os.path.join(output_dir, "del_%s_train.dat" %
+        #            p.dependent_variable_names[i]), dY_dX_train[i])
 
 
 if __name__ == "__main__":
