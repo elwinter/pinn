@@ -107,7 +107,7 @@ def create_command_line_argument_parser():
         help=f"Size of training batches ({DEFAULT_BATCH_SIZE} "
         "for single batch)  (default: %(default)s)"
     )
-    parser.add_argument()
+    parser.add_argument(
         "--convcheck", action="store_true",
         help="Perform convergence check (default: %(default)s)."
     )
@@ -162,7 +162,7 @@ def create_command_line_argument_parser():
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument(
-        "--validation_points", default=None,
+        "--validation", default=None,
         help="Path to optional validation point file (default: %(default)s)."
     )
     parser.add_argument(
@@ -175,7 +175,7 @@ def create_command_line_argument_parser():
         help="Path to problem description file."
     )
     parser.add_argument(
-        "training_points_path",
+        "training_points",
         help="Path to file containing training points."
     )
     return parser
@@ -215,7 +215,7 @@ def main():
     batch_size = args.batch_size
     convcheck = args.convcheck
     debug = args.debug
-    data_points_path = args.data
+    data = args.data
     learning_rate = args.learning_rate
     max_epochs = args.max_epochs
     H = args.n_hid
@@ -226,10 +226,10 @@ def main():
     seed = args.seed
     tol = args.tolerance
     verbose = args.verbose
-    validation_points = args.validation_points
+    validation = args.validation
     w_data = args.w_data
     problem_path = args.problem_path
-    training_points_path = args.training_points_path
+    training_points = args.training_points
     if debug:
         print(f"args = {args}")
 
