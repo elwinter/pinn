@@ -14,7 +14,7 @@ The initial conditions are:
 
 n = n0 = 1.0
 if r <= R_blast:
-    P = 1.0
+    P = 10.0
 else:
     P = 0.1
 ux = 0
@@ -40,7 +40,7 @@ import numpy as np
 description = "Compute data for bw1d_nPux problem."
 
 # Constants
-P_blast = 1.0
+P_blast = 10.0  # Blast pressure
 R_blast = 0.1   # Radius of initial blast.
 n0 = 1.0   # Number density at start
 P0 = 0.1   # Pressure at start
