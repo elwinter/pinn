@@ -1,0 +1,54 @@
+# Load environment.
+# conda activate research-3.10
+
+# Create 101x201 training grid.
+# create_training_points.py 0 1 101 -1 1 201 > bw1d_nPux_101_201_training_grid.dat
+
+# Create data.
+# bw1d_nPux_create_data.py 0 1 101 -1 1 201 > bw1d_nPux_101_201_data.dat
+
+# Define problem.
+platform="ventura"
+pinn_branch="bw1d"
+problem_class="bw3d"
+problem_name="bw1d_nPux"
+problem_resolution="101_201"
+echo "platform=$platform"
+echo "pinn_branch=$pinn_branch"
+echo "problem_class=$problem_class"
+echo "problem_name=$problem_name"
+echo "problem_resolution=$problem_resolution"
+
+# Compute paths.
+pinn_root="$HOME/$platform/research/src/pinn/$pinn_branch/pinn"
+problem_root="$pinn_root/problems/$problem_class/$problem_name"
+pinn_cmd="$pinn_root/pinn/pinn1.py"
+problem_file="$problem_root/${problem_name}.py"
+training_grid_file="$problem_root/${problem_name}_${problem_resolution}_training_grid.dat"
+data_file="$problem_root/${problem_name}_${problem_resolution}_data.dat"
+echo "pinn_root=$pinn_root"
+echo "problem_root=$problem_root"
+echo "pinn_cmd=$pinn_cmd"
+echo "problem_file=$problem_file"
+echo "training_grid_file=$training_grid_file"
+echo "data_file=$data_file"
+ls $pinn_root
+ls $problem_root
+ls $pinn_cmd
+ls $problem_file
+ls $training_grid_file
+ls $data_file
+
+# Run the network.
+cmd="$pinn_cmd -d -v \
+  --seed=0 \
+  --max_epochs=100 \
+  --save_model=-1 \
+  --n_layers=1 \
+  --n_hid=10 \
+  --data $data_file \
+  -w 0.10 \
+  $problem_file \
+  $training_grid_file"
+echo "cmd=$cmd"
+$cmd

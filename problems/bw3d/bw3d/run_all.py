@@ -13,7 +13,7 @@ import numpy as np
 
 
 PROBLEM_CLASS = "bw3d"
-PROBLEM_NAME = "bw3d"
+PROBLEM_NAME = "bw3d_nPuxuyuzBxByBz"
 # print(f"PROBLEM_CLASS = {PROBLEM_CLASS}")
 # print(f"PROBLEM_NAME = {PROBLEM_NAME}")
 
