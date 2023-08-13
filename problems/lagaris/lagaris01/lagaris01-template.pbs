@@ -1,71 +1,41 @@
 #!/bin/bash
 
-#PBS -N {{ pbs_runid }}
+#PBS -N {{ run_id }}
 #PBS -j oe
 #PBS -l walltime={{ pbs_walltime }}
 #PBS -m abe
-#PBS -M eric.winter@jhuapl.edu
 #PBS -A {{ pbs_account }}
 #PBS -q {{ pbs_queue }}
 #PBS -l {{ pbs_select }}
 
-echo "Job $PBS_JOBID started at `date` on `hostname`."
+# Perform PBS-only tasks.
+run_id={{ run_id }}
+if [ "$PBS_JOBID" ]; then
+  echo "The following modules are loaded:"
+  module list
+fi
 
-# Define platform and software identifiers.
-hpc_system={{ run_hpc_system }}
-python_environment={{ run_python_environment }}
-pinn_branch={{ run_code_branch }}
-problem_class={{ run_problem_class }}
-problem_name={{ run_problem_name }}
-echo "hpc_system=$hpc_system"
-echo "python_environment=$python_environment"
-echo "pinn_branch=$pinn_branch"
-echo "problem_class=$problem_class"
-echo "problem_name=$problem_name"
+# Define the pinn software installation to use.
+pinn_root={{ pinn_root }}
+echo "pinn_root=$pinn_root"
 
-# Define directories.
-research_root=$HOME/$hpc_system/research
-research_src=$research_root/src
-pinn_root=$research_src/pinn/$pinn_branch/pinn
-problems_root=$pinn_root/problems
-problem_class_root=$problems_root/$problem_class
-problem_root=$problem_class_root/$problem_name
-
-echo "The following modules are loaded:"
-module list
-
-# Load environment.
-source $HOME/bin/launch_conda $hpc_system
-source $HOME/bin/use_research $hpc_system
-
-# Define PINN command.
-pinn_cmd=$pinn_root/pinn/pinn1.py
-
-echo "The active environment variables are:"
-printenv
-
+# Load the python environment.
+source $HOME/bin/launch_conda
+conda activate {{ python_environment }}
 echo "The active python environment is:"
 echo $CONDA_PREFIX
 
-# Determine input files.
-PROBLEM_FILE=$problem_root/${problem_name}.py
-PROBLEM_DATA_FILE=$problem_root/${problem_name}_initial_conditions.dat
-PROBLEM_TRAINING_POINT_FILE=$problem_root/${problem_name}_training_grid.dat
+# Add the pinn installation directory to the python module path.
+export PYTHONPATH="$pinn_root:$PYTHONPATH"
+
+# Define the PINN command.
+pinn_cmd=$pinn_root/pinn/pinn1.py
+echo "pinn_cmd=$pinn_cmd"
+
+# echo "The active environment variables are:"
+# printenv
 
 # Run the network.
-$pinn_cmd -v \
-  --save_model={{ save_model }} \
-  --seed={{ seed }} \
-  --max_epochs={{ max_epochs }} \
-  --n_layers={{ n_layers }} \
-  --n_hid={{ n_hid }} \
-  --w_data={{ w }} \
-  --data $PROBLEM_DATA_FILE \
-  $PROBLEM_FILE \
-  $PROBLEM_TRAINING_POINT_FILE
-
-# Define the plot command.
-plot_cmd=$problem_root/${problem_name}_plots.py
-
-# Generate the plots.
-python $plot_cmd
+cmd="$pinn_cmd -v --activation={{ pinn1_activation }} --batch_size={{ pinn1_batch_size }} --data={{ pinn1_data }} --learning_rate={{ pinn1_learning_rate }} --max_epochs={{ pinn1_max_epochs }} --max_epochs={{ pinn1_max_epochs }} --n_layers={{ pinn1_n_layers }} --precision={{ pinn1_precision }} --save_model={{ pinn1_save_model }} --seed={{ pinn1_seed }} --w_data={{ pinn1_w_data }} {{ pinn1_problem }} {{ pinn1_training_points }}"
+echo "cmd=$cmd"
+eval $cmd >& pinn1.out
