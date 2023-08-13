@@ -40,7 +40,7 @@ from pinn import common
 # Program constants
 
 # Program description.
-DESCRIPTION = "Solve a set of 1st-order DE using the PINN method."
+DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
 
 # Program defaults
 
@@ -75,6 +75,10 @@ DEFAULT_SAVE_MODEL = -1
 # Default random number generator seed.
 DEFAULT_SEED = 0
 
+# Default absolute tolerance for consecutive loss function values to indicate
+# convergence.
+DEFAULT_TOLERANCE = 1e-6
+
 # Default normalized weight to apply to the boundary condition loss function.
 DEFAULT_W_DATA = 0.0
 
@@ -92,10 +96,6 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
-
-    Raises
-    ------
-    None
     """
     parser = argparse.ArgumentParser(DESCRIPTION)
     parser.add_argument(
@@ -106,6 +106,10 @@ def create_command_line_argument_parser():
         "--batch_size", type=int, default=DEFAULT_BATCH_SIZE,
         help=f"Size of training batches ({DEFAULT_BATCH_SIZE} "
         "for single batch)  (default: %(default)s)"
+    )
+    parser.add_argument()
+        "--convcheck", action="store_true",
+        help="Perform convergence check (default: %(default)s)."
     )
     parser.add_argument(
         "-d", "--debug", action="store_true",
@@ -149,6 +153,11 @@ def create_command_line_argument_parser():
         help="Seed for random number generator (default: %(default)s)"
     )
     parser.add_argument(
+        "--tolerance", type=float, default=DEFAULT_TOLERANCE,
+        help="Absolute loss function convergence tolerance "
+             "(default: %(default)s)"
+    )
+    parser.add_argument(
         "--validation", default=None,
         help="Path to optional validation point file (default: %(default)s)."
     )
@@ -186,10 +195,6 @@ def import_problem(problem_path):
     -------
     p : module
         Module object for problem definition.
-
-    Raises
-    ------
-    None
     """
     problem_name = os.path.splitext(os.path.split(problem_path)[-1])[-2]
     spec = importlib.util.spec_from_file_location(problem_name, problem_path)
@@ -208,6 +213,7 @@ def main():
     args = parser.parse_args()
     activation = args.activation
     batch_size = args.batch_size
+    convcheck = args.convcheck
     debug = args.debug
     data = args.data
     learning_rate = args.learning_rate
@@ -218,6 +224,7 @@ def main():
     save_model = args.save_model
     save_weights = args.save_weights
     seed = args.seed
+    tol = args.tolerance
     validation = args.validation
     verbose = args.verbose
     w_data = args.w_data
@@ -243,7 +250,7 @@ def main():
     output_dir = os.path.join(".", p.__name__)
     if debug:
         print(f"output_dir = {output_dir}")
-    # os.mkdir(output_dir)
+    os.mkdir(output_dir)
 
     # Record system information, network parameters, and problem definition.
     if verbose:
@@ -356,6 +363,9 @@ def main():
         batch_size = n_train
         if debug:
             print(f"Computed batch_size = {batch_size}")
+
+    # Clear the convergence flag to start.
+    converged = False
 
     # Split the training data into randomized batches.
     # Convert each batch to a tf.Variable for use in gradients.
