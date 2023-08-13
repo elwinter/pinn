@@ -47,7 +47,7 @@ DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
 # Default activation function to use in hidden nodes.
 DEFAULT_ACTIVATION = "sigmoid"
 
-# Default number of training samples in batch.
+# Default number of training samples in batch (-1 - use single batch).
 DEFAULT_BATCH_SIZE = -1
 
 # Default learning rate.
@@ -70,7 +70,7 @@ DEFAULT_PRECISION = "float32"
 # 0 = do not save model
 # -1 = only save at end
 # n > 0: Save after every n epochs.
-DEFAULT_SAVE_MODEL = -1
+DEFAULT_SAVE_MODEL = 0
 
 # Default random number generator seed.
 DEFAULT_SEED = 0
@@ -158,12 +158,12 @@ def create_command_line_argument_parser():
              "(default: %(default)s)"
     )
     parser.add_argument(
-        "--validation", default=None,
-        help="Path to optional validation point file (default: %(default)s)."
-    )
-    parser.add_argument(
         "-v", "--verbose", action="store_true",
         help="Print verbose output (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--validation_points", default=None,
+        help="Path to optional validation point file (default: %(default)s)."
     )
     parser.add_argument(
         "-w", "--w_data", type=float, default=DEFAULT_W_DATA,
@@ -171,11 +171,11 @@ def create_command_line_argument_parser():
              "(default: %(default)s)."
     )
     parser.add_argument(
-        "problem",
+        "problem_path",
         help="Path to problem description file."
     )
     parser.add_argument(
-        "training_points",
+        "training_points_path",
         help="Path to file containing training points."
     )
     return parser
@@ -215,7 +215,7 @@ def main():
     batch_size = args.batch_size
     convcheck = args.convcheck
     debug = args.debug
-    data = args.data
+    data_points_path = args.data
     learning_rate = args.learning_rate
     max_epochs = args.max_epochs
     H = args.n_hid
@@ -225,11 +225,11 @@ def main():
     save_weights = args.save_weights
     seed = args.seed
     tol = args.tolerance
-    validation = args.validation
     verbose = args.verbose
+    validation_points = args.validation_points
     w_data = args.w_data
-    problem_path = args.problem
-    training_points = args.training_points
+    problem_path = args.problem_path
+    training_points_path = args.training_points_path
     if debug:
         print(f"args = {args}")
 
