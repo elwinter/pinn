@@ -225,25 +225,25 @@ def main():
     problem_path = args.problem_path
     training_points = args.training_points
     if debug:
-        print(f"args = {args}")
+        print(f"args = {args}", flush=True)
 
     # Set the backend TensorFlow precision.
     if verbose:
-        print(f"Setting TensorFlow precision to {precision}.")
+        print(f"Setting TensorFlow precision to {precision}.", flush=True)
     tf.keras.backend.set_floatx(precision)
 
     # Import the problem to solve.
     if verbose:
-        print(f"Importing module for problem {problem_path}.")
+        print(f"Importing module for problem {problem_path}.", flush=True)
     p = import_problem(problem_path)
     if debug:
-        print(f"p = {p}")
+        print(f"p = {p}", flush=True)
 
     # Set up the output directory under the current directory.
     # An exception is raised if the directory already exists.
     output_dir = os.path.join(".", p.__name__)
     if debug:
-        print(f"output_dir = {output_dir}")
+        print(f"output_dir = {output_dir}", flush=True)
     if os.path.exists(output_dir):
         if not clobber:
             raise TypeError(f"Output directory {output_dir} exists!")
@@ -253,70 +253,70 @@ def main():
     # Record system information, network parameters, and problem definition.
     if verbose:
         print("Recording system information, model hyperparameters, and "
-              "problem definition.")
+              "problem definition.", flush=True)
     common.save_system_information(output_dir)
     common.save_hyperparameters(args, output_dir)
     common.save_problem_definition(p, output_dir)
 
     # Read the training points.
     if verbose:
-        print(f"Reading training points from {training_points}.")
+        print(f"Reading training points from {training_points}.", flush=True)
     # X_train is np.ndarray of shape (n_train, p.n_dim) OR (n_train,) for 1D.
     X_train = np.loadtxt(training_points, dtype=precision)
     if debug:
-        print(f"X_train = {X_train}")
+        print(f"X_train = {X_train}", flush=True)
     # If the data shape is 1-D (only one dimension), reshape to 2-D,
     # (n_train, 1) to make compatible with later calls.
     if len(X_train.shape) == 1:
         X_train = X_train.reshape(X_train.shape[0], 1)
         if debug:
-            print(f"Reshaped X_train = {X_train}")
+            print(f"Reshaped X_train = {X_train}", flush=True)
     np.savetxt(os.path.join(output_dir, "X_train.dat"), X_train)
 
     # Count the training points.
     n_train = X_train.shape[0]
     if debug:
-        print(f"n_train = {n_train}")
+        print(f"n_train = {n_train}", flush=True)
 
     # If provided, read and count the additional training data, including
     # boundary conditions.
     if data:
         if verbose:
-            print(f"Reading additional training data from {data}.")
+            print(f"Reading additional training data from {data}.", flush=True)
         # Shape is (n_data, p.n_dim + p.n_var)
         XY_data = np.loadtxt(data, dtype=precision)
         if debug:
-            print(f"XY_data = {XY_data}")
+            print(f"XY_data = {XY_data}", flush=True)
         # If the data shape is 1-D (only one data point), reshape to 2-D,
         # to make compatible with later calls.
         if len(XY_data.shape) == 1:
             XY_data = XY_data.reshape(1, XY_data.shape[0])
             if debug:
-                print(f"Reshaped XY_data = {XY_data}")
+                print(f"Reshaped XY_data = {XY_data}", flush=True)
         np.savetxt(os.path.join(output_dir, "XY_data.dat"), XY_data)
         # Extract the locations of the supplied data points.
         # Shape (n_data, p.n_dim)
         X_data = XY_data[:, :p.n_dim]
         if debug:
-            print(f"X_data = {X_data}")
+            print(f"X_data = {X_data}", flush=True)
         n_data = XY_data.shape[0]
         if debug:
-            print(f"n_data = {n_data}")
+            print(f"n_data = {n_data}", flush=True)
 
     # If provided, read and count the validation points.
     if validation:
         if verbose:
-            print(f"Reading validation points from {validation}.")
+            print(f"Reading validation points from {validation}.", flush=True)
         # Shape is (n, p.n_dim)
         X_val = np.loadtxt(validation, dtype=precision)
         if debug:
-            print(f"X_val = {X_val}")
+            print(f"X_val = {X_val}", flush=True)
         # If the data shape is 1-D (only one dimension), reshape to 2-D,
         # to make compatible with later calls.
         if len(X_val.shape) == 1:
             X_val = X_val.reshape(X_val.shape[0], 1)
             if debug:
-                print(f"Reshaped X_val = {X_val}")
+                print(f"Reshaped X_val = {X_val}", flush=True)
         np.savetxt(os.path.join(output_dir, "X_val.dat"), X_val)
         n_val = X_val.shape[0]
 
@@ -324,38 +324,38 @@ def main():
     # value of the data weight.
     w_res = 1.0 - w_data
     if debug:
-        print(f"w_res = {w_res}")
-        print(f"w_data = {w_data}")
+        print(f"w_res = {w_res}", flush=True)
+        print(f"w_data = {w_data}", flush=True)
 
     # Build one model for each differential equation defined in the problem.
     if verbose:
-        print("Creating neural networks models.")
+        print("Creating neural networks models.", flush=True)
     models = []
     for i in range(p.n_var):
         if verbose:
-            print(f"Creating model for {p.dependent_variable_names[i]}.")
+            print(f"Creating model for {p.dependent_variable_names[i]}.", flush=True)
         model = common.build_model(n_layers, H, activation)
         models.append(model)
     if debug:
-        print(f"models = {models}")
+        print(f"models = {models}", flush=True)
 
     # Create the optimizer.
     if verbose:
-        print("Creating Adam optimizer.")
+        print("Creating Adam optimizer.", flush=True)
     optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=learning_rate)
     if debug:
-        print(f"optimizer = {optimizer}")
+        print(f"optimizer = {optimizer}", flush=True)
 
     # Set the random number seed for reproducibility.
     if verbose:
-        print(f"Seeding random number generator with {seed}.")
+        print(f"Seeding random number generator with {seed}.", flush=True)
     tf.random.set_seed(seed)
 
     # If a single bach was requested, compute the batch size.
     if batch_size == -1:
         batch_size = n_train
         if debug:
-            print(f"Computed batch_size = {batch_size}")
+            print(f"Computed batch_size = {batch_size}", flush=True)
 
     # Split the training data into randomized batches.
     # Convert each batch to a tf.Variable for use in gradients.
@@ -372,7 +372,7 @@ def main():
             i_stop = n_train
         if verbose:
             print(f"Creating training batch {i_batch} from "
-                  f"{i_start} to {i_stop}.")
+                  f"{i_start} to {i_stop}.", flush=True)
         batch_indices = training_point_indices[i_start:i_stop]
         batch_points = X_train[batch_indices]
         path = os.path.join(output_dir, f"batch_{i_batch:04d}.dat")
@@ -381,19 +381,28 @@ def main():
         i_start = i_stop
         i_batch += 1
     if debug:
-        print(f"batches = {batches}")
+        print(f"batches = {batches}", flush=True)
+        batch_indices = training_point_indices[i_start:i_stop]
+        batch_points = X_train[batch_indices]
+        path = os.path.join(output_dir, f"batch_{i_batch:04d}.dat")
+        np.savetxt(path, batch_points)
+        batches.append(tf.Variable(batch_points))
+        i_start = i_stop
+        i_batch += 1
+    if debug:
+        print(f"batches = {batches}", flush=True)
 
     # Convert additional data locations to tf.Variable.
     if data:
         X_data = tf.Variable(X_data)
         if debug:
-            print(f"TF Variable of X_data = {X_data}")
+            print(f"TF Variable of X_data = {X_data}", flush=True)
 
     # Convert validation locations to tf.Variable.
     if validation:
         X_val = tf.Variable(X_val)
         if debug:
-            print(f"TF Variable of X_val = {X_val}")
+            print(f"TF Variable of X_val = {X_val}", flush=True)
 
     # Create loss history variables.
     loss = {}
@@ -407,19 +416,19 @@ def main():
     # Record the training start time.
     t_start = datetime.datetime.now()
     if verbose:
-        print(f"Training started at {t_start}.")
+        print(f"Training started at {t_start}.", flush=True)
 
     for epoch in range(max_epochs):
 
         # Step 1: Train using the residuals at each training point.
         for (i_batch, X_batch) in enumerate(batches):
             if debug:
-                print(f"Starting epoch {epoch} batch {i_batch}.")
+                print(f"Starting epoch {epoch} batch {i_batch}.", flush=True)
 
             # Determine the length of this batch.
             n_batch = X_batch.shape[0]
             # if debug:
-            #     print(f"n_batch = {n_batch}")
+            #     print(f"n_batch = {n_batch}", flush=True)
 
             # Run the forward pass for this batch.
             # tape0 is for computing gradients wrt network parameters.
@@ -434,7 +443,7 @@ def main():
                     # Each Tensor has shape (n_batch, 1).
                     Y_batch = [model(X_batch) for model in models]
                     # if debug:
-                    #     print(f"Y_batch = {Y_batch}")
+                    #     print(f"Y_batch = {Y_batch}", flush=True)
 
                 # Compute the gradients of the network outputs wrt inputs for
                 # this batch.
@@ -443,7 +452,7 @@ def main():
                 # Each Tensor has shape (n_batch, p.n_dim).
                 dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
                 # if debug:
-                #     print(f"dY_dX_batch = {dY_dX_batch}")
+                #     print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
 
                 # Compute the values of the differential equations at all
                 # batch points.
@@ -452,7 +461,7 @@ def main():
                 # Each Tensor has shape (n_batch, 1).
                 G_batch = [f(X_batch, Y_batch, dY_dX_batch) for f in p.de]
                 # if debug:
-                #     print(f"G_batch = {G_batch}")
+                #     print(f"G_batch = {G_batch}", flush=True)
 
                 # Compute the loss function for the equation residuals at the
                 # batch training points for each model.
@@ -464,13 +473,13 @@ def main():
                 ]
                 # if debug:
                 #     print(f"loss_model_residual_batch = "
-                #           f"{loss_model_residual_batch}")
+                #           f"{loss_model_residual_batch}", flush=True)
 
                 # Compute the weighted residual loss over all models for the
                 # batch.
                 L_batch = w_res*tf.math.reduce_sum(loss_model_residual_batch)
                 if debug:
-                    print(f"L_batch = {L_batch}")
+                    print(f"L_batch = {L_batch}", flush=True)
 
             # Compute the gradient of the loss function wrt the network
             # parameters for this batch.
@@ -489,7 +498,7 @@ def main():
                 for model in models
             ]
             # if debug:
-            #     print(f"pgrad_batch = {pgrad_batch}")
+            #     print(f"pgrad_batch = {pgrad_batch}", flush=True)
 
             # Update the parameters for this epoch.
             for (g, m) in zip(pgrad_batch, models):
@@ -508,7 +517,7 @@ def main():
                 # Each Tensor has shape (n_data, 1).
                 Y_data = [model(X_data) for model in models]
                 # if debug:
-                #     print(f"Y_data = {Y_data}")
+                #     print(f"Y_data = {Y_data}", flush=True)
 
                 # Compute the errors for the data points for each model.
                 # Em_data is a list of tf.Tensor objects.
@@ -519,7 +528,7 @@ def main():
                     for i in range(p.n_var)
                 ]
                 # if debug:
-                #     print(f"Em_data = {Em_data}")
+                #     print(f"Em_data = {Em_data}", flush=True)
 
                 # Compute the loss functions for the data points for each
                 # model.
@@ -531,12 +540,12 @@ def main():
                     for E in Em_data
                 ]
                 # if debug:
-                #     print(f"Lm_data = {Lm_data}")
+                #     print(f"Lm_data = {Lm_data}", flush=True)
 
                 # Compute the weighted data loss function.
                 L_data = w_data*tf.reduce_sum(Lm_data)
                 if debug:
-                    print(f"L_data = {L_data}")
+                    print(f"L_data = {L_data}", flush=True)
 
             # Compute the gradient of the data loss wrt the network
             # parameters.
@@ -553,7 +562,7 @@ def main():
                 for model in models
             ]
             # if debug:
-            #     print(f"pgrad_data = {pgrad_data}")
+            #     print(f"pgrad_data = {pgrad_data}", flush=True)
 
             # Update the parameters for this data.
             for (g, m) in zip(pgrad_data, models):
@@ -572,7 +581,7 @@ def main():
         L_res = tf.reduce_sum(L_batch)
         loss["residual"].append(L_res)
         if debug:
-            print(f"L_res = {L_res}")
+            print(f"L_res = {L_res}", flush=True)
 
         # Compute the end-of-epoch data loss function.
         Y_data = [model(X_data) for model in models]
@@ -587,34 +596,34 @@ def main():
         L_data = w_data*tf.reduce_sum(Lm_data)
         loss["data"].append(L_data)
         if debug:
-            print(f"L_data = {L_data}")
+            print(f"L_data = {L_data}", flush=True)
 
         # Compute the weighted total residual
         L = w_res*L_res + w_data*L_data
         loss["total"].append(L)
         if debug:
-            print(f"L = {L}")
+            print(f"L = {L}", flush=True)
 
         if verbose:
             print(f"epoch = {epoch}, (L_res, L_data, L) = "
-                  f"({L_res}, {L_data}, {L})")
+                  f"({L_res}, {L_data}, {L})", flush=True)
 
         if debug:
-            print(f"Ending epoch {epoch}.")
+            print(f"Ending epoch {epoch}.", flush=True)
 
     # Count the last epoch.
     n_epochs = epoch + 1
     if debug:
-        print(f"n_epochs = {n_epochs}")
+        print(f"n_epochs = {n_epochs}", flush=True)
 
     # Record the training end time.
     t_stop = datetime.datetime.now()
     t_elapsed = t_stop - t_start
     if verbose:
-        print(f"Training stopped at {t_stop}.")
-        print(f"Total training time: {t_elapsed.total_seconds()} seconds")
-        print(f"Epochs: {n_epochs}")
-        print(f"Final value of loss function: {L}")
+        print(f"Training stopped at {t_stop}.", flush=True)
+        print(f"Total training time: {t_elapsed.total_seconds()} seconds", flush=True)
+        print(f"Epochs: {n_epochs}", flush=True)
+        print(f"Final value of loss function: {L}", flush=True)
 
     # Save the loss histories.
     np.savetxt(os.path.join(output_dir, "L_res.dat"), loss["residual"])

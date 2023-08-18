@@ -27,9 +27,9 @@ options["python_environment"] = "research-3.10"
 N_RUNS = 1
 
 # Range of data weights to use.
-W_MIN = 0.00
-W_MAX = 1.00
-N_W = 11
+W_MIN = 0.95
+W_MAX = 0.95
+N_W = 1
 WS = np.linspace(W_MIN, W_MAX, N_W)
 
 # PBS job control constants
@@ -43,7 +43,7 @@ options["pbs_walltime"] = "00:05:00"
 options["pbs_select"] = "select=1:ncpus=128"
 
 # Options for problem set
-options["problem_name"] = "bw3d"
+options["problem_name"] = "bw1d"
 
 # Options for pinn1.py for all runs.
 options["pinn1_activation"] = "sigmoid"
@@ -52,24 +52,24 @@ options["pinn1_batch_size"] = -1
 # options["pinn1_convcheck"] = False
 # options["pinn1_debug"] = False
 options["pinn1_learning_rate"] = 0.01
-options["pinn1_max_epochs"] = 10000
+options["pinn1_max_epochs"] = 100
 options["pinn1_n_hid"] = 10
 options["pinn1_n_layers"] = 1
 options["pinn1_precision"] = "float32"
-options["pinn1_save_model"] = 1000
+options["pinn1_save_model"] = -1
 # options["pinn1_save_weights"] = False
 options["pinn1_seed"] = None
 # options["tolerance"] = 1e-3
 # options["verbose"] = True
-# options["validation"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d_validation.dat"
+# options["validation"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d/bw1d_validation.dat"
 # options["verbose"] = True
 options["pinn1_w_data"] = None
-options["pinn1_problem"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d.py"
-options["pinn1_training_points"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d_011_021_021_021_training_grid.dat"
-options["pinn1_data"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d_011_021_021_021_data.dat"
+options["pinn1_problem"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d/bw1d.py"
+options["pinn1_training_points"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d/bw1d_801_1601_training_grid.dat"
+options["pinn1_data"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d/bw1d_801_1601_data.dat"
     
 # Read and create the PBS script template.
-PBS_TEMPLATE_FILE = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d-template.pbs"
+PBS_TEMPLATE_FILE = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d/bw1d-template.pbs"
 with open(PBS_TEMPLATE_FILE) as f:
     pbs_template_content = f.read()
 pbs_template = Template(pbs_template_content)
