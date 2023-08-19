@@ -129,6 +129,10 @@ def create_command_line_argument_parser():
         help="Number of hidden layers (default: %(default)s)"
     )
     parser.add_argument(
+        "--nogpu", action="store_true",
+        help="Disable TensorFlow use of GPU(s) (default: %(default)s)."
+    )
+    parser.add_argument(
         "--precision", type=str, default=DEFAULT_PRECISION,
         help="Precision to use in TensorFlow solution (default: %(default)s)"
     )
@@ -174,6 +178,32 @@ def create_command_line_argument_parser():
     return parser
 
 
+def disable_gpus():
+    """Tell TensorFlow not to use GPU.
+
+    Tell TensorFlow not to use GPU.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    AssertionError : If this code cannot disable a GPU.
+    """
+    physical_devices = tf.config.list_physical_devices("GPU")
+
+    # Disable all GPUS.
+    tf.config.set_visible_devices([], "GPU")
+    visible_devices = tf.config.get_visible_devices()
+    for device in visible_devices:
+        assert device.device_type != "GPU"
+
+
 def import_problem(problem_path):
     """Import the Python file which defines the problem to solve.
 
@@ -214,6 +244,7 @@ def main():
     max_epochs = args.max_epochs
     H = args.n_hid
     n_layers = args.n_layers
+    nogpu = args.nogpu
     precision = args.precision
     save_model = args.save_model
     save_weights = args.save_weights
@@ -226,6 +257,14 @@ def main():
     training_points = args.training_points
     if debug:
         print(f"args = {args}", flush=True)
+
+    # If requested, disable TensorFlow use of GPU.
+    if nogpu:
+        if verbose:
+            print("Disabling TensorFlow use of GPU.", flush=True)
+        disable_gpus()
+
+    sys.exit()
 
     # Set the backend TensorFlow precision.
     if verbose:
