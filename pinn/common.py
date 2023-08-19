@@ -20,6 +20,7 @@ import sys
 # Import 3rd-party modules.
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.client import device_lib
 
 
 # Module constants
@@ -166,6 +167,8 @@ def save_system_information(output_dir):
                 platform.python_implementation())
         f.write("NumPy version: %s\n" % np.__version__)
         f.write("TensorFlow version: %s\n" % tf.__version__)
+        f.write("Available TensorFlow devices: %s\n" %
+                device_lib.list_local_devices())
 
 
 def find_last_epoch(results_path):
