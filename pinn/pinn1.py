@@ -264,8 +264,6 @@ def main():
             print("Disabling TensorFlow use of GPU.", flush=True)
         disable_gpus()
 
-    sys.exit()
-
     # Set the backend TensorFlow precision.
     if verbose:
         print(f"Setting TensorFlow precision to {precision}.", flush=True)
