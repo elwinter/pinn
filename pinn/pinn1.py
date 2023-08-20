@@ -616,9 +616,9 @@ def main():
             ]
             L_batch = w_res*tf.math.reduce_sum(loss_model_residual_batch)
         L_res = tf.reduce_sum(L_batch)
-        loss["residual"].append(L_res)
         if debug:
             print(f"L_res = {L_res}", flush=True)
+        loss["residual"].append(L_res)
 
         # Compute the end-of-epoch data loss function.
         Y_data = [model(X_data) for model in models]
@@ -631,15 +631,15 @@ def main():
             for E in Em_data
         ]
         L_data = w_data*tf.reduce_sum(Lm_data)
-        loss["data"].append(L_data)
         if debug:
             print(f"L_data = {L_data}", flush=True)
+        loss["data"].append(L_data)
 
         # Compute the weighted total residual
         L = w_res*L_res + w_data*L_data
-        loss["total"].append(L)
         if debug:
             print(f"L = {L}", flush=True)
+        loss["total"].append(L)
 
         if verbose:
             print(f"epoch = {epoch}, (L_res, L_data, L) = "
