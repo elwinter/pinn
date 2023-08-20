@@ -59,7 +59,7 @@ DEFAULT_PRECISION = "float32"
 # 0 = do not save model
 # -1 = only save at end
 # n > 0: Save after every n epochs.
-DEFAULT_SAVE_MODEL = 0
+DEFAULT_SAVE_MODEL = -1
 
 # Default random number generator seed.
 DEFAULT_SEED = 0
@@ -645,6 +645,15 @@ def main():
             print(f"epoch = {epoch}, (L_res, L_data, L) = "
                   f"({L_res}, {L_data}, {L})", flush=True)
 
+        # Save the trained models.
+        if save_model > 0 and epoch % save_model == 0:
+            for (i, model) in enumerate(models):
+                path = os.path.join(
+                    output_dir, "models", f"{epoch}",
+                    f"model_{p.dependent_variable_names[i]}"
+                )
+                model.save(path)
+
         if debug:
             print(f"Ending epoch {epoch}.", flush=True)
 
@@ -666,6 +675,15 @@ def main():
     np.savetxt(os.path.join(output_dir, "L_res.dat"), loss["residual"])
     np.savetxt(os.path.join(output_dir, "L_data.dat"), loss["data"])
     np.savetxt(os.path.join(output_dir, "L.dat"), loss["total"])
+
+    # Save the trained models.
+    if save_model != 0:
+        for (i, model) in enumerate(models):
+            path = os.path.join(
+                output_dir, "models", f"{n_epochs}",
+                f"model_{p.dependent_variable_names[i]}"
+            )
+            model.save(path)
 
 
 if __name__ == "__main__":
