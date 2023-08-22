@@ -64,10 +64,6 @@ DEFAULT_SAVE_MODEL = -1
 # Default random number generator seed.
 DEFAULT_SEED = 0
 
-# Default absolute tolerance for consecutive loss function values to indicate
-# convergence.
-DEFAULT_TOLERANCE = 1e-6
-
 # Default normalized weight to apply to the boundary condition loss function.
 DEFAULT_W_DATA = 0.0
 
@@ -140,11 +136,6 @@ def create_command_line_argument_parser():
     parser.add_argument(
         "--seed", type=int, default=DEFAULT_SEED,
         help="Seed for random number generator (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--tolerance", type=float, default=DEFAULT_TOLERANCE,
-        help="Absolute loss function convergence tolerance "
-             "(default: %(default)s)"
     )
     parser.add_argument(
         "-v", "--verbose", action="store_true",
@@ -239,7 +230,6 @@ def main():
     precision = args.precision
     save_model = args.save_model
     seed = args.seed
-    tol = args.tolerance
     verbose = args.verbose
     validation = args.validation
     w_data = args.w_data
