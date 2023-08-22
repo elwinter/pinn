@@ -335,7 +335,7 @@ def main():
             if debug:
                 print(f"Reshaped X_val = {X_val}", flush=True)
         np.savetxt(os.path.join(output_dir, "X_val.dat"), X_val)
-        n_val = X_val.shape[0]
+        # n_val = X_val.shape[0]
 
     # Compute the normalized weight for the equation residuals, based on the
     # value of the data weight.
