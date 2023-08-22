@@ -101,10 +101,6 @@ def create_command_line_argument_parser():
         help="Clobber existing output directory (default: %(default)s)."
     )
     parser.add_argument(
-        "--convcheck", action="store_true",
-        help="Perform convergence check (default: %(default)s)."
-    )
-    parser.add_argument(
         "-d", "--debug", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
@@ -233,7 +229,6 @@ def main():
     activation = args.activation
     batch_size = args.batch_size
     clobber = args.clobber
-    convcheck = args.convcheck
     debug = args.debug
     data = args.data
     learning_rate = args.learning_rate
