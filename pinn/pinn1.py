@@ -195,10 +195,10 @@ def disable_gpus():
     ------
     AssertionError : If this code cannot disable a GPU.
     """
-    physical_devices = tf.config.list_physical_devices("GPU")
-
     # Disable all GPUS.
     tf.config.set_visible_devices([], "GPU")
+
+    # Make sure the GPU were disabled.
     visible_devices = tf.config.get_visible_devices()
     for device in visible_devices:
         assert device.device_type != "GPU"
