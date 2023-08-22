@@ -142,10 +142,6 @@ def create_command_line_argument_parser():
         " 0 = do not save, -1 = save at end, n > 0 = save every n epochs."
     )
     parser.add_argument(
-        "--save_weights", action="store_true",
-        help="Save the model weights at each epoch (default: %(default)s)."
-    )
-    parser.add_argument(
         "--seed", type=int, default=DEFAULT_SEED,
         help="Seed for random number generator (default: %(default)s)"
     )
@@ -247,7 +243,6 @@ def main():
     nogpu = args.nogpu
     precision = args.precision
     save_model = args.save_model
-    save_weights = args.save_weights
     seed = args.seed
     tol = args.tolerance
     verbose = args.verbose
