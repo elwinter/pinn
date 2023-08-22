@@ -103,7 +103,6 @@ def save_hyperparameters(args, output_dir):
     with open(path, "w") as f:
         f.write("activation = %s\n" % repr(args.activation))
         f.write("batch_size = %s\n" % repr(args.batch_size))
-        f.write("convcheck = %s\n" % repr(args.convcheck))
         f.write("data = %s\n" % repr(args.data))
         f.write("learning_rate = %s\n" % repr(args.learning_rate))
         f.write("max_epochs = %s\n" % repr(args.max_epochs))
@@ -111,7 +110,6 @@ def save_hyperparameters(args, output_dir):
         f.write("n_layers = %s\n" % repr(args.n_layers))
         f.write("precision = %s\n" % repr(args.precision))
         f.write("random_seed = %s\n" % repr(args.seed))
-        f.write("tolerance = %s\n" % repr(args.tolerance))
         f.write("validation = %s\n" % repr(args.validation))
         f.write("w_data = %s\n" % repr(args.w_data))
         f.write("problem_path = %s\n" % repr(args.problem_path))
