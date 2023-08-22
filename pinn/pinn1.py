@@ -350,7 +350,8 @@ def main():
     models = []
     for i in range(p.n_var):
         if verbose:
-            print(f"Creating model for {p.dependent_variable_names[i]}.", flush=True)
+            print(f"Creating model for {p.dependent_variable_names[i]}.",
+                  flush=True)
         model = common.build_model(n_layers, H, activation)
         models.append(model)
     if debug:
@@ -426,9 +427,6 @@ def main():
     loss["residual"] = []
     loss["data"] = []
     loss["total"] = []
-
-    # Clear the convergence flag to start.
-    converged = False
 
     # Record the training start time.
     t_start = datetime.datetime.now()
@@ -541,7 +539,8 @@ def main():
                 # There are p.n_var Tensors in the list.
                 # Each Tensor has shape (n_data, 1).
                 Em_data = [
-                    Y_data[i] - tf.reshape(XY_data[:, p.n_dim + i], (n_data, 1))
+                    Y_data[i] - tf.reshape(XY_data[:, p.n_dim + i],
+                                           (n_data, 1))
                     for i in range(p.n_var)
                 ]
                 # if debug:
@@ -647,7 +646,8 @@ def main():
     t_elapsed = t_stop - t_start
     if verbose:
         print(f"Training stopped at {t_stop}.", flush=True)
-        print(f"Total training time: {t_elapsed.total_seconds()} seconds", flush=True)
+        print(f"Total training time: {t_elapsed.total_seconds()} seconds",
+              flush=True)
         print(f"Epochs: {n_epochs}", flush=True)
         print(f"Final value of loss function: {L}", flush=True)
 
