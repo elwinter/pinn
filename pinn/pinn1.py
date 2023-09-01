@@ -129,6 +129,10 @@ def create_command_line_argument_parser():
         help="Precision to use in TensorFlow solution (default: %(default)s)"
     )
     parser.add_argument(
+        "--load_model", default=None,
+        help="Path to directory containing models to load (default: %(default)s)."
+    )
+    parser.add_argument(
         "--save_model", type=int, default=DEFAULT_SAVE_MODEL,
         help="Save interval (epochs) for trained model (default: %(default)s)."
         " 0 = do not save, -1 = save at end, n > 0 = save every n epochs."
@@ -228,6 +232,7 @@ def main():
     n_layers = args.n_layers
     nogpu = args.nogpu
     precision = args.precision
+    load_model = args.load_model
     save_model = args.save_model
     seed = args.seed
     verbose = args.verbose
@@ -344,16 +349,29 @@ def main():
         print(f"w_res = {w_res}", flush=True)
         print(f"w_data = {w_data}", flush=True)
 
-    # Build one model for each differential equation defined in the problem.
-    if verbose:
-        print("Creating neural networks models.", flush=True)
+    # Load or build one model for each differential equation defined in the
+    # problem.
     models = []
-    for i in range(p.n_var):
+    if load_model:
         if verbose:
-            print(f"Creating model for {p.dependent_variable_names[i]}.",
-                  flush=True)
-        model = common.build_model(n_layers, H, activation)
-        models.append(model)
+            print(f"Creating models from {load_model}.", flush=True)
+        for (i, v) in enumerate(p.dependent_variable_names):
+            if verbose:
+                print(f"Loading model for {v}.", flush=True)
+            path = os.path.join(load_model, f"model_{v}")
+            if debug:
+                print(f"path = {path}")
+            model = tf.keras.models.load_model(path)
+            models.append(model)
+    else:
+        if verbose:
+            print("Creating neural networks models.", flush=True)
+        for i in range(p.n_var):
+            if verbose:
+                print(f"Creating model for {p.dependent_variable_names[i]}.",
+                    flush=True)
+            model = common.build_model(n_layers, H, activation)
+            models.append(model)
     if debug:
         print(f"models = {models}", flush=True)
 
