@@ -392,16 +392,7 @@ def main():
             print(f"Creating training batch {i_batch} from "
                   f"{i_start} to {i_stop}.", flush=True)
         batch_indices = training_point_indices[i_start:i_stop]
-        batch_points = X_train[batch_indices]
-        path = os.path.join(output_dir, f"batch_{i_batch:04d}.dat")
-        np.savetxt(path, batch_points)
-        batches.append(tf.Variable(batch_points))
-        i_start = i_stop
-        i_batch += 1
-    if debug:
-        print(f"batches = {batches}", flush=True)
-        batch_indices = training_point_indices[i_start:i_stop]
-        batch_points = X_train[batch_indices]
+        batch_points = X_train[batch_indices, ...]
         path = os.path.join(output_dir, f"batch_{i_batch:04d}.dat")
         np.savetxt(path, batch_points)
         batches.append(tf.Variable(batch_points))
