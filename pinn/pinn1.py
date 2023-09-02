@@ -263,7 +263,7 @@ def main():
 
     # Set up the output directory under the current directory.
     # An exception is raised if the directory already exists.
-    output_dir = os.path.join(".", p.__name__)
+    output_dir = os.path.join(".", f"{p.__name__}-pinn1")
     if debug:
         print(f"output_dir = {output_dir}", flush=True)
     if os.path.exists(output_dir):
