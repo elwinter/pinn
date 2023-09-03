@@ -248,7 +248,7 @@ def main():
         print("Recording system information, model hyperparameters, and "
               "problem definition.", flush=True)
     common.save_system_information(output_dir)
-    # common.save_hyperparameters(args, output_dir)
+    common.save_hyperparameters(args, output_dir)
     common.save_problem_definition(p, output_dir)
 
     # If provided, read and count the additional training data, including
@@ -344,6 +344,7 @@ def main():
             # Each Tensor has shape (n_data, 1).
             Em_data = [
                 Y_data[i] - tf.reshape(XY_data[:, p.n_dim + i], (n_data, 1))
+                for i in range(p.n_var)
             ]
             if debug:
                 print(f"Em_data = {Em_data}", flush=True)
@@ -404,7 +405,7 @@ def main():
         loss["aggregate"]["data"].append(L_data)
 
         if verbose:
-            print(f"epoch = {epoch}, L_data = {L_data}", flush=True)
+            print(f"epoch = {epoch}, L_data = {L_data:6e}", flush=True)
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
@@ -435,7 +436,7 @@ def main():
 
     # Save the loss histories.
     for v in p.dependent_variable_names:
-        path = os.path.join(output_dir, f"L_{v}_data.dat")
+        path = os.path.join(output_dir, f"L_data_{v}.dat")
         np.savetxt(path, loss[v]["data"])
     path = os.path.join(output_dir, "L_data.dat")
     np.savetxt(path, loss["aggregate"]["data"])
@@ -444,7 +445,7 @@ def main():
     if save_model != 0:
         for (i, model) in enumerate(models):
             path = os.path.join(
-                output_dir, "models", f"{n_epochs}",
+                output_dir, "models", f"{epoch:06d}",
                 f"model_{p.dependent_variable_names[i]}"
             )
             model.save(path)
