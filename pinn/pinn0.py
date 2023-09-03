@@ -234,7 +234,7 @@ def main():
 
     # Set up the output directory under the current directory.
     # An exception is raised if the directory already exists.
-    output_dir = os.path.join(".", "pinn0_output")
+    output_dir = os.path.join(".", f"{p.__name__}-pinn0")
     if debug:
         print(f"output_dir = {output_dir}", flush=True)
     if os.path.exists(output_dir):
@@ -248,7 +248,7 @@ def main():
         print("Recording system information, model hyperparameters, and "
               "problem definition.", flush=True)
     common.save_system_information(output_dir)
-    # common.save_hyperparameters(args, output_dir)
+    common.save_hyperparameters(args, output_dir)
     common.save_problem_definition(p, output_dir)
 
     # If provided, read and count the additional training data, including
@@ -307,9 +307,17 @@ def main():
         if debug:
             print(f"TF Variable of X_data = {X_data}", flush=True)
 
-    # Create loss history variables.
+    # Create loss histories.
     loss = {}
-    loss["data"] = []
+    for v in p.dependent_variable_names:
+        loss[v] = {}
+        loss[v]["residual"] = []
+        loss[v]["data"] = []
+        loss[v]["total"] = []
+    loss["aggregate"] = {}
+    loss["aggregate"]["residual"] = []
+    loss["aggregate"]["data"] = []
+    loss["aggregate"]["total"] = []
 
     # Record the training start time.
     t_start = datetime.datetime.now()
@@ -335,8 +343,7 @@ def main():
             # There are p.n_var Tensors in the list.
             # Each Tensor has shape (n_data, 1).
             Em_data = [
-                Y_data[i] - tf.reshape(XY_data[:, p.n_dim + i],
-                                        (n_data, 1))
+                Y_data[i] - tf.reshape(XY_data[:, p.n_dim + i], (n_data, 1))
                 for i in range(p.n_var)
             ]
             if debug:
@@ -390,13 +397,15 @@ def main():
             tf.math.sqrt(tf.reduce_sum(E**2)/n_data)
             for E in Em_data
         ]
+        for (i, v) in enumerate(p.dependent_variable_names):
+            loss[v]["data"].append(Lm_data[i])
         L_data = tf.reduce_sum(Lm_data)
         if debug:
             print(f"L_data = {L_data}", flush=True)
-        loss["data"].append(L_data)
+        loss["aggregate"]["data"].append(L_data)
 
         if verbose:
-            print(f"epoch = {epoch}, L_data = {L_data}", flush=True)
+            print(f"epoch = {epoch}, L_data = {L_data:6e}", flush=True)
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
@@ -426,13 +435,17 @@ def main():
         print(f"Final value of loss function: {L_data}", flush=True)
 
     # Save the loss histories.
-    np.savetxt(os.path.join(output_dir, "L_data.dat"), loss["data"])
+    for v in p.dependent_variable_names:
+        path = os.path.join(output_dir, f"L_data_{v}.dat")
+        np.savetxt(path, loss[v]["data"])
+    path = os.path.join(output_dir, "L_data.dat")
+    np.savetxt(path, loss["aggregate"]["data"])
 
     # Save the trained models.
     if save_model != 0:
         for (i, model) in enumerate(models):
             path = os.path.join(
-                output_dir, "models", f"{n_epochs}",
+                output_dir, "models", f"{epoch:06d}",
                 f"model_{p.dependent_variable_names[i]}"
             )
             model.save(path)
