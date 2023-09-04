@@ -1,0 +1,47 @@
+#!/bin/bash
+
+#PBS -N {{ run_id }}
+#PBS -j oe
+#PBS -l walltime={{ pbs_walltime }}
+#PBS -m abe
+#PBS -A {{ pbs_account }}
+#PBS -q {{ pbs_queue }}
+#PBS -l {{ pbs_select }}
+
+# Perform PBS-only tasks.
+run_id={{ run_id }}
+if [ "$PBS_JOBID" ]; then
+  echo "The following modules are loaded:"
+  module list
+fi
+
+# Define the pinn software installation to use.
+pinn_root={{ pinn_root }}
+echo "pinn_root=$pinn_root"
+
+# Load the python environment.
+source $HOME/bin/launch_conda {{ platform }}
+conda activate {{ python_environment }}
+echo "The active python environment is:"
+echo $CONDA_PREFIX
+
+# Add the pinn installation directory to the python module path.
+export PYTHONPATH="$pinn_root:$PYTHONPATH"
+
+# Define the PINN command.
+pinn_cmd=$pinn_root/pinn/pinn0.py
+echo "pinn_cmd=$pinn_cmd"
+
+echo "The active environment variables are:"
+printenv
+
+# Run the network.
+cmd="$pinn_cmd --activation={{ activation }} {{ clobber }} {{ debug }} --learning_rate={{ learning_rate }} --max_epochs={{ max_epochs }} --n_hid={{ n_hid }} --n_layers={{ n_layers }} {{ nogpu }} --precision={{ precision }} --save_model={{ save_model }} --seed={{ seed }} {{ verbose }} {{ validation }} {{ problem_path }} {{ data }}"
+echo "cmd=$cmd"
+eval $cmd >& pinn1.out
+
+# Create standard post-processing graphics.
+plot_cmd="$pinn_root/problems/lagaris/lagaris01/lagaris01_plots_0.py"
+cmd="$plot_cmd {{ debug }} {{ verbose }} lagaris01-pinn0"
+echo "cmd=$cmd"
+eval $cmd >& lagaris01_plots_0.out
