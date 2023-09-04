@@ -208,6 +208,62 @@ def main():
     # Return to standard plotting backend.
     mpl.use("TkAgg")
 
+    # -------------------------------------------------------------------------
+
+    # Plot the weights and biases for each layer.
+
+    # Create the plot in a memory buffer.
+    mpl.use("Agg")
+
+    # Input/first hidden layer weights
+    i = 0
+    layer = model.layers[i]
+    w = layer.variables[0].numpy()
+    n_inputs = w.shape[0]
+    n_nodes = w.shape[1]
+    w.shape = (n_nodes,)
+    x = np.arange(n_nodes)
+    plt.bar(x, w)
+    plt.xlabel("Node")
+    plt.ylabel("$w$")
+    plt.title(f"Layer {i} weights")
+    path = os.path.join(output_path, f"w{i:02}.png")
+    plt.savefig(path)
+    plt.clf()
+
+    # Input layer biases
+    i = 0
+    layer = model.layers[i]
+    b = layer.variables[1].numpy()
+    w.shape = (n_nodes,)
+    x = np.arange(n_nodes)
+    plt.bar(x, b)
+    plt.xlabel("Node")
+    plt.ylabel("$b$")
+    plt.title(f"Layer {i} biases")
+    path = os.path.join(output_path, f"b{i:02}.png")
+    plt.savefig(path)
+    plt.clf()
+
+    # Output layer weights
+    i = 1
+    layer = model.layers[i]
+    w = layer.variables[0].numpy()
+    n_inputs = w.shape[0]
+    n_nodes = w.shape[1]
+    w.shape = (n_inputs,)
+    x = np.arange(n_inputs)
+    plt.bar(x, w)
+    plt.xlabel("Node")
+    plt.ylabel("$w$")
+    plt.title(f"Layer {i} weights")
+    path = os.path.join(output_path, f"w{i:02}.png")
+    plt.savefig(path)
+    plt.clf()
+
+    # Return to standard plotting backend.
+    mpl.use("TkAgg")
+
 
 if __name__ == "__main__":
     """Begin main program."""
