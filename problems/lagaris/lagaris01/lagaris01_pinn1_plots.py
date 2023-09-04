@@ -1,135 +1,270 @@
-# # Import standard modules.
-# from importlib import import_module
-# import os
-# import sys
+#!/usr/bin/env python
 
-# # Import supplemental modules.
-# import matplotlib as mpl
-# import matplotlib.pyplot as plt
-# import numpy as np
+"""Create plots for pinn1 results for lagaris01 problem.
 
-# # Import project modules.
-# import pinn.standard_plots as psp
+Create plots for pinn1 results for lagaris01 problem.
 
-# # Specify the run ID (aka problem name).
-# runid = "lagaris01"
+Author
+------
+Eric Winter (eric.winter62@gmail.com)
+"""
 
-# # Add the subdirectory for the run results to the module search path.
-# run_path = os.path.join(".", runid)
-# sys.path.append(run_path)
+# Import standard modules.
+import argparse
+from importlib import import_module
+import os
+import sys
 
-# # Import the problem definition from the run results directory.
-# p = import_module(runid)
+# Import supplemental modules.
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
 
-# # Read the run hyperparameters from the run results directory.
-# import hyperparameters as hp
+# Import project modules.
+import pinn.common
 
-# # Load all data.
 
-# X_train = np.loadtxt(os.path.join(runid, "X_train.dat"))
-# x_train = X_train  # 1-D, so p.ix not needed
+# Program constants
 
-# # Load the data locations and values (includes initial conditions).
-# XY_data = np.loadtxt(os.path.join(runid, "XY_data.dat"))
+# Program description
+DESCRIPTION = "Create plots for pinn1 results for lagaris01 problem."
 
-# # Extract the initial conditions (everything after the coordinate values on each row).
-# ic = XY_data[p.n_dim:]
+# Name of directory to hold output plots
+OUTPUT_DIR = "plots_1"
 
-# # Load the model-predicted values.
-# ψ = []
-# delψ = []
-# for var_name in p.dependent_variable_names:
-#     ψ.append(np.loadtxt(os.path.join(runid, "%s_train.dat" % var_name)))
-#     delψ.append(np.loadtxt(os.path.join(runid, "del_%s_train.dat" % var_name)))
+# Name of problem
+PROBLEM_NAME = "lagaris01"
 
-# # Load the loss function histories.
-# losses_model = np.loadtxt(os.path.join(runid, "losses_model.dat"))
-# losses_model_res = np.loadtxt(os.path.join(runid, "losses_model_res.dat"))
-# losses_model_data = np.loadtxt(os.path.join(runid, "losses_model_data.dat"))
-# losses = np.loadtxt(os.path.join(runid, "losses.dat"))
-# losses_res = np.loadtxt(os.path.join(runid, "losses_res.dat"))
-# losses_data = np.loadtxt(os.path.join(runid, "losses_data.dat"))
+# Number of points to use in comparison plot.
+NUM_POINTS = 101
 
-# # Compute the limits of the training domain.
-# x_min = x_train[0]
-# x_max = x_train[-1]
 
-# # Extract the unique training point values (a grid is assumed).
-# x_train_vals = np.unique(x_train)
-# n_x_train_vals = len(x_train_vals)
+def create_command_line_argument_parser():
+    """Create the command-line argument parser.
 
-# # Plotting options
+    Create the command-line argument parser.
 
-# # Specify the size (width, height) (in inches) for individual subplots.
-# SUBPLOT_WIDTH = 5.0
-# SUBPLOT_HEIGHT = 5.0
+    Parameters
+    ----------
+    None
 
-# # Compute the coordinate plot tick locations and labels.
-# XY_N_X_TICKS = 5
-# XY_x_tick_pos = np.linspace(x_min, x_max, XY_N_X_TICKS)
-# XY_x_tick_labels = ["%.1f" % x for x in XY_x_tick_pos]
+    Returns
+    -------
+    parser : argparse.ArgumentParser
+        Parser for command-line arguments.
+    """
+    parser = argparse.ArgumentParser(DESCRIPTION)
+    parser.add_argument(
+        "--clobber", action="store_true",
+        help="Clobber existing output directory (default: %(default)s)."
+    )
+    parser.add_argument(
+        "-d", "--debug", action="store_true",
+        help="Print debugging output (default: %(default)s)."
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true",
+        help="Print verbose output (default: %(default)s)."
+    )
+    parser.add_argument(
+        "results_path",
+        help="Path to directory containing results to plot."
+    )
+    return parser
 
-# # Create figures in a memory buffer.
-# mpl.use("Agg")
 
-# # Plot the total loss function history.
-# total_loss_figsize = (SUBPLOT_WIDTH*2, SUBPLOT_HEIGHT)
-# plt.figure(figsize=total_loss_figsize)
-# psp.plot_loss_functions(
-#     [losses_res, losses_data, losses],
-#     ["$L_{res}$", "$L_{data}$", "$L$"],
-#     title="Total loss function history for %s" % runid
-# )
-# plt.savefig("loss.png")
+def main():
+    """Main program."""
+    # Set up the command-line parser.
+    parser = create_command_line_argument_parser()
 
-# # Extract the coordinates of the training points at the initial time.
-# n_start = n_x_train_vals
-# x0 = XY_data[0]
-# y0 = XY_data[-1]
+    # Parse the command-line arguments.
+    args = parser.parse_args()
+    clobber = args.clobber
+    debug = args.debug
+    verbose = args.verbose
+    results_path = args.results_path
+    if debug:
+        print(f"args = {args}", flush=True)
 
-# # Extract the trained solution.
-# y_train = ψ[0]
+    # Add the run results directory to the module search path.
+    sys.path.append(results_path)
 
-# # Compute the analytical solution at the training points.
-# y_analytical = p.Ψ_analytical(x_train)
+    # Import the problem definition from the run results directory.
+    p = import_module(PROBLEM_NAME)
 
-# # Compute the error and RMS error in the trained solution.
-# y_err = y_train - y_analytical
-# y_rms_err = np.sqrt(np.sum(y_err**2)/len(y_err))
+    # Compute the path to the output directory. Then create it if needed.
+    output_path = OUTPUT_DIR
+    if os.path.exists(output_path):
+        if not clobber:
+            raise FileExistsError(f"Output directory {output_path} exists!")
+    else:
+        os.mkdir(output_path)
 
-# # Plot the actual, predicted, and absolute error in the solution.
-# plt.clf()
-# ax1 = plt.gca()
-# ax1.plot(x_train, y_train, label="$\psi_t$")
-# ax1.plot(x_train, y_analytical, label="$\psi_a$")
-# ax1.plot(x_train, y_err, label="$\psi_{err}$")
-# ax1.legend()
-# ax1.set_xlabel(p.independent_variable_labels[0])
-# ax1.set_ylabel(p.dependent_variable_labels[0])
-# ax1.set_title(f"Trained and analytical solutions for {runid}\n"
-#               f"RMS error = {y_rms_err:.2e}")
-# plt.savefig("trained_actual_error.png")
+    # -------------------------------------------------------------------------
 
-# # Extract the trained derivative.
-# dy_dx_train = delψ[0]
+    # Plot the data loss history.
 
-# # Compute the analytical solution at the training points.
-# dy_dx_analytical = p.dΨ_dx_analytical(x_train)
+    # Read the data.
+    path = os.path.join(results_path, "L_data.dat")
+    L_dat = np.loadtxt(path)
 
-# # Compute the error and RMS error in the trained derivative.
-# dy_dx_err = dy_dx_train - dy_dx_analytical
-# dy_dx_rms_err = np.sqrt(np.sum(dy_dx_err**2)/len(dy_dx_err))
+    # Create the plot in a memory buffer.
+    mpl.use("Agg")
 
-# # Plot the actual, predicted, and absolute error in the derivative.
-# plt.clf()
-# ax1 = plt.gca()
-# ax1.plot(x_train, dy_dx_train, label="$d\psi_t/dx$")
-# ax1.plot(x_train, dy_dx_analytical, label="$d\psi_a/dx$")
-# ax1.plot(x_train, dy_dx_err, label="$d\psi/dx (err)$")
-# ax1.legend()
-# ax1.set_xlabel(p.independent_variable_labels[0])
-# ax1.set_ylabel("$d\psi/dx$")
-# ax1.set_title(f"Trained and analytical derivative for {runid}\n"
-#               f"RMS error = {dy_dx_rms_err:.2e}")
-# plt.savefig("trained_actual_derivative_error.png")
+    # Create the plot. 
+    plt.semilogy(L_dat)
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.ylim([1e-6, 1])
+    plt.title("Data loss")
+    plt.grid()
 
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "L_dat.png")
+    plt.savefig(path)
+
+    # Return to standard plotting backend.
+    mpl.use("TkAgg")
+
+    # -------------------------------------------------------------------------
+
+    # Plot the trained and analytical solutions, and the error.
+
+    # Create the plot in a memory buffer.
+    mpl.use("Agg")
+
+    # Load the trained model.
+    last_epoch = pinn.common.find_last_epoch(results_path)
+    path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                        f"model_{p.dependent_variable_names[0]}")
+    model = tf.keras.models.load_model(path)
+
+    # Create a set of x points for comparison. Use it to compute the trained
+    # and analytical solutions, and error. Also compute RMS error.
+    x = np.linspace(p.x0, p.x1, NUM_POINTS)
+    yt = model(x).numpy().reshape(NUM_POINTS)
+    ya = p.Ψ_analytical(x)
+    yerr = yt - ya
+    rms_err = np.sqrt(np.sum(yerr**2)/NUM_POINTS)
+
+    # Create the plot.
+    x_label = p.independent_variable_labels[0]
+    y_name = p.dependent_variable_names[0]
+    y_label = p.dependent_variable_labels[0]
+    plt.plot(x, yt, label=f"{y_label} (trained)")
+    plt.plot(x, ya, label=f"{y_label} (analytical)")
+    plt.plot(x, yerr, label=f"{y_label} (error)")
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.legend()
+    plt.suptitle("Trained and analytical solution, and error")
+    plt.title(f"N = {NUM_POINTS}, RMS error = {rms_err:.2e})")
+    plt.grid()
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, f"{y_name}.png")
+    plt.savefig(path)
+
+    # Return to standard plotting backend.
+    mpl.use("TkAgg")
+
+    # -------------------------------------------------------------------------
+
+    # Plot the trained and analytical derivatives, and the error.
+
+    # Create the plot in a memory buffer.
+    mpl.use("Agg")
+
+    # Compute the trained and analytical derivatives, and error.
+    # Also compute RMS error.
+    xv = tf.Variable(x.reshape(NUM_POINTS, 1))
+    with tf.GradientTape(persistent=True) as tape1:
+        yt = model(xv)
+    dyt_dx = tape1.gradient(yt, xv).numpy().reshape(NUM_POINTS)
+    dya_dx = p.dΨ_dx_analytical(x)
+    dy_dx_err = dyt_dx - dya_dx
+    rms_err = np.sqrt(np.sum(dy_dx_err**2)/NUM_POINTS)
+
+    # Create the plot.
+    x_label = p.independent_variable_labels[0]
+    y_name = f"d{p.dependent_variable_names[0]}_d{p.independent_variable_names[0]}"
+    y_label = f"d{p.dependent_variable_labels[0]}/d{p.independent_variable_labels[0]}"
+    plt.plot(x, dyt_dx, label=f"{y_label} (trained)")
+    plt.plot(x, dya_dx, label=f"{y_label} (analytical)")
+    plt.plot(x, dy_dx_err, label=f"{y_label} (error)")
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.legend()
+    plt.suptitle("Trained and analytical derivative, and error")
+    plt.title(f"N = {NUM_POINTS}, RMS error = {rms_err:.2e})")
+    plt.grid()
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, f"{y_name}.png")
+    plt.savefig(path)
+
+    # Return to standard plotting backend.
+    mpl.use("TkAgg")
+
+    # -------------------------------------------------------------------------
+
+    # Plot the weights and biases for each layer.
+
+    # Create the plot in a memory buffer.
+    mpl.use("Agg")
+
+    # Input/first hidden layer weights
+    i = 0
+    layer = model.layers[i]
+    w = layer.variables[0].numpy()
+    n_inputs = w.shape[0]
+    n_nodes = w.shape[1]
+    w.shape = (n_nodes,)
+    x = np.arange(n_nodes)
+    plt.bar(x, w)
+    plt.xlabel("Node")
+    plt.ylabel("$w$")
+    plt.title(f"Layer {i} weights")
+    path = os.path.join(output_path, f"w{i:02}.png")
+    plt.savefig(path)
+    plt.clf()
+
+    # Input layer biases
+    i = 0
+    layer = model.layers[i]
+    b = layer.variables[1].numpy()
+    w.shape = (n_nodes,)
+    x = np.arange(n_nodes)
+    plt.bar(x, b)
+    plt.xlabel("Node")
+    plt.ylabel("$b$")
+    plt.title(f"Layer {i} biases")
+    path = os.path.join(output_path, f"b{i:02}.png")
+    plt.savefig(path)
+    plt.clf()
+
+    # Output layer weights
+    i = 1
+    layer = model.layers[i]
+    w = layer.variables[0].numpy()
+    n_inputs = w.shape[0]
+    n_nodes = w.shape[1]
+    w.shape = (n_inputs,)
+    x = np.arange(n_inputs)
+    plt.bar(x, w)
+    plt.xlabel("Node")
+    plt.ylabel("$w$")
+    plt.title(f"Layer {i} weights")
+    path = os.path.join(output_path, f"w{i:02}.png")
+    plt.savefig(path)
+    plt.clf()
+
+    # Return to standard plotting backend.
+    mpl.use("TkAgg")
+
+
+if __name__ == "__main__":
+    """Begin main program."""
+    main()

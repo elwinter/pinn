@@ -42,6 +42,5 @@ eval $cmd >& pinn1.out
 
 # Create standard post-processing graphics.
 plot_cmd="$pinn_root/problems/lagaris/lagaris01/lagaris01_pinn1_plots.py"
-cmd="$plot_cmd {{ debug }} {{ verbose }} lagaris01-pinn0"
-echo "cmd=$cmd"
+cmd="$plot_cmd {{ debug }} {{ verbose }} lagaris01-pinn1"
 eval $cmd >& lagaris01_pinn1_plots.out
