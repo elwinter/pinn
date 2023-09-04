@@ -20,7 +20,7 @@ pinn_root={{ pinn_root }}
 echo "pinn_root=$pinn_root"
 
 # Load the python environment.
-source $HOME/bin/launch_conda
+source $HOME/bin/launch_conda {{ platform }}
 conda activate {{ python_environment }}
 echo "The active python environment is:"
 echo $CONDA_PREFIX
@@ -36,25 +36,12 @@ echo "The active environment variables are:"
 printenv
 
 # Run the network.
-cmd="$pinn_cmd
---activation={{ activation }}
---batch_size={{ batch_size }}
-{{ clobber }}
-{{ debug }}
---data={{ data }}
---learning_rate={{ learning_rate }}
---max_epochs={{ max_epochs }}
---n_hid={{ n_hid }}
---n_layers={{ n_layers }}
-{{ nogpu }}
---precision={{ precision }}
-{{ load_model }}
---save_model={{ save_model }}
---seed={{ random_seed }}
-{{ validation }}
-{{ verbose }}
---w_data={{ w_data }}
-{{ problem_path }}
-{{ training_points }}"
+cmd="$pinn_cmd --activation={{ activation }} --batch_size={{ batch_size }} {{ clobber }} {{ debug }} --data={{ data }} --learning_rate={{ learning_rate }} --max_epochs={{ max_epochs }} --n_hid={{ n_hid }} --n_layers={{ n_layers }} {{ nogpu }} --precision={{ precision }} {{ load_model }} --save_model={{ save_model }} --seed={{ seed }} {{ validation }} {{ verbose }} --w_data={{ w_data }} {{ problem_path }} {{ training_points }}"
 echo "cmd=$cmd"
 eval $cmd >& pinn1.out
+
+# Create standard post-processing graphics.
+plot_cmd="$pinn_root/problems/lagaris/lagaris01/lagaris01_pinn1_plots.py"
+cmd="$plot_cmd {{ debug }} {{ verbose }} lagaris01-pinn0"
+echo "cmd=$cmd"
+eval $cmd >& lagaris01_pinn1_plots.out

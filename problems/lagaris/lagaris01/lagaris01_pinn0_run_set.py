@@ -45,6 +45,7 @@ SCRIPT_TEMPLATE = os.path.join(
 # Initialize the options dictionary used to populate the run script template.
 options = {}
 options["problem_name"] = "lagaris01"
+options["platform"] = "ventura"
 # PBS job constants (for derecho)
 options["pbs_account"] = "UJHB0019"
 options["pbs_queue"] = "main"
