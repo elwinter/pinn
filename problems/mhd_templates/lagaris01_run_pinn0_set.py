@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Train a set of models for the lagaris01 problem.
+"""Train a set of pinn0 models for the lagaris01 problem.
 
-Train a set of models for the lagaris01 problem.
+Train a set of pinn0 models for the lagaris01 problem.
 
 Author
 ------
@@ -14,7 +14,7 @@ Eric Winter (eric.winter62@gmail.com)
 import argparse
 import datetime
 import os
-# import subprocess
+import subprocess
 
 # Import supplemental modules
 from jinja2 import Template
@@ -26,9 +26,9 @@ import numpy as np
 # Program constants
 
 # Program description
-DESCRIPTION = "Train a set of models for the lagaris01 problem."
+DESCRIPTION = "Train a set of pinn0 models for the lagaris01 problem."
 
-# Minimum, maximum, and count of data weights.
+# Minimum, maximum, and count of data weights. IGNORE THESE.
 W_MIN = 0.0
 W_MAX = 1.0
 N_W = 1
@@ -39,12 +39,13 @@ N_RUNS = 1
 # Path to script template.
 SCRIPT_TEMPLATE = os.path.join(
     os.environ["PINN_INSTALL_DIR"],
-    "problems", "lagaris", "lagaris01", "lagaris01_pinn1_template.pbs"
+    "problems", "lagaris", "lagaris01", "lagaris01_pinn0_template.pbs"
 )
 
 # Initialize the options dictionary used to populate the run script template.
 options = {}
 options["problem_name"] = "lagaris01"
+options["platform"] = "ventura"
 # PBS job constants (for derecho)
 options["pbs_account"] = "UJHB0019"
 options["pbs_queue"] = "main"
@@ -55,41 +56,32 @@ options["pinn_root"] = os.environ["PINN_INSTALL_DIR"]
 options["python_environment"] = "research-3.10"
 # Arguments for pinn code.
 options["activation"] = "sigmoid"
-options["batch_size"] = -1
 options["clobber"] = ""
 options["debug"] = ""
-options["data"] = os.path.join(
-    os.environ["PINN_INSTALL_DIR"],
-    "problems", "lagaris", "lagaris01", "data", "lagaris01_data.dat"
-)
 options["learning_rate"] = 0.01
 options["max_epochs"] = 100
 options["n_hid"] = 10
 options["n_layers"] = 1
 options["nogpu"] = ""
 options["precision"] = "float32"
-options["load_model"] = ""
 options["save_model"] = -1
-options["random_seed"] = None
-options["validation"] = ""
+options["seed"] = None
 options["verbose"] = "--verbose"
-options["w_data"] = None
+options["validation"] = ""
 options["problem_path"] = os.path.join(
     os.environ["PINN_INSTALL_DIR"],
     "problems", "lagaris", "lagaris01", "lagaris01.py"
 )
-options["training_points"] = os.path.join(
+options["data"] = os.path.join(
     os.environ["PINN_INSTALL_DIR"],
-    "problems", "lagaris", "lagaris01", "data", "lagaris01_10_training_grid.dat"
+    "problems", "lagaris", "lagaris01", "data", "lagaris01_data_0011.dat"
 )
 
+# Command to run the job script.
+RUN_JOB_COMMAND = "bash"
 
 # General constants
 MICROSECONDS_PER_SECOND = 1e6
-
-
-
-# Options for pinn1.py for all runs.
 
 
 def create_command_line_argument_parser():
@@ -170,14 +162,15 @@ def main():
 
             # Compute the random_seed as an integer number of microseconds for the
             # current time.
-            random_seed = datetime.datetime.now().timestamp()
-            random_seed = int(random_seed*MICROSECONDS_PER_SECOND)
+            seed = datetime.datetime.now().timestamp()
+            seed = int(seed*MICROSECONDS_PER_SECOND)
             if debug:
-                print(f"random_seed = {random_seed}")
+                print(f"random_seed = {seed}")
 
             # Assemble the run ID string.
-            run_id = f"{options['problem_name']}-{run:02d}-{random_seed}"
-            print(f"run_id = {run_id}")
+            run_id = f"{options['problem_name']}-{run:02d}-{seed}"
+            if debug:
+                print(f"run_id = {run_id}")
 
             # Make a directory for this run_id, and go there.
             # THIS SHOULD NEVER FAIL SINCE TIME MOVES FORWARD ONLY!
@@ -189,8 +182,7 @@ def main():
 
             # Update the options for this run.
             options["run_id"] = run_id
-            options["random_seed"] = random_seed
-            options["w_data"] = w
+            options["seed"] = seed
 
             # Render the template for this run and save as a file.
             script_content = script_template.render(options)
@@ -201,23 +193,25 @@ def main():
                 f.write(script_content)
 
             # Submit the job and save the output.
-            # args = [RUN_JOB_COMMAND, pbs_file]
-            # result = subprocess.run(
-            #     args, check=True,
-            #     stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            # )
-            # with open("job.out", "w") as f:
-            #     f.write(result.stdout.decode())
+            args = [RUN_JOB_COMMAND, script_file]
+            result = subprocess.run(
+                args, check=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+            with open("job.out", "w") as f:
+                f.write(result.stdout.decode())
 
             # Move back to the weight directory.
             os.chdir(weight_dir)
             cwd = os.getcwd()
-            print(f"cwd = {cwd}")
+            if debug:
+                print(f"cwd = {cwd}")
 
         # Move back to the top directory.
         os.chdir(start_dir)
         cwd = os.getcwd()
-        print(f"cwd = {cwd}")
+        if debug:
+            print(f"cwd = {cwd}")
 
 
 if __name__ == "__main__":
