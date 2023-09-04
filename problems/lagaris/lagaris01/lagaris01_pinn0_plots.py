@@ -113,7 +113,7 @@ def main():
     # Create the plot in a memory buffer.
     mpl.use("Agg")
 
-    # Create the plot. 
+    # Create the plot.
     plt.semilogy(L_dat)
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
@@ -189,8 +189,14 @@ def main():
 
     # Create the plot.
     x_label = p.independent_variable_labels[0]
-    y_name = f"d{p.dependent_variable_names[0]}_d{p.independent_variable_names[0]}"
-    y_label = f"d{p.dependent_variable_labels[0]}/d{p.independent_variable_labels[0]}"
+    y_name = (
+        f"d{p.dependent_variable_names[0]}_"
+        f"d{p.independent_variable_names[0]}"
+    )
+    y_label = (
+        f"d{p.dependent_variable_labels[0]}/"
+        f"d{p.independent_variable_labels[0]}"
+    )
     plt.plot(x, dyt_dx, label=f"{y_label} (trained)")
     plt.plot(x, dya_dx, label=f"{y_label} (analytical)")
     plt.plot(x, dy_dx_err, label=f"{y_label} (error)")

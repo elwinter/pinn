@@ -161,8 +161,8 @@ def main():
             if debug:
                 print(f"run = {run}")
 
-            # Compute the random_seed as an integer number of microseconds for the
-            # current time.
+            # Compute the random_seed as an integer number of microseconds for
+            # the current time.
             seed = datetime.datetime.now().timestamp()
             seed = int(seed*MICROSECONDS_PER_SECOND)
             if debug:

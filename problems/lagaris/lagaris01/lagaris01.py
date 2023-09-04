@@ -80,7 +80,7 @@ for (i, s) in enumerate(dependent_variable_names):
 iΨ = dependent_variable_index["Ψ"]
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = ["$\psi$"]
+dependent_variable_labels = [r"$\psi$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)

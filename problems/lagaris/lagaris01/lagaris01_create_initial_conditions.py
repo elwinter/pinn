@@ -12,7 +12,6 @@ eric.winter62@gmail.com
 import argparse
 
 # Import supplemental Python modules.
-import numpy as np
 
 # Import project Python modules.
 

@@ -81,7 +81,8 @@ options["problem_path"] = os.path.join(
 )
 options["training_points"] = os.path.join(
     os.environ["PINN_INSTALL_DIR"],
-    "problems", "lagaris", "lagaris01", "data", "lagaris01_10_training_grid.dat"
+    "problems", "lagaris", "lagaris01", "data",
+    "lagaris01_10_training_grid.dat"
 )
 
 
