@@ -32,10 +32,29 @@ export PYTHONPATH="$pinn_root:$PYTHONPATH"
 pinn_cmd=$pinn_root/pinn/pinn1.py
 echo "pinn_cmd=$pinn_cmd"
 
-# echo "The active environment variables are:"
-# printenv
+echo "The active environment variables are:"
+printenv
 
 # Run the network.
-cmd="$pinn_cmd -v --activation={{ pinn1_activation }} --batch_size={{ pinn1_batch_size }} --data={{ pinn1_data }} --learning_rate={{ pinn1_learning_rate }} --max_epochs={{ pinn1_max_epochs }} --max_epochs={{ pinn1_max_epochs }} --n_layers={{ pinn1_n_layers }} --precision={{ pinn1_precision }} --save_model={{ pinn1_save_model }} --seed={{ pinn1_seed }} --w_data={{ pinn1_w_data }} {{ pinn1_problem }} {{ pinn1_training_points }}"
+cmd="$pinn_cmd
+--activation={{ activation }}
+--batch_size={{ batch_size }}
+{{ clobber }}
+{{ debug }}
+--data={{ data }}
+--learning_rate={{ learning_rate }}
+--max_epochs={{ max_epochs }}
+--n_hid={{ n_hid }}
+--n_layers={{ n_layers }}
+{{ nogpu }}
+--precision={{ precision }}
+{{ load_model }}
+--save_model={{ save_model }}
+--seed={{ random_seed }}
+{{ validation }}
+{{ verbose }}
+--w_data={{ w_data }}
+{{ problem_path }}
+{{ training_points }}"
 echo "cmd=$cmd"
 eval $cmd >& pinn1.out
