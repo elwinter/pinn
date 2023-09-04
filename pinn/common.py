@@ -12,6 +12,7 @@ Eric Winter (eric.winter62@gmail.com)
 # Import standard modules.
 import datetime
 import glob
+import importlib
 import os
 import platform
 import shutil
@@ -211,6 +212,29 @@ def find_last_epoch(results_path):
 
     # Return the largest epoch number.
     return last_epoch
+
+
+def import_problem(problem_path):
+    """Import the Python file which defines the problem to solve.
+
+    Import the Python file which defines the problem to solve.
+
+    Parameters
+    ----------
+    problem_path : str
+        Path to problem definition file.
+
+    Returns
+    -------
+    p : module
+        Module object for problem definition.
+    """
+    problem_name = os.path.splitext(os.path.split(problem_path)[-1])[-2]
+    spec = importlib.util.spec_from_file_location(problem_name, problem_path)
+    p = importlib.util.module_from_spec(spec)
+    sys.modules[problem_name] = p
+    spec.loader.exec_module(p)
+    return p
 
 
 if __name__ == '__main__':

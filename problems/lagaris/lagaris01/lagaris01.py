@@ -150,7 +150,7 @@ def Ψ_analytical(x):
     Ψ : np.array of float, shape (n,)
         Analytical solution at each x-value.
     """
-    Ψ = tf.math.exp(-x**2/2)/(1 + x + x**3) + x**2
+    Ψ = np.exp(-x**2/2)/(1 + x + x**3) + x**2
     return Ψ
 
 
