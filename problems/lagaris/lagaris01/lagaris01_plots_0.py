@@ -144,22 +144,60 @@ def main():
     # Create a set of x points for comparison. Use it to compute the trained
     # and analytical solutions, and error. Also compute RMS error.
     x = np.linspace(p.x0, p.x1, NUM_POINTS)
-    Yt = model(x).numpy().reshape(NUM_POINTS)
-    Ya = p.Ψ_analytical(x)
-    Yerr = Yt - Ya
-    rms_err = np.sqrt(np.sum(Yerr**2)/NUM_POINTS)
+    yt = model(x).numpy().reshape(NUM_POINTS)
+    ya = p.Ψ_analytical(x)
+    yerr = yt - ya
+    rms_err = np.sqrt(np.sum(yerr**2)/NUM_POINTS)
 
     # Create the plot.
     x_label = p.independent_variable_labels[0]
     y_name = p.dependent_variable_names[0]
     y_label = p.dependent_variable_labels[0]
-    plt.plot(x, Yt, label=f"{y_label} (trained)")
-    plt.plot(x, Ya, label=f"{y_label} (analytical)")
-    plt.plot(x, Yerr, label=f"{y_label} (error)")
+    plt.plot(x, yt, label=f"{y_label} (trained)")
+    plt.plot(x, ya, label=f"{y_label} (analytical)")
+    plt.plot(x, yerr, label=f"{y_label} (error)")
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.legend()
     plt.suptitle("Trained and analytical solution, and error")
+    plt.title(f"N = {NUM_POINTS}, RMS error = {rms_err:.2e})")
+    plt.grid()
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, f"{y_name}.png")
+    plt.savefig(path)
+
+    # Return to standard plotting backend.
+    mpl.use("TkAgg")
+
+    # -------------------------------------------------------------------------
+
+    # Plot the trained and analytical derivatives, and the error.
+
+    # Create the plot in a memory buffer.
+    mpl.use("Agg")
+
+    # Compute the trained and analytical derivatives, and error.
+    # Also compute RMS error.
+    xv = tf.Variable(x.reshape(NUM_POINTS, 1))
+    with tf.GradientTape(persistent=True) as tape1:
+        yt = model(xv)
+    dyt_dx = tape1.gradient(yt, xv).numpy().reshape(NUM_POINTS)
+    dya_dx = p.dΨ_dx_analytical(x)
+    dy_dx_err = dyt_dx - dya_dx
+    rms_err = np.sqrt(np.sum(dy_dx_err**2)/NUM_POINTS)
+
+    # Create the plot.
+    x_label = p.independent_variable_labels[0]
+    y_name = f"d{p.dependent_variable_names[0]}_d{p.independent_variable_names[0]}"
+    y_label = f"d{p.dependent_variable_labels[0]}/d{p.independent_variable_labels[0]}"
+    plt.plot(x, dyt_dx, label=f"{y_label} (trained)")
+    plt.plot(x, dya_dx, label=f"{y_label} (analytical)")
+    plt.plot(x, dy_dx_err, label=f"{y_label} (error)")
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.legend()
+    plt.suptitle("Trained and analytical derivative, and error")
     plt.title(f"N = {NUM_POINTS}, RMS error = {rms_err:.2e})")
     plt.grid()
 
