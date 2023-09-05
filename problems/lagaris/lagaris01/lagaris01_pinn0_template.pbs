@@ -38,7 +38,7 @@ printenv
 # Run the network.
 cmd="$pinn_cmd --activation={{ activation }} {{ clobber }} {{ debug }} --learning_rate={{ learning_rate }} --max_epochs={{ max_epochs }} --n_hid={{ n_hid }} --n_layers={{ n_layers }} {{ nogpu }} --precision={{ precision }} --save_model={{ save_model }} --seed={{ seed }} {{ verbose }} {{ validation }} {{ problem_path }} {{ data }}"
 echo "cmd=$cmd"
-eval $cmd >& pinn1.out
+eval $cmd >& pinn0.out
 
 # Create standard post-processing graphics.
 plot_cmd="$pinn_root/problems/lagaris/lagaris01/lagaris01_pinn0_plots.py"
