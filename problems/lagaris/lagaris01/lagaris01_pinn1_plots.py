@@ -102,16 +102,19 @@ def main():
     else:
         os.mkdir(output_path)
 
+    # Create the plots in a memory buffer.
+    mpl.use("Agg")
+
     # -------------------------------------------------------------------------
 
     # Plot the data loss history.
 
+    # Clear the figure.
+    plt.clf()
+
     # Read the data.
     path = os.path.join(results_path, "L_data.dat")
     L_dat = np.loadtxt(path)
-
-    # Create the plot in a memory buffer.
-    mpl.use("Agg")
 
     # Create the plot.
     plt.semilogy(L_dat)
@@ -125,15 +128,12 @@ def main():
     path = os.path.join(output_path, "L_dat.png")
     plt.savefig(path)
 
-    # Return to standard plotting backend.
-    mpl.use("TkAgg")
-
     # -------------------------------------------------------------------------
 
     # Plot the trained and analytical solutions, and the error.
 
-    # Create the plot in a memory buffer.
-    mpl.use("Agg")
+    # Clear the figure.
+    plt.clf()
 
     # Load the trained model.
     last_epoch = pinn.common.find_last_epoch(results_path)
@@ -167,15 +167,12 @@ def main():
     path = os.path.join(output_path, f"{y_name}.png")
     plt.savefig(path)
 
-    # Return to standard plotting backend.
-    mpl.use("TkAgg")
-
     # -------------------------------------------------------------------------
 
     # Plot the trained and analytical derivatives, and the error.
 
-    # Create the plot in a memory buffer.
-    mpl.use("Agg")
+    # Clear the figure.
+    plt.clf()
 
     # Compute the trained and analytical derivatives, and error.
     # Also compute RMS error.
@@ -211,15 +208,12 @@ def main():
     path = os.path.join(output_path, f"{y_name}.png")
     plt.savefig(path)
 
-    # Return to standard plotting backend.
-    mpl.use("TkAgg")
-
     # -------------------------------------------------------------------------
 
-    # Plot the weights and biases for each layer.
+    # Plot the weights and biases for each layer
 
-    # Create the plot in a memory buffer.
-    mpl.use("Agg")
+    # Clear the figure.
+    plt.clf()
 
     # Input/first hidden layer weights
     i = 0
@@ -265,10 +259,6 @@ def main():
     plt.title(f"Layer {i} weights")
     path = os.path.join(output_path, f"w{i:02}.png")
     plt.savefig(path)
-    plt.clf()
-
-    # Return to standard plotting backend.
-    mpl.use("TkAgg")
 
 
 if __name__ == "__main__":
