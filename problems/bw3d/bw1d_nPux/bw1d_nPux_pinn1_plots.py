@@ -76,6 +76,12 @@ def create_command_line_argument_parser():
         "results_path",
         help="Path to directory containing results to plot."
     )
+    parser.add_argument(
+        "nt", type=int, help="Number of points in t-dimension"
+    )
+    parser.add_argument(
+        "nx", type=int, help="Number of points in x-dimension"
+    )
     return parser
 
 
@@ -90,6 +96,8 @@ def main():
     debug = args.debug
     verbose = args.verbose
     results_path = args.results_path
+    nt = args.nt
+    nx = args.nx
     if debug:
         print(f"args = {args}", flush=True)
 
@@ -170,102 +178,153 @@ def main():
         path = os.path.join(output_path, f"L_{v}.png")
         plt.savefig(path)
 
-    # # ------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
 
-    # # Load the training points.
-    # path = os.path.join(results_path, "X_train.dat")
-    # X_train = np.loadtxt(path)
-    # NT = 101
-    # NX = 201
+    # Load the training points.
+    path = os.path.join(results_path, "X_train.dat")
+    X_train = np.loadtxt(path)
 
-    # # Find the last trained model.
-    # last_epoch = pinn.common.find_last_epoch(results_path)
+    # Find the last trained model.
+    last_epoch = pinn.common.find_last_epoch(results_path)
 
     # ------------------------------------------------------------------------
 
-    # # Make a movie of the density evolution.
-    # v = p.dependent_variable_names[0]
-    # xlabel = p.independent_variable_names[p.ix]
-    # ylabel = p.dependent_variable_labels[0]
+    # Make a movie of the density evolution.
+    v = p.dependent_variable_names[p.i_n]
+    xlabel = p.independent_variable_names[p.ix]
+    ylabel = p.dependent_variable_labels[p.i_n]
 
-    # # Load the model for this variable.
-    # path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-    #                     f"model_{v}")
-    # model = tf.keras.models.load_model(path)
+    # Load the model for this variable.
+    path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                        f"model_{v}")
+    model = tf.keras.models.load_model(path)
 
-    # # Evaluate the model at the training points.
-    # Y_train = model(X_train).numpy().reshape(NT, NX)
+    # Evaluate the model at the training points.
+    Y_train = model(X_train).numpy().reshape(nt, nx)
 
-    # # Create a frame directory for this variable.
-    # frame_dir = os.path.join(output_path, f"frames_{v}")
-    # os.mkdir(frame_dir)
+    # Create a frame directory for this variable.
+    frame_dir = os.path.join(output_path, f"frames_{v}")
+    os.mkdir(frame_dir)
 
-    # # Create and save each frame.
-    # frames = []
-    # for i in range(NT):
-    #     plt.clf()
-    #     i0 = i*NX
-    #     i1 = i0 + NX
-    #     x = X_train[i0:i1, 1]
-    #     y = Y_train[i, :]
-    #     plt.plot(x, y)
-    #     plt.ylim([0, 1.1])
-    #     plt.xlabel(xlabel)
-    #     plt.ylabel(ylabel)
-    #     plt.title(ylabel)
-    #     path = os.path.join(frame_dir, f"{v}-{i:06}.png")
-    #     plt.savefig(path)
-    #     frames.append(path)
+    # Create and save each frame.
+    frames = []
+    for i in range(nt):
+        plt.clf()
+        i0 = i*nx
+        i1 = i0 + nx
+        x = X_train[i0:i1, 1]
+        y = Y_train[i, :]
+        plt.plot(x, y)
+        plt.ylim([0, 1.1])
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        t_frame = X_train[i0, 0]
+        t_label = f"t = {t_frame:.2e}"
+        plt.text(-1.0, 1.03, t_label)
+        title = ylabel
+        plt.title(title)
+        path = os.path.join(frame_dir, f"{v}-{i:06}.png")
+        plt.savefig(path)
+        frames.append(path)
 
-    #     # Assemble the frames into a movie.
-    #     args = ["convert", "-delay", "2", "-loop", "0"]
-    #     args.extend(frames)
-    #     path = os.path.join(output_path, f"{v}.gif")
-    #     args.append(path)
-    #     subprocess.run(args)
+    # Assemble the frames into a movie.
+    args = ["convert", "-delay", "2", "-loop", "0"]
+    args.extend(frames)
+    path = os.path.join(output_path, f"{v}.gif")
+    args.append(path)
+    subprocess.run(args)
 
-    # # ------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
 
-    # # Make a movie of the pressure evolution.
-    # v = p.dependent_variable_names[1]
-    # xlabel = p.independent_variable_names[p.ix]
-    # ylabel = p.dependent_variable_labels[0]
+    # Make a movie of the pressure evolution.
+    v = p.dependent_variable_names[p.iP]
+    xlabel = p.independent_variable_names[p.ix]
+    ylabel = p.dependent_variable_labels[p.iP]
 
-    # # Load the model for this variable.
-    # path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-    #                     f"model_{v}")
-    # model = tf.keras.models.load_model(path)
+    # Load the model for this variable.
+    path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                        f"model_{v}")
+    model = tf.keras.models.load_model(path)
 
-    # # Evaluate the model at the training points.
-    # Y_train = model(X_train).numpy().reshape(NT, NX)
+    # Evaluate the model at the training points.
+    Y_train = model(X_train).numpy().reshape(nt, nx)
 
-    # # Create a frame directory for this variable.
-    # frame_dir = os.path.join(output_path, f"frames_{v}")
-    # os.mkdir(frame_dir)
+    # Create a frame directory for this variable.
+    frame_dir = os.path.join(output_path, f"frames_{v}")
+    os.mkdir(frame_dir)
 
-    # # Create and save each frame.
-    # frames = []
-    # for i in range(NT):
-    #     plt.clf()
-    #     i0 = i*NX
-    #     i1 = i0 + NX
-    #     x = X_train[i0:i1, 1]
-    #     y = Y_train[i, :]
-    #     plt.plot(x, y)
-    #     plt.ylim([0, 1.1])
-    #     plt.xlabel(xlabel)
-    #     plt.ylabel(ylabel)
-    #     plt.title(ylabel)
-    #     path = os.path.join(frame_dir, f"{v}-{i:06}.png")
-    #     plt.savefig(path)
-    #     frames.append(path)
+    # Create and save each frame.
+    frames = []
+    for i in range(nt):
+        plt.clf()
+        i0 = i*nx
+        i1 = i0 + nx
+        x = X_train[i0:i1, 1]
+        y = Y_train[i, :]
+        plt.plot(x, y)
+        plt.ylim([0, 1.1])
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        t_frame = X_train[i0, 0]
+        t_label = f"t = {t_frame:.2e}"
+        plt.text(-1.0, 1.03, t_label)
+        plt.title(ylabel)
+        path = os.path.join(frame_dir, f"{v}-{i:06}.png")
+        plt.savefig(path)
+        frames.append(path)
 
-    #     # Assemble the frames into a movie.
-    #     args = ["convert", "-delay", "2", "-loop", "0"]
-    #     args.extend(frames)
-    #     path = os.path.join(output_path, f"{v}.gif")
-    #     args.append(path)
-    #     subprocess.run(args)
+    # Assemble the frames into a movie.
+    args = ["convert", "-delay", "2", "-loop", "0"]
+    args.extend(frames)
+    path = os.path.join(output_path, f"{v}.gif")
+    args.append(path)
+    subprocess.run(args)
+
+    # ------------------------------------------------------------------------
+
+    # Make a movie of the x-velocity evolution.
+    v = p.dependent_variable_names[p.iux]
+    xlabel = p.independent_variable_names[p.ix]
+    ylabel = p.dependent_variable_labels[p.iux]
+
+    # Load the model for this variable.
+    path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                        f"model_{v}")
+    model = tf.keras.models.load_model(path)
+
+    # Evaluate the model at the training points.
+    Y_train = model(X_train).numpy().reshape(nt, nx)
+
+    # Create a frame directory for this variable.
+    frame_dir = os.path.join(output_path, f"frames_{v}")
+    os.mkdir(frame_dir)
+
+    # Create and save each frame.
+    frames = []
+    for i in range(nt):
+        plt.clf()
+        i0 = i*nx
+        i1 = i0 + nx
+        x = X_train[i0:i1, 1]
+        y = Y_train[i, :]
+        plt.plot(x, y)
+        plt.ylim([0, 1.1])
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        t_frame = X_train[i0, 0]
+        t_label = f"t = {t_frame:.2e}"
+        plt.text(-1.0, 1.03, t_label)
+        plt.title(ylabel)
+        path = os.path.join(frame_dir, f"{v}-{i:06}.png")
+        plt.savefig(path)
+        frames.append(path)
+
+    # Assemble the frames into a movie.
+    args = ["convert", "-delay", "2", "-loop", "0"]
+    args.extend(frames)
+    path = os.path.join(output_path, f"{v}.gif")
+    args.append(path)
+    subprocess.run(args)
 
 
 if __name__ == "__main__":
