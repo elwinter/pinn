@@ -486,6 +486,13 @@ def main():
 
     # -------------------------------------------------------------------------
 
+    # Convert the complete set of training point to a TF Variable.
+    X_train = tf.Variable(X_train)
+    if debug:
+        print(f"X_train = {X_train}")
+
+    # -------------------------------------------------------------------------
+
     # Train the models.
 
     # Record the training start time.
@@ -674,25 +681,22 @@ def main():
             print("Step 3: Computing end-of-epoch loss.", flush=True)
 
         # Compute the end-of-epoch residual loss functions.
-        G2_sum = tf.zeros(p.n_var)
-        for (i_batch, X_batch) in enumerate(batches):
-            with tf.GradientTape(persistent=True) as tape1:
-                Y_batch = [model(X_batch) for model in models]
-                if debug:
-                    print(f"Y_batch = {Y_batch}", flush=True)
-            dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
+        # G2_sum contains the sum of G**2 for each model, summed over all
+        # training points in all batches.
+        with tf.GradientTape(persistent=True) as tape1:
+            Y_train = [model(X_train) for model in models]
             if debug:
-                print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
-            G_batch = [f(X_batch, Y_batch, dY_dX_batch) for f in p.de]
-            if debug:
-                print(f"G_batch = {G_batch}", flush=True)
-            G2_sum_batch = [tf.math.reduce_sum(G**2) for G in G_batch]
-            if debug:
-                print(f"G2_sum_batch = {G2_sum_batch}", flush=True)
-            G2_sum += G2_sum_batch
+                print(f"Y_train = {Y_train}", flush=True)
+        dY_dX_train = [tape1.gradient(Y, X_train) for Y in Y_train]
         if debug:
-            print(f"G2_sum = {G2_sum}", flush=True)
-        Lm_res = tf.math.sqrt(G2_sum/n_train)
+            print(f"dY_dX_train = {dY_dX_train}", flush=True)
+        G_train = [f(X_train, Y_train, dY_dX_train) for f in p.de]
+        if debug:
+            print(f"G_train = {G_train}", flush=True)
+        G2_train_sum = np.array([tf.math.reduce_sum(G**2) for G in G_train])
+        if debug:
+            print(f"G2_train_sum = {G2_train_sum}", flush=True)
+        Lm_res = tf.math.sqrt(G2_train_sum/n_train)
         for (i, v) in enumerate(p.dependent_variable_names):
             loss[v]["residual"].append(Lm_res[i])
         L_res = tf.reduce_sum(Lm_res)
