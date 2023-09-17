@@ -99,27 +99,30 @@ def save_hyperparameters(args, output_dir):
     -------
     path : str
         Path to hyperparameter file.
+
+    Raises
+    ------
+    None
     """
     path = os.path.join(output_dir, hyperparameter_file)
     with open(path, "w") as f:
-        f.write("activation = %s\n" % repr(args.activation))
+        f.write(f"activation = {repr(args.activation)}\n")
         if "batch_size" in args:
-            f.write("batch_size = %s\n" % repr(args.batch_size))
-        f.write("data = %s\n" % repr(args.data))
-        f.write("learning_rate = %s\n" % repr(args.learning_rate))
-        f.write("max_epochs = %s\n" % repr(args.max_epochs))
-        f.write("n_hid = %s\n" % repr(args.n_hid))
-        f.write("n_layers = %s\n" % repr(args.n_layers))
-        f.write("precision = %s\n" % repr(args.precision))
-        f.write("random_seed = %s\n" % repr(args.seed))
-        f.write("validation = %s\n" % repr(args.validation))
+            f.write(f"batch_size = {repr(args.batch_size)}\n")
+        f.write(f"data = {repr(args.data)}\n")
+        f.write(f"learning_rate = {repr(args.learning_rate)}\n")
+        f.write(f"max_epochs = {repr(args.max_epochs)}\n")
+        f.write(f"n_hid = {repr(args.n_hid)}\n")
+        f.write(f"n_layers = {repr(args.n_layers)}\n")
+        f.write(f"nogpu = {repr(args.nogpu)}\n")
+        f.write(f"precision = {repr(args.precision)}\n")
+        f.write(f"random_seed = {repr(args.seed)}\n")
+        f.write(f"validation = {repr(args.validation)}\n")
         if "w_data" in args:
-            f.write("w_data = %s\n" % repr(args.w_data))
-        f.write("problem_path = %s\n" % repr(args.problem_path))
+            f.write(f"w_data = {repr(args.w_data)}\n")
+        f.write(f"problem_path = {repr(args.problem_path)}\n")
         if "training_points" in args:
-            f.write("training_points = %s\n" % repr(args.training_points))
-        if "data" in args:
-            f.write("data = %s\n" % repr(args.data))
+            f.write(f"training_points = {repr(args.training_points)}\n")
     return path
 
 
@@ -137,6 +140,10 @@ def save_problem_definition(problem, output_dir):
 
     Returns
     -------
+    None
+
+    Raises
+    ------
     None
     """
     # Copy the problem definition file to the output directory.
@@ -156,23 +163,26 @@ def save_system_information(output_dir):
     Returns
     -------
     None
+
+    Raises
+    ------
+    None
     """
     path = os.path.join(output_dir, system_information_file)
     with open(path, "w") as f:
         f.write("System report:\n")
-        f.write("Start time: %s\n" % datetime.datetime.now())
-        f.write("Host name: %s\n" % platform.node())
-        f.write("Platform: %s\n" % platform.platform())
-        f.write("uname: " + " ".join(platform.uname()) + "\n")
-        f.write("Python version: %s\n" % sys.version)
-        f.write("Python build: %s\n" % " ".join(platform.python_build()))
-        f.write("Python compiler: %s\n" % platform.python_compiler())
-        f.write("Python implementation: %s\n" %
-                platform.python_implementation())
-        f.write("NumPy version: %s\n" % np.__version__)
-        f.write("TensorFlow version: %s\n" % tf.__version__)
-        f.write("Available TensorFlow devices: %s\n" %
-                device_lib.list_local_devices())
+        f.write(f"Start time: {datetime.datetime.now()}\n")
+        f.write(f"Host name: {platform.node()}\n")
+        f.write(f"Platform: {platform.platform()}\n")
+        f.write(f"uname: {' '.join(platform.uname())}\n")
+        f.write(f"Python version: {sys.version}\n")
+        f.write(f"Python build: {' '.join(platform.python_build())}\n")
+        f.write(f"Python compiler: {platform.python_compiler()}\n")
+        f.write(f"Python implementation: {platform.python_implementation()}\n")
+        f.write(f"NumPy version: {np.__version__}\n")
+        f.write(f"TensorFlow version: {tf.__version__}\n")
+        f.write("Available TensorFlow devices: "
+                f"{device_lib.list_local_devices()}\n")
 
 
 def find_last_epoch(results_path):
