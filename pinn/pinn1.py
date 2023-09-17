@@ -424,7 +424,7 @@ def main():
         print(f"Seeding random number generator with {seed}.", flush=True)
     tf.random.set_seed(seed)
 
-    # # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
     # Prepare inputs for TensorFlow.
 
@@ -671,7 +671,7 @@ def main():
 
         # Step 3: Compute the end-of-epoch loss functions.
         if debug:
-            print(f"Step 3: Computing end-of-epoch loss.", flush=True)
+            print("Step 3: Computing end-of-epoch loss.", flush=True)
 
         # Compute the end-of-epoch residual loss functions.
         G2_sum = tf.zeros(p.n_var)
