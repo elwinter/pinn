@@ -37,13 +37,13 @@ printenv
 
 # Run the network.
 echo "Training network."
-cmd="$pinn_cmd --activation={{ activation }} --batch_size={{ batch_size }} {{ clobber }} {{ debug }} --data={{ data }} --learning_rate={{ learning_rate }} --max_epochs={{ max_epochs }} --n_hid={{ n_hid }} --n_layers={{ n_layers }} {{ nogpu }} --precision={{ precision }} {{ load_model }} --save_model={{ save_model }} --seed={{ seed }} {{ validation }} {{ verbose }} --w_data={{ w_data }} {{ problem_path }} {{ training_points }}"
+cmd="$pinn_cmd --verbose --activation={{ pinn1_activation }} --batch_size={{ pinn1_batch_size }} --data={{ pinn1_data }} --learning_rate={{ pinn1_learning_rate }} --max_epochs={{ pinn1_max_epochs }} --n_hid={{ pinn1_n_hid }} --n_layers={{ pinn1_n_layers }} --precision={{ pinn1_precision }} --save_model={{ pinn1_save_model }} --seed={{ pinn1_seed }}  --w_data={{ pinn1_w_data }} {{ pinn1_problem }} {{ pinn1_training_points }}"
 echo "cmd=$cmd"
-eval $cmd #>& pinn1.out
+eval $cmd >& pinn1.out
 
 # Create standard post-processing graphics.
 echo "Creating plots."
 plot_cmd="$pinn_root/problems/bw3d/bw1d_nPux/bw1d_nPux_pinn1_plots.py"
 cmd="$plot_cmd {{ debug }} {{ verbose }} bw1d_nPux-pinn1"
 echo "cmd=$cmd"
-eval $cmd #>& bw1d_nPux_pinn1_plots.out
+eval $cmd >& bw1d_nPux_pinn1_plots.out
