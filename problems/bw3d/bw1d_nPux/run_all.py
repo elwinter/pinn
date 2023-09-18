@@ -20,7 +20,8 @@ MICROSECONDS_PER_SECOND = 1e6
 options = {}
 
 # Specify the software installation to use.
-options["pinn_root"] = os.environ["RESEARCH_INSTALL_DIR"]
+pinn_root = os.environ["RESEARCH_INSTALL_DIR"]
+options["pinn_root"] = pinn_root
 options["python_environment"] = "research-3.10"
 
 # Number of runs per data weight value.
@@ -48,28 +49,21 @@ options["problem_name"] = "bw1d_nPux"
 # Options for pinn1.py for all runs.
 options["pinn1_activation"] = "sigmoid"
 options["pinn1_batch_size"] = -1
-# options["pinn1_clobber"] = False
-# options["pinn1_convcheck"] = False
-# options["pinn1_debug"] = False
 options["pinn1_learning_rate"] = 0.01
-options["pinn1_max_epochs"] = 100
-options["pinn1_n_hid"] = 10
-options["pinn1_n_layers"] = 1
+options["pinn1_max_epochs"] = 10000
+options["pinn1_n_hid"] = 100
+options["pinn1_n_layers"] = 4
 options["pinn1_precision"] = "float32"
-options["pinn1_save_model"] = -1
-# options["pinn1_save_weights"] = False
-options["pinn1_seed"] = None
-# options["tolerance"] = 1e-3
-# options["verbose"] = True
-# options["validation"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d_nPux/bw1d_nPux_validation.dat"
-# options["verbose"] = True
+options["pinn1_save_model"] = 1000
 options["pinn1_w_data"] = None
-options["pinn1_problem"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d_nPux/bw1d_nPux.py"
-options["pinn1_training_points"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d_nPux/bw1d_nPux_401_401_training_grid.dat"
-options["pinn1_data"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d_nPux/bw1d_nPux_401_401_data.dat"
-    
+options["pinn1_data"] = f"{pinn_root}/problems/bw3d/bw1d_nPux/data/bw1d_nPux_101_201_data.dat"
+options["pinn1_problem"] = f"{pinn_root}/problems/bw3d/bw1d_nPux/bw1d_nPux.py"
+options["pinn1_training_points"] = f"{pinn_root}/problems/bw3d/bw1d_nPux/data/bw1d_nPux_101_201_training_grid.dat"
+options["n_t"] = 101
+options["n_x"] = 201
+
 # Read and create the PBS script template.
-PBS_TEMPLATE_FILE = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw1d_nPux/bw1d_nPux-template.pbs"
+PBS_TEMPLATE_FILE = f"{pinn_root}/problems/bw3d/bw1d_nPux/bw1d_nPux_pinn1_template.pbs"
 with open(PBS_TEMPLATE_FILE) as f:
     pbs_template_content = f.read()
 pbs_template = Template(pbs_template_content)
@@ -80,19 +74,19 @@ def main():
 
     # Save the starting directory.
     start_dir = os.getcwd()
-    print(f"start_dir = {start_dir}")
+    # print(f"start_dir = {start_dir}")
 
     # Perform all runs.
     for w in WS:
-        print(f"w = {w:.2f}")
+        # print(f"w = {w:.2f}")
 
         # Make a directory for runs using this weight, and go there.
         w_dirname = f"w={w:.2f}"
-        print(f"w_dirname = {w_dirname}")
+        # print(f"w_dirname = {w_dirname}")
         os.mkdir(w_dirname)
         os.chdir(w_dirname)
         weight_dir = os.getcwd()
-        print(f"Current directory is {weight_dir}.")
+        # print(f"Current directory is {weight_dir}.")
 
         # Perform runs for this data weight.
         for run in range(N_RUNS):
@@ -105,13 +99,13 @@ def main():
 
             # Assemble the run ID string.
             run_id = f"{options['problem_name']}-{run:02d}-{seed}"
-            print(f"run_id = {run_id}")
+            # print(f"run_id = {run_id}")
 
             # Make a directory for this run_id, and go there.
             os.mkdir(run_id)
             os.chdir(run_id)
             cwd = os.getcwd()
-            print(f"Current directory is {cwd}.")
+            # print(f"Current directory is {cwd}.")
 
             # Update the options for this run.
             options["run_id"] = run_id
@@ -126,6 +120,7 @@ def main():
                 f.write(pbs_content)
 
             # Submit the job and save the output.
+            print(f"Submitting run {run_id} in directory {cwd}.")
             args = [RUN_JOB_COMMAND, pbs_file]
             result = subprocess.run(
                 args, check=True,
@@ -137,12 +132,12 @@ def main():
             # Move back to the weight directory.
             os.chdir(weight_dir)
             cwd = os.getcwd()
-            print(f"Current directory is {cwd}.")
+            # print(f"Current directory is {cwd}.")
 
         # Move back to the top directory.
         os.chdir(start_dir)
         cwd = os.getcwd()
-        print(f"Current directory is {cwd}.")
+        # print(f"Current directory is {cwd}.")
 
 
 if __name__ == "__main__":
