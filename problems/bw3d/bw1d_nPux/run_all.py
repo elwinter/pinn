@@ -63,7 +63,7 @@ options["n_t"] = 101
 options["n_x"] = 201
 
 # Read and create the PBS script template.
-PBS_TEMPLATE_FILE = f"{pinn_root}/problems/bw3d/bw1d_nPux/bw1d_nPux_pinn1_template.pbs"
+PBS_TEMPLATE_FILE = f"{pinn_root}/problems/bw3d/bw1d_nPux/bw1d_nPux-pinn1-template.pbs"
 with open(PBS_TEMPLATE_FILE) as f:
     pbs_template_content = f.read()
 pbs_template = Template(pbs_template_content)
