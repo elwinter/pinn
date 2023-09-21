@@ -12,136 +12,139 @@ import numpy as np
 # Import project modules
 
 
-PROBLEM_CLASS = "bw3d"
-PROBLEM_NAME = "bw3d"
-# print(f"PROBLEM_CLASS = {PROBLEM_CLASS}")
-# print(f"PROBLEM_NAME = {PROBLEM_NAME}")
-
-RESEARCH_ROOT = os.environ["RESEARCH_INSTALL_DIR"]
-PROBLEMS_DIR = os.path.join(RESEARCH_ROOT, "problems")
-PROBLEM_DIR = os.path.join(PROBLEMS_DIR, PROBLEM_CLASS, PROBLEM_NAME)
-PROBLEM_DEFINITION_FILE = os.path.join(PROBLEM_DIR, f"{PROBLEM_NAME}.py")
-PROBLEM_TRAINING_GRID_FILE = os.path.join(PROBLEM_DIR, f"{PROBLEM_NAME}_training_grid.dat")
-PROBLEM_DATA_FILE = os.path.join(PROBLEM_DIR, f"{PROBLEM_NAME}_data.dat")
-PBS_TEMPLATE_FILE = os.path.join(PROBLEM_DIR, f"{PROBLEM_NAME}-template.pbs")
-# print(f"RESEARCH_ROOT = {RESEARCH_ROOT}")
-# print(f"PROBLEMS_DIR = {PROBLEMS_DIR}")
-# print(f"PROBLEM_DIR = {PROBLEM_DIR}")
-# print(f"PROBLEM_DEFINITION_FILE = {PROBLEM_DEFINITION_FILE}")
-# print(f"PROBLEM_TRAINING_GRID_FILE = {PROBLEM_TRAINING_GRID_FILE}")
-# print(f"PROBLEM_DATA_FILE = {PROBLEM_DATA_FILE}")
-# print(f"PBS_TEMPLATE_FILE = {PBS_TEMPLATE_FILE}")
-
 # General constants
 MICROSECONDS_PER_SECOND = 1e6
 
-# PBS job control constants
-QSUB_COMMAND = "bash"
-# QSUB_COMMAND = "qsub"
-# PBS_ACCOUNT = "UJHB0019"
-# PBS_QUEUE = "main"
-# PBS_WALLTIME = "00:05:00"
-# PBS_SELECT = "select=1:ncpus=128"
 
-# Run environment constants
-RUN_PLATFORM = "ventura"
-RUN_PYTHON_ENVIRONMENT = "research-3.10"
-RUN_CODE_BRANCH = "development"
-RUN_PROBLEM_CLASS = "bw3d"
-RUN_PROBLEM_NAME = "bw3d"
+# Initialize the options dictionary.
+options = {}
 
-# Problem set constants
+# Specify the software installation to use.
+options["pinn_root"] = os.environ["RESEARCH_INSTALL_DIR"]
+options["python_environment"] = "research-3.10"
+
+# Number of runs per data weight value.
 N_RUNS = 1
-W_MIN = 0.0
-W_MAX = 1.0
-N_W = 1
-WS = np.linspace(W_MIN, W_MAX, N_W)
-N_LAYERS = 1
-SAVE_MODEL = -1
-N_LAYERS = 1
-N_HID = 10
-MAX_EPOCHS=100
 
+# Range of data weights to use.
+W_MIN = 0.00
+W_MAX = 1.00
+N_W = 11
+WS = np.linspace(W_MIN, W_MAX, N_W)
+
+# PBS job control constants
+RUN_JOB_COMMAND = "bash"
+# RUN_JOB_COMMAND = "qsub"
+
+# PBS job constants (for derecho)
+options["pbs_account"] = "UJHB0019"
+options["pbs_queue"] = "main"
+options["pbs_walltime"] = "00:05:00"
+options["pbs_select"] = "select=1:ncpus=128"
+
+# Options for problem set
+options["problem_name"] = "bw3d"
+
+# Options for pinn1.py for all runs.
+options["pinn1_activation"] = "sigmoid"
+options["pinn1_batch_size"] = -1
+# options["pinn1_clobber"] = False
+# options["pinn1_convcheck"] = False
+# options["pinn1_debug"] = False
+options["pinn1_learning_rate"] = 0.01
+options["pinn1_max_epochs"] = 10000
+options["pinn1_n_hid"] = 10
+options["pinn1_n_layers"] = 1
+options["pinn1_precision"] = "float32"
+options["pinn1_save_model"] = 1000
+# options["pinn1_save_weights"] = False
+options["pinn1_seed"] = None
+# options["tolerance"] = 1e-3
+# options["verbose"] = True
+# options["validation"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d_validation.dat"
+# options["verbose"] = True
+options["pinn1_w_data"] = None
+options["pinn1_problem"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d.py"
+options["pinn1_training_points"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d_011_021_021_021_training_grid.dat"
+options["pinn1_data"] = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d_011_021_021_021_data.dat"
+    
 # Read and create the PBS script template.
+PBS_TEMPLATE_FILE = "/homes/winteel1/mollie/research/src/pinn/development/pinn/problems/bw3d/bw3d/bw3d-template.pbs"
 with open(PBS_TEMPLATE_FILE) as f:
     pbs_template_content = f.read()
 pbs_template = Template(pbs_template_content)
 
-# Save the starting directory.
-start_dir = os.getcwd()
-# print(f"start_dir = {start_dir}")
 
-# Perform all runs.
-for w in WS:
-    # print(f"w = {w:.2f}")
+def main():
+    """Begin main program."""
 
-    # Make a directory for runs using this weight, and go there.
-    w_dirname = f"w={w:.2f}"
-    # print(f"w_dirname = {w_dirname}")
-    os.mkdir(w_dirname)
-    os.chdir(w_dirname)
-    weight_dir = os.getcwd()
-    # print(f"Current directory is {weight_dir}.")
+    # Save the starting directory.
+    start_dir = os.getcwd()
+    print(f"start_dir = {start_dir}")
 
-    for run in range(N_RUNS):
-        # print(f"run = {run}")
+    # Perform all runs.
+    for w in WS:
+        print(f"w = {w:.2f}")
 
-        # Compute the seed as an integer number of microseconds.
-        seed = datetime.datetime.now().timestamp()
-        seed = int(seed*MICROSECONDS_PER_SECOND)
-        # print(f"seed = {seed}")
+        # Make a directory for runs using this weight, and go there.
+        w_dirname = f"w={w:.2f}"
+        print(f"w_dirname = {w_dirname}")
+        os.mkdir(w_dirname)
+        os.chdir(w_dirname)
+        weight_dir = os.getcwd()
+        print(f"Current directory is {weight_dir}.")
 
-        # Assemble the run ID string.
-        run_id = f"{PROBLEM_NAME}-{run:02d}-{seed}"
-        print(f"run_id = {run_id}")
+        # Perform runs for this data weight.
+        for run in range(N_RUNS):
+            # print(f"run = {run}")
 
-        # Make a directory for this run_id, and go there.
-        os.mkdir(run_id)
-        os.chdir(run_id)
+            # Compute the seed as an integer number of microseconds.
+            seed = datetime.datetime.now().timestamp()
+            seed = int(seed*MICROSECONDS_PER_SECOND)
+            # print(f"seed = {seed}")
+
+            # Assemble the run ID string.
+            run_id = f"{options['problem_name']}-{run:02d}-{seed}"
+            print(f"run_id = {run_id}")
+
+            # Make a directory for this run_id, and go there.
+            os.mkdir(run_id)
+            os.chdir(run_id)
+            cwd = os.getcwd()
+            print(f"Current directory is {cwd}.")
+
+            # Update the options for this run.
+            options["run_id"] = run_id
+            options["pinn1_seed"] = seed
+            options["pinn1_w_data"] = w
+
+            # Render the template for this run and save as a file.
+            pbs_content = pbs_template.render(options)
+            # print(f"pbs_content = {pbs_content}")
+            pbs_file = f"{run_id}.pbs"
+            with open(pbs_file, "w") as f:
+                f.write(pbs_content)
+
+            # Submit the job and save the output.
+            args = [RUN_JOB_COMMAND, pbs_file]
+            subprocess.run(args, check=True)
+            # result = subprocess.run(
+            #     args, check=True,
+            #     stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            # )
+            # with open("job.out", "w") as f:
+            #     f.write(result.stdout.decode())
+
+            # Move back to the weight directory.
+            os.chdir(weight_dir)
+            cwd = os.getcwd()
+            print(f"Current directory is {cwd}.")
+
+        # Move back to the top directory.
+        os.chdir(start_dir)
         cwd = os.getcwd()
-        # print(f"Current directory is {cwd}.")
+        print(f"Current directory is {cwd}.")
 
-        # Assemble the dictionary for the template.
-        options = {
-            "run_id": run_id,
-            "pbs_jobid": run_id,
-            "run_platform": RUN_PLATFORM,
-            "run_python_environment": RUN_PYTHON_ENVIRONMENT,
-            "run_code_branch": RUN_CODE_BRANCH,
-            "run_problem_class": RUN_PROBLEM_CLASS,
-            "run_problem_name": RUN_PROBLEM_NAME,
-            "max_epochs": MAX_EPOCHS,
-            "n_hid": N_HID,
-            "n_layers": N_LAYERS,
-            "save_model": SAVE_MODEL,
-            "seed": seed,
-            "w": w,
-#             "pbs_account": PBS_ACCOUNT,
-#             "pbs_queue": PBS_QUEUE,
-#             "pbs_select": PBS_SELECT,
-#             "pbs_walltime": PBS_WALLTIME,
-        }
 
-        # Render the template for this run and save as a file.
-        pbs_content = pbs_template.render(options)
-        # print(f"pbs_content = {pbs_content}")
-        pbs_file = f"{run_id}.pbs"
-        with open(pbs_file, "w") as f:
-            f.write(pbs_content)
-
-        # Submit the job and save the output.
-        args = [QSUB_COMMAND, pbs_file]
-        result = subprocess.run(
-            args, check=True,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
-
-        # Move back to the weight directory.
-        os.chdir(weight_dir)
-        cwd = os.getcwd()
-        # print(f"Current directory is {cwd}.")
-
-    # Move back to the top directory.
-    os.chdir(start_dir)
-    cwd = os.getcwd()
-    # print(f"Current directory is {cwd}.")
+if __name__ == "__main__":
+    main()

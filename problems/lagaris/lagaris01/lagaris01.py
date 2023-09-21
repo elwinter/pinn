@@ -80,7 +80,7 @@ for (i, s) in enumerate(dependent_variable_names):
 iΨ = dependent_variable_index["Ψ"]
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = ["$\psi$"]
+dependent_variable_labels = [r"$\psi$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
@@ -150,7 +150,7 @@ def Ψ_analytical(x):
     Ψ : np.array of float, shape (n,)
         Analytical solution at each x-value.
     """
-    Ψ = tf.math.exp(-x**2/2)/(1 + x + x**3) + x**2
+    Ψ = np.exp(-x**2/2)/(1 + x + x**3) + x**2
     return Ψ
 
 

@@ -133,3 +133,6 @@ dmypy.json
 
 # Mac stuff
 .DS_Store
+
+# Emacs backup files.
+*~

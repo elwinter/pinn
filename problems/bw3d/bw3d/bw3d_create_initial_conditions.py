@@ -104,7 +104,7 @@ def main():
             for z in zg:
                 r = np.sqrt(x**2 + y**2 + z**2)
                 n = n0
-                if r < R0:
+                if r <= R0:
                     P = P_blast
                 else:
                     P = P0
