@@ -177,6 +177,7 @@ def main():
         # Save the plot to a PNG file.
         path = os.path.join(output_path, f"L_{v}.png")
         plt.savefig(path)
+        plt.close()
 
     # ------------------------------------------------------------------------
 
@@ -184,8 +185,31 @@ def main():
     path = os.path.join(results_path, "X_train.dat")
     X_train = np.loadtxt(path)
 
+    # Load the additional data.
+    path = os.path.join(results_path, "XY_data.dat")
+    XY_data = np.loadtxt(path)
+
     # Find the last trained model.
     last_epoch = pinn.common.find_last_epoch(results_path)
+
+    # ------------------------------------------------------------------------
+
+    # Plot the initial pressure provided by data.
+    v = p.dependent_variable_names[p.iP]
+    xlabel = p.independent_variable_names[p.ix]
+    ylabel = p.dependent_variable_labels[p.iP]
+
+    # Load the data for P(0).
+    x = XY_data[:, p.ix]
+    P = XY_data[:, p.n_dim + p.iP]
+    print(P.min(), P.max(), P)
+    plt.plot(x, P)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title("Initial pressure data")
+    path = os.path.join("P0.png")
+    plt.savefig(path)
+    plt.close()
 
     # ------------------------------------------------------------------------
 
