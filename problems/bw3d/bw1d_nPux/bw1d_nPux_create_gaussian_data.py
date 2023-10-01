@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Compute initial conditions for bw3d.
+"""Compute Gaussian initial conditions for bw1d_nPux problem.
 
 Author
 ------
@@ -21,7 +21,7 @@ from scipy.stats import norm
 # Program constants
 
 # Program description.
-description = "Compute initial conditions for bw3d problem."
+description = "Compute Gaussian initial conditions for bw1d_nPux problem."
 
 # Constants
 P_blast = 1.0
