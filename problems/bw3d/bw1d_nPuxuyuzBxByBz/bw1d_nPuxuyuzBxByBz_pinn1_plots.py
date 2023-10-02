@@ -489,52 +489,6 @@ def main():
 
     # ------------------------------------------------------------------------
 
-    # Make a movie of the x-magnetic field evolution.
-    v = p.dependent_variable_names[p.iBx]
-    xlabel = p.independent_variable_names[p.ix]
-    ylabel = p.dependent_variable_labels[p.iBx]
-
-    # Load the model for this variable.
-    path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-                        f"model_{v}")
-    model = tf.keras.models.load_model(path)
-
-    # Evaluate the model at the training points.
-    Y_train = model(X_train).numpy().reshape(nt, nx)
-
-    # Create a frame directory for this variable.
-    frame_dir = os.path.join(output_path, f"frames_{v}")
-    os.mkdir(frame_dir)
-
-    # Create and save each frame.
-    frames = []
-    for i in range(nt):
-        plt.clf()
-        i0 = i*nx
-        i1 = i0 + nx
-        x = X_train[i0:i1, 1]
-        y = Y_train[i, :]
-        plt.plot(x, y)
-        plt.ylim([0, 1.1])
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        t_frame = X_train[i0, 0]
-        t_label = f"t = {t_frame:.2e}"
-        plt.text(-1.0, 1.03, t_label)
-        plt.title(ylabel)
-        path = os.path.join(frame_dir, f"{v}-{i:06}.png")
-        plt.savefig(path)
-        frames.append(path)
-
-    # Assemble the frames into a movie.
-    args = ["convert", "-delay", "2", "-loop", "0"]
-    args.extend(frames)
-    path = os.path.join(output_path, f"{v}.gif")
-    args.append(path)
-    subprocess.run(args)
-
-    # ------------------------------------------------------------------------
-
     # Make a movie of the y-magnetic field evolution.
     v = p.dependent_variable_names[p.iBy]
     xlabel = p.independent_variable_names[p.ix]
