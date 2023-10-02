@@ -202,7 +202,6 @@ def main():
     # Load the data for P(0).
     x = XY_data[:, p.ix]
     P = XY_data[:, p.n_dim + p.iP]
-    print(P.min(), P.max(), P)
     plt.plot(x, P)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
