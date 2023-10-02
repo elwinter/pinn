@@ -206,7 +206,7 @@ def main():
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title("Initial pressure data")
-    path = os.path.join("P0.png")
+    path = os.path.join(output_path, "P0.png")
     plt.savefig(path)
     plt.close()
 
