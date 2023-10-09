@@ -58,6 +58,10 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(DESCRIPTION)
     parser.add_argument(
@@ -65,11 +69,11 @@ def create_command_line_argument_parser():
         help="Clobber existing output directory (default: %(default)s)."
     )
     parser.add_argument(
-        "-d", "--debug", action="store_true",
+        "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
-        "-v", "--verbose", action="store_true",
+        "--verbose", "-v", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument(
@@ -92,14 +96,14 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}", flush=True)
     clobber = args.clobber
     debug = args.debug
     verbose = args.verbose
     results_path = args.results_path
     nt = args.nt
     nx = args.nx
-    if debug:
-        print(f"args = {args}", flush=True)
 
     # Add the run results directory to the module search path.
     sys.path.append(results_path)
@@ -114,6 +118,8 @@ def main():
             raise FileExistsError(f"Output directory {output_path} exists!")
     else:
         os.mkdir(output_path)
+
+    # -------------------------------------------------------------------------
 
     # Create the plots in a memory buffer.
     mpl.use("Agg")
@@ -139,7 +145,7 @@ def main():
     plt.ylabel("Loss")
     plt.ylim(ylim["L"])
     plt.legend()
-    plt.title(f"Aggregate residual, data, and weighted loss")
+    plt.title("Aggregate residual, data, and weighted loss")
     plt.grid()
 
     # Save the plot to a PNG file.
@@ -171,7 +177,7 @@ def main():
         plt.ylabel("Loss")
         plt.ylim(ylim["L"])
         plt.legend()
-        plt.title(f"Residual, data, and aggregate loss for {v}")
+        plt.title(f"Residual, data, and weighted loss for {v}")
         plt.grid()
 
         # Save the plot to a PNG file.
@@ -212,7 +218,7 @@ def main():
 
     # ------------------------------------------------------------------------
 
-    # Make a movie of the density evolution.
+    # Make a movie of the number density evolution.
     v = p.dependent_variable_names[p.i_n]
     xlabel = p.independent_variable_names[p.ix]
     ylabel = p.dependent_variable_labels[p.i_n]
@@ -235,13 +241,13 @@ def main():
         plt.clf()
         i0 = i*nx
         i1 = i0 + nx
-        x = X_train[i0:i1, 1]
+        x = X_train[i0:i1, p.ix]
         y = Y_train[i, :]
         plt.plot(x, y)
-        plt.ylim([0, 1.1])
+        plt.ylim(ylim["n"])
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-        t_frame = X_train[i0, 0]
+        t_frame = X_train[i0, p.it]
         t_label = f"t = {t_frame:.2e}"
         plt.text(-1.0, 1.03, t_label)
         title = ylabel
@@ -255,7 +261,7 @@ def main():
     args.extend(frames)
     path = os.path.join(output_path, f"{v}.gif")
     args.append(path)
-    subprocess.run(args)
+    subprocess.run(args, check=True)
 
     # ------------------------------------------------------------------------
 
