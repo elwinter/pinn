@@ -358,6 +358,7 @@ def main():
             models.append(model)
     if debug:
         print(f"models = {models}", flush=True)
+    # SAVE MODEL DESCRIPTIONS!
 
     # Create the optimizer.
     if verbose:
