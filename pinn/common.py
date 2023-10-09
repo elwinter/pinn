@@ -247,5 +247,31 @@ def import_problem(problem_path):
     return p
 
 
+def disable_gpus():
+    """Tell TensorFlow not to use GPU.
+
+    Tell TensorFlow not to use GPU.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    AssertionError : If this code cannot disable a GPU.
+    """
+    # Disable all GPUS.
+    tf.config.set_visible_devices([], "GPU")
+
+    # Make sure the GPU were disabled.
+    visible_devices = tf.config.get_visible_devices()
+    for device in visible_devices:
+        assert device.device_type != "GPU"
+
+
 if __name__ == '__main__':
     pass

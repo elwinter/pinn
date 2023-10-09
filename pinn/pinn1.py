@@ -28,43 +28,43 @@ from pinn import common
 
 # Program constants
 
-# Program description.
+# Program description
 DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
 
 # Program defaults
 
-# Default activation function to use in hidden nodes.
+# Default activation function to use in hidden nodes
 DEFAULT_ACTIVATION = "sigmoid"
 
-# Default number of training samples in batch (-1 - use single batch).
+# Default number of training samples in batch (-1 - use single batch)
 DEFAULT_BATCH_SIZE = -1
 
-# Default learning rate.
+# Default learning rate
 DEFAULT_LEARNING_RATE = 0.01
 
-# Default maximum number of training epochs.
+# Default maximum number of training epochs
 DEFAULT_MAX_EPOCHS = 100
 
-# Default number of hidden nodes per layer.
+# Default number of hidden nodes per layer
 DEFAULT_N_HID = 10
 
 # Default number of layers in the fully-connected network, each with n_hid
-# nodes.
+# nodes
 DEFAULT_N_LAYERS = 1
 
-# Default TensorFlow precision for computations.
+# Default TensorFlow precision for computations
 DEFAULT_PRECISION = "float32"
 
-# Default interval (in epochs) for saving the model.
+# Default interval (in epochs) for saving the model
 # 0 = do not save model
 # -1 = only save at end
-# n > 0: Save after every n epochs.
+# n > 0: Save after every n epochs
 DEFAULT_SAVE_MODEL = -1
 
-# Default random number generator seed.
+# Default random number generator seed
 DEFAULT_SEED = 0
 
-# Default normalized weight to apply to the data loss function.
+# Default normalized weight to apply to the data loss function
 DEFAULT_W_DATA = 0.0
 
 
@@ -170,59 +170,6 @@ def create_command_line_argument_parser():
     return parser
 
 
-def disable_gpus():
-    """Tell TensorFlow not to use GPU.
-
-    Tell TensorFlow not to use GPU.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    AssertionError : If this code cannot disable a GPU.
-    """
-    # Disable all GPUS.
-    tf.config.set_visible_devices([], "GPU")
-
-    # Make sure the GPU were disabled.
-    visible_devices = tf.config.get_visible_devices()
-    for device in visible_devices:
-        assert device.device_type != "GPU"
-
-
-def import_problem(problem_path):
-    """Import the Python file which defines the problem to solve.
-
-    Import the Python file which defines the problem to solve.
-
-    Parameters
-    ----------
-    problem_path : str
-        Path to problem definition file.
-
-    Returns
-    -------
-    p : module
-        Module object for problem definition.
-
-    Raises
-    ------
-    None
-    """
-    problem_name = os.path.splitext(os.path.split(problem_path)[-1])[-2]
-    spec = importlib.util.spec_from_file_location(problem_name, problem_path)
-    p = importlib.util.module_from_spec(spec)
-    sys.modules[problem_name] = p
-    spec.loader.exec_module(p)
-    return p
-
-
 def main():
     """Begin main program."""
     # Set up the command-line parser.
@@ -260,7 +207,7 @@ def main():
     if nogpu:
         if verbose:
             print("Disabling TensorFlow use of GPU.", flush=True)
-        disable_gpus()
+        common.disable_gpus()
 
     # Set the backend TensorFlow precision.
     if verbose:
@@ -274,7 +221,7 @@ def main():
     # Import the problem to solve.
     if verbose:
         print(f"Importing module for problem {problem_path}.", flush=True)
-    p = import_problem(problem_path)
+    p = common.import_problem(problem_path)
     if debug:
         print(f"p = {p}", flush=True)
 
