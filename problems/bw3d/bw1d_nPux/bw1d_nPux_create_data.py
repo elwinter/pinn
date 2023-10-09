@@ -103,7 +103,7 @@ def main():
         print(f"xg = {xg}")
 
     # Compute the initial conditions at spatial locations.
-    # First 2 lines are comment header.
+    # First 3 lines are comment header.
     # Each subsequent line is:
     # tg[0] x n P ux
     header = "# t x"

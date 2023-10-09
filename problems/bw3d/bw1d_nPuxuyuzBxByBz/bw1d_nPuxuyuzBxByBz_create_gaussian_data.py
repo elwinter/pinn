@@ -114,7 +114,7 @@ def main():
     # Compute the initial conditions at spatial locations.
     # First 3 lines are comment header.
     # Each line is:
-    # tg[0] x n P ux uy Bx By Bz
+    # tg[0] x n P ux uy uz Bx By Bz
     header = "# t x"
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
@@ -122,9 +122,8 @@ def main():
     header = "# t x n P ux"
     print(header)
     for x in xg:
-        r = np.sqrt(x**2)
         n = n0
-        # Gaussian blast of same total energy as step function
+        # Gaussian blast of same total energy as hat function
         # Centered at x = 0, with stddev = 0.05, so blast mostly
         # contained inside |x| < 0.25.
         P = P0 + E_blast*norm.pdf(x, loc=0, scale=0.05)

@@ -123,9 +123,8 @@ def main():
     header = "# t x n P ux uy uz Bx By Bz"
     print(header)
     for x in xg:
-        r = np.sqrt(x**2)
         n = n0
-        if r <= R_blast:
+        if np.abs(x) <= R_blast:
             P = P_blast
         else:
             P = P0
