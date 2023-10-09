@@ -13,10 +13,7 @@ The problem domain is:
 The initial conditions are:
 
 n = 1.0
-if r <= R_blast:
-    P = 1.0
-else:
-    P = 0.1
+P = 0.1 + E_blast*GAUSSIAN(r, mean=0, stddev=0.05)
 ux = 0
 uy = 0
 uz = 0
@@ -35,6 +32,7 @@ import argparse
 
 # Import supplemental Python modules.
 import numpy as np
+from scipy.stats import norm
 
 # Import project Python modules.
 
@@ -47,8 +45,9 @@ description = "Create data for the bw3d_nPuxuyuzBxByBz problem."
 # Constants
 n0 = 1.0       # Number density at start
 P0 = 0.1       # Pressure at start
-P_blast = 1.0  # Blast pressure
-R_blast = 0.0  # Blast radius
+P_blast = 1.0   # Pressure of equivalent hat-function blast
+R_blast = 0.1   # Radius of equivalent hat-function blast
+E_blast = P_blast*2*R_blast  # Total energy of equivalent hat-function blast
 u0x = 0.0      # x-component of velocity at start
 u0y = 0.0      # y-component of velocity at start
 u0z = 0.0      # z-component of velocity at start
@@ -126,12 +125,12 @@ def main():
     for x in xg:
         for y in yg:
             for z in zg:
-                r = np.sqrt(x**2 + y**2 + z**2)
+                r = np.sqrt(x**2 + y**2)
                 n = n0
-                if r <= R_blast:
-                    P = P_blast
-                else:
-                    P = P0
+                # Gaussian blast of same total energy as hat function
+                # Centered at origin, with stddev = 0.05, so blast mostly
+                # contained inside r < 0.25.
+                P = P0 + E_blast*norm.pdf(r, loc=0, scale=0.05)
                 ux = u0x
                 uy = u0y
                 uz = u0z

@@ -12,7 +12,7 @@ The problem domain is:
 The initial conditions are:
 
 n = 1.0
-P = E_blast*GAUSSIAN(r, mean=0, stddev=0.05)
+P = 0.1 + E_blast*GAUSSIAN(r, mean=0, stddev=0.05)
 ux = 0
 uy = 0
 uz = 0
@@ -39,7 +39,7 @@ from scipy.stats import norm
 # Program constants
 
 # Program description.
-description = "Compute Gaussian data for the bw2d_nPuxuyuzBxByBz problem."
+description = "Create Gaussian data for the bw2d_nPuxuyuzBxByBz problem."
 
 # Constants
 n0 = 1.0       # Number density at start
@@ -125,8 +125,8 @@ def main():
             n = n0
             # Gaussian blast of same total energy as hat function
             # Centered at origin, with stddev = 0.05, so blast mostly
-            # contained inside |x| < 0.25.
-            P = P0 + E_blast*norm.pdf(x, loc=0, scale=0.05)
+            # contained inside r < 0.25.
+            P = P0 + E_blast*norm.pdf(r, loc=0, scale=0.05)
             ux = u0x
             uy = u0y
             uz = u0z

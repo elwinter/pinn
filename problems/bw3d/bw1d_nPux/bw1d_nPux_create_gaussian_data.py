@@ -11,7 +11,7 @@ The problem domain is:
 The initial conditions are:
 
 n = 1.0
-P = E_blast*GAUSSIAN(x, mean=0, stddev=0.05)
+P = 0.1 + E_blast*GAUSSIAN(x, mean=0, stddev=0.05)
 ux = 0
 
 Author
