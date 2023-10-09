@@ -12,6 +12,10 @@ dimension, and the number of points in each dimension.
 For random points, the user supplies the minimum and maximum values for each
 dimension, and the total number of points.
 
+The training points are created as a Numpy array, shape (n_train, n_dim),
+where n_train is the number of training points, and n_dim is the number of
+dimensions in the training space.l
+
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
@@ -51,14 +55,18 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
-        "-d", "--debug", action="store_true",
+        "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
-        "-r", "--random", action="store_true",
+        "--random", "-r", action="store_true",
         help="Select points randomly within domain (default: %(default)s)."
     )
     parser.add_argument(
@@ -66,7 +74,7 @@ def create_command_line_argument_parser():
         help="Seed for random number generator (default: %(default)s)"
     )
     parser.add_argument(
-        "-v", "--verbose", action="store_true",
+        "--verbose", "-v", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
@@ -75,28 +83,22 @@ def create_command_line_argument_parser():
 
 def main():
     """Begin main program."""
-
     # Set up the command-line parser.
     parser = create_command_line_argument_parser()
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
     debug = args.debug
     random = args.random
     seed = args.seed
     verbose = args.verbose
     rest = args.rest
-    if debug:
-        print(f"args = {args}")
-        print(f"debug = {debug}")
-        print(f"random  {random}")
-        print(f"seed = {seed}")
-        print(f"verbose = {verbose}")
-        print(f"rest = {rest}")
 
     # Fetch the remaining command-line arguments.
     # For gridded results, they should be in sets of 3:
-    # x_min x_max n_x y_min y_max n_y z_min z_max n_z ...
+    # t_min t_max n_t x_min x_max n_x y_min y_max n_y z_min z_max n_z ...
     # For random results, sets of 2, plus 1.
     if random:
         X_min = np.array(rest[:-1:2], dtype=float)
@@ -118,8 +120,10 @@ def main():
     # Assemble the minima and maxima into a combined array of boundaries of
     # the form:
     # [
+    #  [t_min, t_max],
     #  [x_min, x_max],
     #  [y_min, y_max],
+    #  [z_min, z_max],
     #  ...
     # ]
     b = np.vstack([X_min, X_max]).T
@@ -143,6 +147,14 @@ def main():
         print(f"points = {points}")
 
     # Send the points to standard output.
+    # Include a header as a comment describing the data.
+    header = "#"
+    if random:
+        pass
+    else:
+        for (xmin, xmax, nx) in zip(X_min, X_max, X_n):
+            header += f" {xmin} {xmax} {nx}"
+    print(header)
     np.savetxt(sys.stdout, points, fmt="%g")
 
 
