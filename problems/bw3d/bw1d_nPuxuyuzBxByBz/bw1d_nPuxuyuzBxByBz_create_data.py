@@ -1,6 +1,26 @@
 #!/usr/bin/env python
 
-"""Compute initial conditions for bw3d.
+"""Compute initial conditions for bw1d_nPuxuyuzBxByBz.
+
+This problem is a 1-D blast wave, described with n, P, ux, uy, uz, Bx, By, Bz.
+
+The problem domain is:
+    -1 <= x <= 1
+    0 <= t <= 1
+
+The initial conditions are a hat function in pressure:
+
+n = 1.0
+if r <= R_blast:
+    P = 10.0
+else:
+    P = 0.1
+ux = 0
+uy = 0
+uz = 0
+Bx = 0
+By = 0
+Bz = 0
 
 Author
 ------
@@ -20,21 +40,19 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute initial conditions for bw3d problem."
+description = "Compute initial conditions for bw1d_nPuxuyuzBxByBz problem."
 
 # Constants
-P_blast = 1.0
+n0 = 1.0        # Number density at start
+P0 = 0.1        # Pressure at start
+P_blast = 1.0   # Blast pressure
 R_blast = 0.1   # Radius of initial blast.
-n0 = 1.0   # Number density at start
-P0 = 0.1   # Pressure at start
-B0x = 0.0  # x-component of magnetic field at start
-B0y = 0.0  # y-component of magnetic field at start
-B0z = 0.0  # z-component of magnetic field at start
-
-# Compute the constant velocity components.
-u0x = 0.0  # x-component of velocity at start
-u0y = 0.0  # y-component of velocity start
-u0z = 0.0  # z-component of velocity start
+u0x = 0.0       # x-component of velocity at start
+u0y = 0.0       # y-component of velocity start
+u0z = 0.0       # z-component of velocity start
+B0x = 0.0       # x-component of magnetic field at start
+B0y = 0.0       # y-component of magnetic field at start
+B0z = 0.0       # z-component of magnetic field at start
 
 
 def create_command_line_argument_parser():
@@ -50,10 +68,14 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
-        "-d", "--debug", action="store_true",
+        "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
@@ -67,10 +89,10 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
     debug = args.debug
     rest = args.rest
-    if debug:
-        print(f"args = {args}")
 
     # Fetch the remaining command-line arguments.
     # They should be in 2 sets of 3:
@@ -83,7 +105,7 @@ def main():
         print(f"{t_min} <= t <= {t_max}, n_t = {n_t}")
         print(f"{x_min} <= x <= {x_max}, n_x = {n_x}")
 
-    # Create the (t, x, y) grid points for the initial conditions.
+    # Create the (t, x) grid points for the initial conditions.
     tg = np.linspace(t_min, t_max, n_t)
     xg = np.linspace(x_min, x_max, n_x)
     if debug:
@@ -91,8 +113,15 @@ def main():
         print(f"xg = {xg}")
 
     # Compute the initial conditions at spatial locations.
-    # Each line is:
-    # tg[0] x n P ux uy Bx By Bz
+    # First 3 lines are comment header.
+    # Each subsequent line is:
+    # tg[0] x n P ux uy uz Bx By Bz
+    header = "# t x"
+    print(header)
+    header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
+    print(header)
+    header = "# t x n P ux uy uz Bx By Bz"
+    print(header)
     for x in xg:
         r = np.sqrt(x**2)
         n = n0

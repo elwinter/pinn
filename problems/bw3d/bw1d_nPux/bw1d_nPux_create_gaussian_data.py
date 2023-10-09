@@ -11,7 +11,7 @@ The problem domain is:
 The initial conditions are:
 
 n = n0 = 1.0
-P = E_blast*GAUSSIAN(mean=0, stddev=0.05)
+P = E_blast*GAUSSIAN(x, mean=0, stddev=0.05)
 ux = 0
 
 Author
@@ -39,8 +39,8 @@ description = "Compute Gaussian initial conditions for bw1d_nPux problem."
 n0 = 1.0        # Number density at start
 P0 = 0.1        # Pressure at start
 P_blast = 1.0   # Pressure of equivalent hat-function blast
-R_blast = 0.1   # Radius of initial blast.
-E_blast = P_blast*2*R_blast  # Total energy of hat-function blast
+R_blast = 0.1   # Radius of equivalent hat-function blast
+E_blast = P_blast*2*R_blast  # Total energy of equivalent hat-function blast
 u0x = 0.0       # x-component of velocity at start
 
 
@@ -101,7 +101,8 @@ def main():
         print(f"tg = {tg}")
         print(f"xg = {xg}")
 
-    # First 2 lines are comment header.
+    # Compute the initial conditions at spatial locations.
+    # First 3 lines are comment header.
     # Each subsequent line is:
     # tg[0] x n P ux
     header = "# t x"

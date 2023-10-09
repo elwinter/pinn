@@ -10,7 +10,7 @@ The problem domain is:
 
 The initial conditions are a hat function in pressure:
 
-n = n0 = 1.0
+n = 1.0
 if r <= R_blast:
     P = 10.0
 else:
@@ -95,7 +95,7 @@ def main():
         print(f"{t_min} <= t <= {t_max}, n_t = {n_t}")
         print(f"{x_min} <= x <= {x_max}, n_x = {n_x}")
 
-    # Create the (t, x, y) grid points for the initial conditions.
+    # Create the (t, x) grid points for the initial conditions.
     tg = np.linspace(t_min, t_max, n_t)
     xg = np.linspace(x_min, x_max, n_x)
     if debug:
