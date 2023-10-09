@@ -8,7 +8,7 @@ The problem domain is:
     -1 <= x <= 1
     0 <= t <= 1
 
-The initial conditions are:
+The initial conditions are a hat function in pressure:
 
 n = n0 = 1.0
 if r <= R_blast:
@@ -38,10 +38,10 @@ import numpy as np
 description = "Compute data for bw1d_nPux problem."
 
 # Constants
-P_blast = 10.0  # Blast pressure
-R_blast = 0.1   # Radius of initial blast.
 n0 = 1.0        # Number density at start
 P0 = 0.1        # Pressure at start
+P_blast = 10.0  # Blast pressure
+R_blast = 0.1   # Radius of initial blast.
 u0x = 0.0       # x-component of velocity at start
 
 
