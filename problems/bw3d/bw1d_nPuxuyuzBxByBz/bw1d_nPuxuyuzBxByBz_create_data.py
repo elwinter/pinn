@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
-"""Compute initial conditions for bw1d_nPuxuyuzBxByBz.
+"""Create data for the bw1d_nPuxuyuzBxByBz problem.
 
 This problem is a 1-D blast wave, described with n, P, ux, uy, uz, Bx, By, Bz.
 
 The problem domain is:
-    -1 <= x <= 1
     0 <= t <= 1
+    -1 <= x <= 1
 
-The initial conditions are a hat function in pressure:
+The initial conditions are:
 
 n = 1.0
-if r <= R_blast:
-    P = 10.0
+if x <= R_blast:
+    P = 1.0
 else:
     P = 0.1
 ux = 0
@@ -40,13 +40,13 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute initial conditions for bw1d_nPuxuyuzBxByBz problem."
+description = "Create data for the bw1d_nPuxuyuzBxByBz problem."
 
 # Constants
 n0 = 1.0        # Number density at start
 P0 = 0.1        # Pressure at start
 P_blast = 1.0   # Blast pressure
-R_blast = 0.1   # Radius of initial blast.
+R_blast = 0.1   # Blast radius
 u0x = 0.0       # x-component of velocity at start
 u0y = 0.0       # y-component of velocity start
 u0z = 0.0       # z-component of velocity start
@@ -95,7 +95,7 @@ def main():
     rest = args.rest
 
     # Fetch the remaining command-line arguments.
-    # They should be in 2 sets of 3:
+    # There should be 2 sets of 3:
     # t_min t_max n_t x_min x_max n_x
     assert len(rest) == 6
     (t_min, x_min) = np.array(rest[::3], dtype=float)
@@ -105,17 +105,17 @@ def main():
         print(f"{t_min} <= t <= {t_max}, n_t = {n_t}")
         print(f"{x_min} <= x <= {x_max}, n_x = {n_x}")
 
-    # Create the (t, x) grid points for the initial conditions.
+    # Create the (t, x) grid points for the data.
     tg = np.linspace(t_min, t_max, n_t)
     xg = np.linspace(x_min, x_max, n_x)
     if debug:
         print(f"tg = {tg}")
         print(f"xg = {xg}")
 
-    # Compute the initial conditions at spatial locations.
+    # Compute the data at each point.
     # First 3 lines are comment header.
     # Each subsequent line is:
-    # tg[0] x n P ux uy uz Bx By Bz
+    # t x n P ux uy uz Bx By Bz
     header = "# t x"
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"

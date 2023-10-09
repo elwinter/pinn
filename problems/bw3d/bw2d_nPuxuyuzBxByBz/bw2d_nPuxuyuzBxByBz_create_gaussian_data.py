@@ -1,6 +1,24 @@
 #!/usr/bin/env python
 
-"""Compute Gaussian initial conditions for bw2d_nPuxuyuzBxByBz.
+"""Create Gaussian data for the bw2d_nPuxuyuzBxByBz problem.
+
+This problem is a 2-D blast wave, described with n, P, ux, uy, uz, Bx, By, Bz.
+
+The problem domain is:
+    0 <= t <= 1
+    -1 <= x <= 1
+    -1 <= y <= 1
+
+The initial conditions are:
+
+n = 1.0
+P = E_blast*GAUSSIAN(r, mean=0, stddev=0.05)
+ux = 0
+uy = 0
+uz = 0
+Bx = 0
+By = 0
+Bz = 0
 
 Author
 ------
@@ -13,6 +31,7 @@ import argparse
 
 # Import supplemental Python modules.
 import numpy as np
+from scipy.stats import norm
 
 # Import project Python modules.
 
@@ -20,23 +39,20 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Compute Gaussian initial conditions for bw2d_nPuxuyuzBxByBz problem."
+description = "Compute Gaussian data for the bw2d_nPuxuyuzBxByBz problem."
 
 # Constants
-P_blast = 1.0
-R0 = 0.1   # Radius of initial blast.
-n0 = 1.0   # Number density at start
-P0 = 0.1   # Pressure at start
-
-# Compute the constant magnetic field components.
-B0x = 0.0  # x-component of magnetic field at start
-B0y = 0.0  # y-component of magnetic field at start
-B0z = 0.0  # z-component of magnetic field at start
-
-# Compute the constant velocity components.
-u0x = 0.0  # x-component of velocity at start
-u0y = 0.0  # y-component of velocity at start
-u0z = 0.0  # z-component of velocity at start
+n0 = 1.0       # Number density at start
+P0 = 0.1       # Pressure at start
+P_blast = 1.0   # Pressure of equivalent hat-function blast
+R_blast = 0.1   # Radius of equivalent hat-function blast
+E_blast = P_blast*2*R_blast  # Total energy of equivalent hat-function blast
+u0x = 0.0      # x-component of velocity at start
+u0y = 0.0      # y-component of velocity at start
+u0z = 0.0      # z-component of velocity at start
+B0x = 0.0      # x-component of magnetic field at start
+B0y = 0.0      # y-component of magnetic field at start
+B0z = 0.0      # z-component of magnetic field at start
 
 
 def create_command_line_argument_parser():
@@ -52,10 +68,14 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
-        "-d", "--debug", action="store_true",
+        "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
@@ -69,13 +89,13 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
     debug = args.debug
     rest = args.rest
-    if debug:
-        print(f"args = {args}")
 
     # Fetch the remaining command-line arguments.
-    # They should be in 4 sets of 3:
+    # There should be in 3 sets of 3:
     # t_min t_max n_t x_min x_max n_x y_min y_max n_y
     assert len(rest) == 9
     (t_min, x_min, y_min) = np.array(rest[::3], dtype=float)
@@ -86,7 +106,7 @@ def main():
         print(f"{x_min} <= x <= {x_max}, n_x = {n_x}")
         print(f"{y_min} <= y <= {y_max}, n_y = {n_y}")
 
-    # Create the (t, x, y) grid points for the initial conditions.
+    # Create the (t, x, y) grid points for the data.
     tg = np.linspace(t_min, t_max, n_t)
     xg = np.linspace(x_min, x_max, n_x)
     yg = np.linspace(y_min, y_max, n_y)
@@ -95,17 +115,18 @@ def main():
         print(f"xg = {xg}")
         print(f"yg = {yg}")
 
-    # Compute the initial conditions at spatial locations.
-    # Each line is:
-    # tg[0] x y n P ux uy uz Bx By Bz
+    # Compute the data at each point.
+    # First 3 lines are comment header.
+    # Each subsequent line is:
+    # t x y n P ux uy uz Bx By Bz
     for x in xg:
         for y in yg:
             r = np.sqrt(x**2 + y**2)
             n = n0
-            if r <= R0:
-                P = P_blast
-            else:
-                P = P0
+            # Gaussian blast of same total energy as hat function
+            # Centered at origin, with stddev = 0.05, so blast mostly
+            # contained inside |x| < 0.25.
+            P = P0 + E_blast*norm.pdf(x, loc=0, scale=0.05)
             ux = u0x
             uy = u0y
             uz = u0z

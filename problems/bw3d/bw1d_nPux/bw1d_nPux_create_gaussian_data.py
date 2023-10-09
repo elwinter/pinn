@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-"""Compute Gaussian initial conditions for bw1d_nPux problem.
+"""Create Gaussian data for the bw1d_nPux problem.
 
 This problem is a 1-D blast wave, described with n, P, ux.
 
 The problem domain is:
-    -1 <= x <= 1
     0 <= t <= 1
+    -1 <= x <= 1
 
 The initial conditions are:
 
-n = n0 = 1.0
+n = 1.0
 P = E_blast*GAUSSIAN(x, mean=0, stddev=0.05)
 ux = 0
 
@@ -33,7 +33,7 @@ from scipy.stats import norm
 # Program constants
 
 # Program description.
-description = "Compute Gaussian initial conditions for bw1d_nPux problem."
+description = "Create Gaussian data for the bw1d_nPux problem."
 
 # Constants
 n0 = 1.0        # Number density at start
@@ -84,7 +84,7 @@ def main():
     rest = args.rest
 
     # Fetch the remaining command-line arguments.
-    # They should be in 2 sets of 3:
+    # There should be 2 sets of 3:
     # t_min t_max n_t x_min x_max n_x
     assert len(rest) == 6
     (t_min, x_min) = np.array(rest[::3], dtype=float)
@@ -94,17 +94,17 @@ def main():
         print(f"{t_min} <= t <= {t_max}, n_t = {n_t}")
         print(f"{x_min} <= x <= {x_max}, n_x = {n_x}")
 
-    # Create the (t, x) grid points for the initial conditions.
+    # Create the (t, x) grid points for the data.
     tg = np.linspace(t_min, t_max, n_t)
     xg = np.linspace(x_min, x_max, n_x)
     if debug:
         print(f"tg = {tg}")
         print(f"xg = {xg}")
 
-    # Compute the initial conditions at spatial locations.
+    # Compute the data at each point.
     # First 3 lines are comment header.
     # Each subsequent line is:
-    # tg[0] x n P ux
+    # t x n P ux
     header = "# t x"
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
@@ -112,7 +112,6 @@ def main():
     header = "# t x n P ux"
     print(header)
     for x in xg:
-        r = np.sqrt(x**2)
         n = n0
         # Gaussian blast of same total energy as hat function
         # Centered at x = 0, with stddev = 0.05, so blast mostly
