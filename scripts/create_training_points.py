@@ -148,13 +148,21 @@ def main():
 
     # Send the points to standard output.
     # Include a header as a comment describing the data.
-    header = "#"
     if random:
-        pass
+        header = "# RANDOM"
+        print(header)
+        header = "#"
+        for (xmin, xmax) in zip(X_min, X_max):
+            header += f" {xmin} {xmax}"
+        header += f"{n}"
+        print(header)
     else:
+        header = "# GRID"
+        print(header)
+        header = "#"
         for (xmin, xmax, nx) in zip(X_min, X_max, X_n):
             header += f" {xmin} {xmax} {nx}"
-    print(header)
+        print(header)
     np.savetxt(sys.stdout, points, fmt="%g")
 
 

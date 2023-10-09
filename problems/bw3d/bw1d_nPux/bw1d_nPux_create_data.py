@@ -4,8 +4,6 @@
 
 This problem is a 1-D blast wave, described with n, P, ux.
 
-The blast wave starts at |x| <= R_blast, where P = 1. Everywhere else, P = 0.1.
-The fluid is initially motionless (ux = 0) and of uniform density (n = 1.0).
 The problem domain is:
     -1 <= x <= 1
     0 <= t <= 1
@@ -42,9 +40,9 @@ description = "Compute data for bw1d_nPux problem."
 # Constants
 P_blast = 10.0  # Blast pressure
 R_blast = 0.1   # Radius of initial blast.
-n0 = 1.0   # Number density at start
-P0 = 0.1   # Pressure at start
-u0x = 0.0  # x-component of velocity at start
+n0 = 1.0        # Number density at start
+P0 = 0.1        # Pressure at start
+u0x = 0.0       # x-component of velocity at start
 
 
 def create_command_line_argument_parser():
@@ -60,10 +58,14 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
-        "-d", "--debug", action="store_true",
+        "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
@@ -77,10 +79,10 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
     debug = args.debug
     rest = args.rest
-    if debug:
-        print(f"args = {args}")
 
     # Fetch the remaining command-line arguments.
     # They should be in 2 sets of 3:
@@ -101,8 +103,15 @@ def main():
         print(f"xg = {xg}")
 
     # Compute the initial conditions at spatial locations.
-    # Each line is:
+    # First 2 lines are comment header.
+    # Each subsequent line is:
     # tg[0] x n P ux
+    header = "# t x"
+    print(header)
+    header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
+    print(header)
+    header = "# t x n P ux"
+    print(header)
     for x in xg:
         r = np.sqrt(x**2)
         n = n0
