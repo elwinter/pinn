@@ -110,9 +110,11 @@ def main():
         print(f"xg = {xg}")
 
     # Compute the data at each point.
-    # First 3 lines are metadata header as comments.
+    # First 4 lines are metadata header as comments.
     # Each subsequent line is:
     # t x n P ux
+    header = "# GRID"
+    print(header)
     header = "# t x"
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
