@@ -44,6 +44,6 @@ eval $cmd >& pinn1.out
 # Create standard post-processing graphics.
 echo "Creating plots."
 plot_cmd="$pinn_root/problems/bw3d/bw1d_nPux/bw1d_nPux_pinn1_plots.py"
-cmd="$plot_cmd {{ debug }} {{ verbose }} {{ results_dir }} {{ nt }} {{ nx }}"
+cmd="$plot_cmd {{ debug }} {{ verbose }} {{ results_dir }}"
 echo "cmd=$cmd"
 eval $cmd >& bw1d_nPux_pinn1_plots.out

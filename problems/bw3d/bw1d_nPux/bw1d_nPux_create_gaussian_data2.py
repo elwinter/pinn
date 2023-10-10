@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create hat-function initial conditions for the bw1d_nPux problem.
+"""Create Gaussian data for the bw1d_nPux problem.
 
 This problem is a 1-D blast wave, described with n, P, ux.
 
@@ -10,13 +10,9 @@ The problem domain is:
 
 The initial conditions are:
 
-if x <= R_blast:
-    n = n_blast
-    P = P_blast
-else:
-    n = n0
-    P = P0
-ux = ux0
+n = 1.0
+P = 0.1 + E_blast*GAUSSIAN(x, mean=0, stddev=0.05)
+ux = 0
 
 Author
 ------
@@ -29,6 +25,7 @@ import argparse
 
 # Import supplemental Python modules.
 import numpy as np
+from scipy.stats import norm
 
 # Import project Python modules.
 
@@ -36,20 +33,15 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Create hat-function initial conditions for the bw1d_nPux problem."
+description = "Create Gaussian data for the bw1d_nPux problem."
 
 # Constants
-
-# Ambient initial conditions
-n0 = 0.1
-P0 = 0.1
-u0x = 0.0
-
-# Blast parameters
-# Ideal, isothermal gas: P = n*k*T
-P_blast = 1.0   # Blast pressure
-n_blast = 1.0   # Blast number density
-R_blast = 0.1   # Blast radius
+n0 = 1.0        # Number density at start
+P0 = 0.1        # Pressure at start
+P_blast = 1.0   # Pressure of equivalent hat-function blast
+R_blast = 0.1   # Radius of equivalent hat-function blast
+E_blast = P_blast*2*R_blast  # Total energy of equivalent hat-function blast
+u0x = 0.0       # x-component of velocity at start
 
 
 def create_command_line_argument_parser():
@@ -68,7 +60,7 @@ def create_command_line_argument_parser():
 
     Raises
     ------
-    None
+    None        
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
@@ -110,11 +102,9 @@ def main():
         print(f"xg = {xg}")
 
     # Compute the data at each point.
-    # First 4 lines are metadata header as comments.
+    # First 3 lines are comment header.
     # Each subsequent line is:
     # t x n P ux
-    header = "# GRID"
-    print(header)
     header = "# t x"
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
@@ -122,12 +112,11 @@ def main():
     header = "# t x n P ux"
     print(header)
     for x in xg:
-        if np.abs(x) <= R_blast:
-            n = n_blast
-            P = P_blast
-        else:
-            n = n0
-            P = P0
+        # Gaussian blast of same total energy as hat function
+        # Centered at x = 0, with stddev = 0.05, so blast mostly
+        # contained inside |x| < 0.25.
+        P = P0 + E_blast*norm.pdf(x, loc=0, scale=0.05)
+        n = n0*P/P0
         ux = u0x
         print(tg[0], x, n, P, ux)
 
