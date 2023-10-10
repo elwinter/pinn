@@ -16,6 +16,7 @@ import argparse
 import datetime
 import importlib.util
 import os
+import shutil
 import sys
 
 # Import 3rd-party modules.
@@ -265,7 +266,7 @@ def main():
         X_train = X_train.reshape(X_train.shape[0], 1)
         if debug:
             print(f"Reshaped X_train = {X_train}", flush=True)
-    np.savetxt(os.path.join(output_dir, "X_train.dat"), X_train)
+    shutil.copy(training_points, os.path.join(output_dir, "X_train.dat"))
 
     # Count the training points.
     n_train = X_train.shape[0]
@@ -289,7 +290,7 @@ def main():
             XY_data = XY_data.reshape(1, XY_data.shape[0])
             if debug:
                 print(f"Reshaped XY_data = {XY_data}", flush=True)
-        np.savetxt(os.path.join(output_dir, "XY_data.dat"), XY_data)
+        shutil.copy(data, os.path.join(output_dir, "XY_data.dat"))
 
         # Extract the *locations* of the supplied data points.
         # Shape is (n_data, p.n_dim)
