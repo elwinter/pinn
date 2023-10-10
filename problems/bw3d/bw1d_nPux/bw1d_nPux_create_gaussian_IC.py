@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create Gaussian data for the bw1d_nPux problem.
+"""Create Gaussian initial conditions for the bw1d_nPux problem.
 
 This problem is a 1-D blast wave, described with n, P, ux.
 
@@ -10,9 +10,9 @@ The problem domain is:
 
 The initial conditions are:
 
-n = 1.0
-P = 0.1 + E_blast*GAUSSIAN(x, mean=0, stddev=0.05)
-ux = 0
+P = P0 + P_blast*GAUSSIAN(x, mean=0, stddev=0.05)
+n = n0*P/P0
+ux = u0x
 
 Author
 ------
@@ -37,10 +37,9 @@ description = "Create Gaussian data for the bw1d_nPux problem."
 
 # Constants
 n0 = 1.0        # Number density at start
-P0 = 0.1        # Pressure at start
-P_blast = 1.0   # Pressure of equivalent hat-function blast
-R_blast = 0.1   # Radius of equivalent hat-function blast
-E_blast = P_blast*2*R_blast  # Total energy of equivalent hat-function blast
+P0 = 1.0        # Pressure at start
+P_blast = 10.0  # Peak pressure of blast
+stddev_blast = 0.05   # Standard deviation of blast
 u0x = 0.0       # x-component of velocity at start
 
 
@@ -102,20 +101,21 @@ def main():
         print(f"xg = {xg}")
 
     # Compute the data at each point.
-    # First 3 lines are comment header.
+    # First 4 lines are metadata header as comments.
     # Each subsequent line is:
     # t x n P ux
+    header = "# GRID"
+    print(header)
     header = "# t x"
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
     print(header)
     header = "# t x n P ux"
     print(header)
+    gaussian_max = norm.pdf(0, loc=0, scale=stddev_blast)
     for x in xg:
-        # Gaussian blast of same total energy as hat function
-        # Centered at x = 0, with stddev = 0.05, so blast mostly
-        # contained inside |x| < 0.25.
-        P = P0 + E_blast*norm.pdf(x, loc=0, scale=0.05)
+        # Gaussian blast of centered at x = 0
+        P = P0 + P_blast*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
         n = n0*P/P0
         ux = u0x
         print(tg[0], x, n, P, ux)
