@@ -40,9 +40,9 @@ PROBLEM_NAME = "bw1d_nPux"
 # Plot limits for dependent variables.
 ylim = {}
 ylim["L"] = [1e-12, 10]
-ylim["n"] = [0, 1.1]
-ylim["P"] = [0, 2.0]
-ylim["ux"] = [0, 0.1]
+ylim["n"] = [0, 11.0]
+ylim["P"] = [0, 11.0]
+ylim["ux"] = [0, 1.0]
 
 
 def create_command_line_argument_parser():
@@ -103,7 +103,7 @@ def main():
 
     # -------------------------------------------------------------------------
 
-    # Plot the aggregate residual, data, and weighted loss histories.
+    # Plot the total residual, data, and weighted loss histories.
 
     # Load the data.
     path = os.path.join(results_path, "L_res.dat")
@@ -122,7 +122,7 @@ def main():
     plt.ylabel("Loss")
     plt.ylim(ylim["L"])
     plt.legend()
-    plt.title(f"Aggregate residual, data, and weighted loss")
+    plt.title(f"Total residual, data, and weighted loss")
     plt.grid()
 
     # Save the plot to a PNG file.
@@ -141,6 +141,7 @@ def main():
 
         # Load the data.
         variable_name = p.dependent_variable_names[iv]
+        variable_label = p.dependent_variable_labels[iv]
         path = os.path.join(results_path, f"L_res_{variable_name}.dat")
         L_res = np.loadtxt(path)
         path = os.path.join(results_path, f"L_data_{variable_name}.dat")
@@ -156,7 +157,7 @@ def main():
         plt.ylabel("Loss")
         plt.ylim(ylim["L"])
         plt.legend()
-        plt.title(f"Residual, data, and aggregate loss for {variable_name}")
+        plt.title(f"Residual, data, and weighted loss for {variable_label}")
         plt.grid()
 
         # Save the plot.
@@ -178,6 +179,7 @@ def main():
 
     # Read the data description from the header.
     with open(path, "r") as f:
+        line = f.readline()
         line = f.readline()
         line = f.readline()
         line = line[2:]
@@ -256,10 +258,14 @@ def main():
             plt.close()
 
         # Assemble the frames into a movie.
-        args = ["convert", "-delay", "2", "-loop", "0"]
-        args.extend(frames)
-        path = os.path.join(output_path, f"{variable_name}.gif")
-        args.append(path)
+        frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
+        movie_file = os.path.join(output_path, f"{variable_name}.mp4")
+        args = [
+            "ffmpeg", "-r", "4", "-s", "1920x1080",
+            "-i", frame_pattern,
+            "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+            movie_file
+        ]
         subprocess.run(args)
 
 
