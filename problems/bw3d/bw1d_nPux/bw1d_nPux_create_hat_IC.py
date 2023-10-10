@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create data for the bw1d_nPux problem.
+"""Create hat-function initial conditions for the bw1d_nPux problem.
 
 This problem is a 1-D blast wave, described with n, P, ux.
 
@@ -10,12 +10,13 @@ The problem domain is:
 
 The initial conditions are:
 
-n = 1.0
 if x <= R_blast:
-    P = 1.0
+    n = n_blast
+    P = P_blast
 else:
-    P = 0.1
-ux = 0
+    n = n0
+    P = P0
+ux = ux0
 
 Author
 ------
@@ -35,14 +36,19 @@ import numpy as np
 # Program constants
 
 # Program description.
-description = "Create data for the bw1d_nPux problem."
+description = "Create hat-function initial conditions for the bw1d_nPux problem."
 
 # Constants
-n0 = 1.0        # Number density at start
-P0 = 0.1        # Pressure at start
-P_blast = 1.0   # Blast pressure
-R_blast = 0.1   # Blast radius
-u0x = 0.0       # x-component of velocity at start
+
+# Ambient initial conditions
+n0 = 1.0
+P0 = 1.0
+u0x = 0.0
+
+# Blast parameters
+P_blast = 10.0   # Blast pressure
+n_blast = 10.0   # Blast number density
+R_blast = 0.1    # Blast radius
 
 
 def create_command_line_argument_parser():
@@ -103,7 +109,7 @@ def main():
         print(f"xg = {xg}")
 
     # Compute the data at each point.
-    # First 3 lines are comment header.
+    # First 3 lines are metadata header as comments.
     # Each subsequent line is:
     # t x n P ux
     header = "# t x"
@@ -113,10 +119,11 @@ def main():
     header = "# t x n P ux"
     print(header)
     for x in xg:
-        n = n0
         if np.abs(x) <= R_blast:
+            n = n_blast
             P = P_blast
         else:
+            n = n0
             P = P0
         ux = u0x
         print(tg[0], x, n, P, ux)
