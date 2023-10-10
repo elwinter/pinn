@@ -46,6 +46,7 @@ P0 = 1.0
 u0x = 0.0
 
 # Blast parameters
+# Ideal, isothermal gas: P = n*k*T
 P_blast = 10.0   # Blast pressure
 n_blast = 10.0   # Blast number density
 R_blast = 0.1    # Blast radius
