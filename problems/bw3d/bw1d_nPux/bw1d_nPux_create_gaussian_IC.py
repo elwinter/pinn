@@ -113,12 +113,23 @@ def main():
     header = "# t x n P ux"
     print(header)
     gaussian_max = norm.pdf(0, loc=0, scale=stddev_blast)
+    # for x in xg:
+    #     # Gaussian blast of centered at x = 0
+    #     P = P0 + P_blast*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
+    #     n = n0*P/P0
+    #     ux = u0x
+    #     print(tg[0], x, n, P, ux)
+
+    # Now add data at the first non-zero time step. Use forward extrapolation
+    # from t = 0. At t = 0, dn/dt and dP/dt are 0 by definition, since initial
+    # n(x) is flat at n0, and ux(x) is flat at 0. Thus the value of n at the
+    # first non-zero time is still n0, and P is still P0, while ux has changed.
     for x in xg:
         # Gaussian blast of centered at x = 0
         P = P0 + P_blast*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
         n = n0*P/P0
-        ux = u0x
-        print(tg[0], x, n, P, ux)
+        ux = u0x + x/stddev_blast**2*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max*(tg[1] - tg[0])
+        print(tg[1], x, n, P, ux)
 
 
 if __name__ == "__main__":
