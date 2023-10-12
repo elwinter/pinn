@@ -37,8 +37,8 @@ description = "Create Gaussian data for the bw1d_nPux problem."
 
 # Constants
 n0 = 1.0        # Number density at start
-P0 = 1.0        # Pressure at start
-P_blast = 10.0  # Peak pressure of blast
+P0 = 0.1        # Pressure at start
+P_blast = 1.0   # Peak pressure of blast
 stddev_blast = 0.05   # Standard deviation of blast
 u0x = 0.0       # x-component of velocity at start
 
