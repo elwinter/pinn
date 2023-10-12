@@ -359,7 +359,6 @@ def main():
             models.append(model)
     if debug:
         print(f"models = {models}", flush=True)
-    # SAVE MODEL DESCRIPTIONS!
 
     # Create the optimizer.
     if verbose:
@@ -737,7 +736,7 @@ def main():
         os.path.join(output_dir, "L.dat"), loss["aggregate"]["total"]
     )
 
-    # Save the final trained models.
+    # Save the final trained models and descriptions.
     if save_model != 0:
         for (i, model) in enumerate(models):
             path = os.path.join(
@@ -745,6 +744,13 @@ def main():
                 f"model_{p.dependent_variable_names[i]}"
             )
             model.save(path)
+            variable_name = p.dependent_variable_names[i]
+            path = os.path.join(output_dir, f"model_{variable_name}.txt")
+            old_stdout = sys.stdout
+            with open(path, "w") as f:
+                sys.stdout = f
+                model.summary()
+            sys.stdout = old_stdout
 
 
 if __name__ == "__main__":
