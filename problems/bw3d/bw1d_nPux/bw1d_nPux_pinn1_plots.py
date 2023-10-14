@@ -41,7 +41,7 @@ PROBLEM_NAME = "bw1d_nPux"
 ylim = {}
 ylim["L"] = [1e-12, 10]
 ylim["n"] = [0, 11.0]
-ylim["P"] = [0, 11.0]
+ylim["P"] = [0, 1.1]
 ylim["ux"] = [0, 1.0]
 
 
