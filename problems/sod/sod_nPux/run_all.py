@@ -20,7 +20,7 @@ MICROSECONDS_PER_SECOND = 1e6
 options = {}
 
 # Specify the software installation to use.
-pinn_root = os.environ["RESEARCH_INSTALL_DIR"]
+pinn_root = os.environ["PINN_INSTALL_DIR"]
 options["pinn_root"] = pinn_root
 options["python_environment"] = "research-3.10"
 
@@ -46,7 +46,7 @@ options["pbs_select"] = "select=1:ncpus=128"
 # Options for problem set
 problem_name = "sod_nPux"
 options["problem_name"] = problem_name
-problem_root = f"{pinn_root}/problems/bw3d/sod_nPux"
+problem_root = f"{pinn_root}/problems/sod/sod_nPux"
 
 # Options for pinn1.py for all runs.
 options["pinn1_activation"] = "sigmoid"
@@ -58,10 +58,13 @@ options["pinn1_n_layers"] = 4
 options["pinn1_precision"] = "float32"
 options["pinn1_save_model"] = 1000
 options["pinn1_w_data"] = None
-options["pinn1_data"] = f"{problem_root}/data/sod_nPux_IC.dat"
+options["pinn1_data"] = f"{problem_root}/data/sod_nPux_101x101_IC.dat"
 options["pinn1_problem"] = f"{problem_root}/{problem_name}.py"
-options["pinn1_training_points"] = f"{problem_root}/data/{problem_name}_training_grid.dat"
+options["pinn1_training_points"] = f"{problem_root}/data/{problem_name}_101x101_training_grid.dat"
 options["results_dir"] = f"{problem_name}-pinn1"
+
+# Options for plot generation.
+options["plot_cmd"] = f"{problem_root}/{problem_name}_pinn1_plots.py"
 
 # Read and create the PBS script template.
 PBS_TEMPLATE_FILE = f"{problem_root}/{options['problem_name']}_pinn1_template.pbs"

@@ -43,7 +43,7 @@ eval $cmd >& pinn1.out
 
 # Create standard post-processing graphics.
 echo "Creating plots."
-plot_cmd="$pinn_root/problems/bw3d/sod_nPux/sod_nPux_pinn1_plots.py"
+plot_cmd={{ plot_cmd }}
 cmd="$plot_cmd {{ debug }} {{ verbose }} {{ results_dir }}"
 echo "cmd=$cmd"
-eval $cmd >& sod_nPux_pinn1_plots.out
+eval $cmd >& pinn1_plots.out
