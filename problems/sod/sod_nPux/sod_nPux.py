@@ -219,11 +219,16 @@ de = [
 if __name__ == "__main__":
     print(f"independent_variable_names = {independent_variable_names}")
     print(f"independent_variable_index = {independent_variable_index}")
+    print(f"it = {it}")
+    print(f"ix = {ix}")
     print(f"independent_variable_labels = {independent_variable_labels}")
     print(f"n_dim = {n_dim}")
 
     print(f"dependent_variable_names = {dependent_variable_names}")
     print(f"dependent_variable_index = {dependent_variable_index}")
+    print(f"i_n = {i_n}")
+    print(f"iP = {iP}")
+    print(f"iux = {iux}")
     print(f"dependent_variable_labels = {dependent_variable_labels}")
     print(f"n_var = {n_var}")
 
