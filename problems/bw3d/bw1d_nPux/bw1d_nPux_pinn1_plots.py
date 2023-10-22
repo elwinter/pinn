@@ -40,9 +40,9 @@ PROBLEM_NAME = "bw1d_nPux"
 # Plot limits for dependent variables.
 ylim = {}
 ylim["L"] = [1e-12, 10]
-ylim["n"] = [0, 11.0]
-ylim["P"] = [0, 1.1]
-ylim["ux"] = [0, 1.0]
+ylim["n"] = [0, 2.0]
+ylim["P"] = [0, 2.0]
+ylim["ux"] = [0, 2.0]
 
 
 def create_command_line_argument_parser():
@@ -208,8 +208,8 @@ def main():
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
         xlabel = p.independent_variable_labels[p.ix]
         ylabel = p.dependent_variable_labels[iv]
-        X = XY_data[:, p.ix]
-        Y = XY_data[:, p.n_dim + iv]
+        X = XY_data[:nx, p.ix]
+        Y = XY_data[:nx, p.n_dim + iv]
         plt.plot(X, Y)
         plt.ylim(ylim[variable_name])
         plt.xlabel(xlabel)
@@ -246,7 +246,7 @@ def main():
             plt.ylabel(ylabel)
             t_frame = X_train[i0, 0]
             t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
-            t_label_x = -1.0
+            t_label_x = 0.0
             t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1])
             plt.text(t_label_x, t_label_y, t_label)
             plt.title(ylabel)
