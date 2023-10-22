@@ -40,7 +40,7 @@ PROBLEM_NAME = "bw1d_nPux"
 # Plot limits for dependent variables.
 ylim = {}
 ylim["L"] = [1e-12, 10]
-ylim["n"] = [0, 2.0]
+ylim["n"] = [0, 12.0]
 ylim["P"] = [0, 2.0]
 ylim["ux"] = [0, 2.0]
 
@@ -215,6 +215,7 @@ def main():
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.title(f"Initial {ylabel}")
+        plt.grid()
         path = os.path.join(output_path, f"{variable_name}0.png")
         if verbose:
             print(f"Saving {path}.")
@@ -250,6 +251,7 @@ def main():
             t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1])
             plt.text(t_label_x, t_label_y, t_label)
             plt.title(ylabel)
+            plt.grid()
             path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
             if verbose:
                 print(f"Saving {path}.")
