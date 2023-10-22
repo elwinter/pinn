@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 
-"""Create Gaussian initial conditions for the bw1d_nPux problem.
+"""Create Gaussian isothermal initial conditions for the bw1d_nPux problem.
 
-This problem is a 1-D blast wave, described with n, P, ux.
+This problem is a *isothermal* 1-D blast wave, described with n, P, ux.
 
 The problem domain is:
     0 <= t <= 1
-    -1 <= x <= 1
+    0 <= x <= 1
 
 The initial conditions are:
 
-P = P0 + P_blast*GAUSSIAN(x, mean=0, stddev=0.05)
-n = n0*P/P0
-ux = u0x
+P = P0 + P1*GAUSSIAN(x, mean=0, stddev=0.05)
+n = n0*(P/P0)
+ux = u0x + u1x*GAUSSIAN(x, mean=0, stddev=0.05)
+
+where GAUSSIAN(x, mu, stddev) is the Gaussian distribution, normalized to unit
+area, evaluated at x, with mean mu and standard deviation stddev.
 
 Author
 ------
@@ -38,9 +41,14 @@ description = "Create Gaussian data for the bw1d_nPux problem."
 # Constants
 n0 = 1.0        # Number density at start
 P0 = 0.1        # Pressure at start
-P_blast = 1.0   # Peak pressure of blast
-stddev_blast = 0.05   # Standard deviation of blast
 u0x = 0.0       # x-component of velocity at start
+gamma = 5/3     # Adiabatic index of gas
+
+# Blast characteristics
+P1 = 1.0              # Additional peak pressure of blast
+stddev_blast = 0.05   # Standard deviation in x of blast pressure at start
+                      # Also used as stddev for ux(0, x) distribution.
+u1x = 1.0             # x-component of blast velocity at start
 
 
 def create_command_line_argument_parser():
@@ -100,7 +108,7 @@ def main():
         print(f"tg = {tg}")
         print(f"xg = {xg}")
 
-    # Compute the data at each point.
+    # Write the training data header.
     # First 4 lines are metadata header as comments.
     # Each subsequent line is:
     # t x n P ux
@@ -112,24 +120,31 @@ def main():
     print(header)
     header = "# t x n P ux"
     print(header)
-    gaussian_max = norm.pdf(0, loc=0, scale=stddev_blast)
-    # for x in xg:
-    #     # Gaussian blast of centered at x = 0
-    #     P = P0 + P_blast*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
-    #     n = n0*P/P0
-    #     ux = u0x
-    #     print(tg[0], x, n, P, ux)
 
-    # Now add data at the first non-zero time step. Use forward extrapolation
-    # from t = 0. At t = 0, dn/dt and dP/dt are 0 by definition, since initial
-    # n(x) is flat at n0, and ux(x) is flat at 0. Thus the value of n at the
-    # first non-zero time is still n0, and P is still P0, while ux has changed.
+    # gaussian_max is the value of the Gaussian of the specified standard
+    # deviation, at the center of the distribution (the origin). Dividing by
+    # this value normalizes the Gaussian distribution to unit area.
+    gaussian_max = norm.pdf(0, loc=0, scale=stddev_blast)
+
+    # Compute the initial conditions.
+    # Assume a Gaussian P distribution centered at the origin.
+    # n is computed from P using the isothermal relation.
+    # ux is arbitrary. so set to Gaussian centered at origin, using the same
+    # standard deviation (this is not a requirement, just a convenience).
     for x in xg:
-        # Gaussian blast of centered at x = 0
-        P = P0 + P_blast*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
+        P = P0 + P1*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
         n = n0*P/P0
-        ux = u0x + x/stddev_blast**2*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max*(tg[1] - tg[0])
-        print(tg[1], x, n, P, ux)
+        ux = u0x + u1x*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
+        print(tg[0], x, n, P, ux)
+
+    # Now add the boundary conditions at x = 0.
+    # n, P, ux are all constant at their initial values.
+    for t in tg:
+        # Gaussian blast of centered at x = 0
+        P = P0 + P1
+        n = n0*P/P0
+        ux = u0x + u1x
+        print(t, 0, n, P, ux)
 
 
 if __name__ == "__main__":
