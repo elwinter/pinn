@@ -132,19 +132,10 @@ def main():
     # ux is arbitrary. so set to Gaussian centered at origin, using the same
     # standard deviation (this is not a requirement, just a convenience).
     for x in xg:
-        P = P0 + P1*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
+        P = P0 + P1*norm.pdf(np.abs(x), loc=0, scale=stddev_blast)/gaussian_max
         n = n0*P/P0
-        ux = u0x + u1x*norm.pdf(x, loc=0, scale=stddev_blast)/gaussian_max
+        ux = u0x + u1x*norm.pdf(np.abs(x), loc=0, scale=stddev_blast)/gaussian_max
         print(tg[0], x, n, P, ux)
-
-    # Now add the boundary conditions at x = 0.
-    # n, P, ux are all constant at their initial values.
-    for t in tg:
-        # Gaussian blast of centered at x = 0
-        P = P0 + P1
-        n = n0*P/P0
-        ux = u0x + u1x
-        print(t, 0, n, P, ux)
 
 
 if __name__ == "__main__":
