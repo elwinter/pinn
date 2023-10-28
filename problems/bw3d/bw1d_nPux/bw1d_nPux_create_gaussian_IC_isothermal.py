@@ -135,6 +135,7 @@ def main():
         P = P0 + P1*norm.pdf(np.abs(x), loc=0, scale=stddev_blast)/gaussian_max
         n = n0*P/P0
         ux = u0x + u1x*norm.pdf(np.abs(x), loc=0, scale=stddev_blast)/gaussian_max
+        ux *= np.sign(x)
         print(tg[0], x, n, P, ux)
 
 
