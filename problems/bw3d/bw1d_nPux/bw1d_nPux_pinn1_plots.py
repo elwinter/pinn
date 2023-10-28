@@ -239,39 +239,39 @@ def main():
         model = models[iv]
         Y_trained[iv, ...] = model(X_train).numpy().reshape(nt, nx)
         frames = []
-        # for i in range(nt):
-        #     i0 = i*nx
-        #     i1 = i0 + nx
-        #     X = X_train[i0:i1, 1]
-        #     Y = Y_trained[iv][i, :]
-        #     plt.plot(X, Y)
-        #     plt.ylim(ylim[variable_name])
-        #     plt.xlabel(xlabel)
-        #     plt.ylabel(ylabel)
-        #     t_frame = X_train[i0, 0]
-        #     t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
-        #     t_label_x = 0.0
-        #     t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1])
-        #     plt.text(t_label_x, t_label_y, t_label)
-        #     plt.title(ylabel)
-        #     plt.grid()
-        #     path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
-        #     if verbose:
-        #         print(f"Saving {path}.")
-        #     plt.savefig(path)
-        #     frames.append(path)
-        #     plt.close()
+        for i in range(nt):
+            i0 = i*nx
+            i1 = i0 + nx
+            X = X_train[i0:i1, 1]
+            Y = Y_trained[iv][i, :]
+            plt.plot(X, Y)
+            plt.ylim(ylim[variable_name])
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
+            t_frame = X_train[i0, 0]
+            t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
+            t_label_x = 0.0
+            t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1])
+            plt.text(t_label_x, t_label_y, t_label)
+            plt.title(ylabel)
+            plt.grid()
+            path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
+            if verbose:
+                print(f"Saving {path}.")
+            plt.savefig(path)
+            frames.append(path)
+            plt.close()
 
         # Assemble the frames into a movie.
-        # frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
-        # movie_file = os.path.join(output_path, f"{variable_name}.mp4")
-        # args = [
-        #     "ffmpeg", "-r", "4", "-s", "1920x1080",
-        #     "-i", frame_pattern,
-        #     "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-        #     movie_file
-        # ]
-        # subprocess.run(args)
+        frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
+        movie_file = os.path.join(output_path, f"{variable_name}.mp4")
+        args = [
+            "ffmpeg", "-r", "4", "-s", "1920x1080",
+            "-i", frame_pattern,
+            "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+            movie_file
+        ]
+        subprocess.run(args)
 
     # ------------------------------------------------------------------------
 
