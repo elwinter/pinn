@@ -20,6 +20,7 @@ import sys
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 import tensorflow as tf
 
 # Import project modules.
@@ -42,7 +43,8 @@ ylim = {}
 ylim["L"] = [1e-12, 10]
 ylim["n"] = [0, 12.0]
 ylim["P"] = [0, 2.0]
-ylim["ux"] = [0, 2.0]
+ylim["ux"] = [-2.0, 2.0]
+ylim["E"] = [0.0, 1.0]
 
 
 def create_command_line_argument_parser():
@@ -225,6 +227,7 @@ def main():
     # ------------------------------------------------------------------------
 
     # Make a movie for each predicted variable.
+    Y_trained = np.zeros([p.n_var, nt, nx])
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
         if verbose:
             print(f"Creating movie for {variable_name}.")
@@ -234,41 +237,77 @@ def main():
         frame_dir = os.path.join(output_path, f"frames_{variable_name}")
         os.mkdir(frame_dir)
         model = models[iv]
-        Y_trained = model(X_train).numpy().reshape(nt, nx)
+        Y_trained[iv, ...] = model(X_train).numpy().reshape(nt, nx)
         frames = []
-        for i in range(nt):
-            i0 = i*nx
-            i1 = i0 + nx
-            X = X_train[i0:i1, 1]
-            Y = Y_trained[i, :]
-            plt.plot(X, Y)
-            plt.ylim(ylim[variable_name])
-            plt.xlabel(xlabel)
-            plt.ylabel(ylabel)
-            t_frame = X_train[i0, 0]
-            t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
-            t_label_x = 0.0
-            t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1])
-            plt.text(t_label_x, t_label_y, t_label)
-            plt.title(ylabel)
-            plt.grid()
-            path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
-            if verbose:
-                print(f"Saving {path}.")
-            plt.savefig(path)
-            frames.append(path)
-            plt.close()
+        # for i in range(nt):
+        #     i0 = i*nx
+        #     i1 = i0 + nx
+        #     X = X_train[i0:i1, 1]
+        #     Y = Y_trained[iv][i, :]
+        #     plt.plot(X, Y)
+        #     plt.ylim(ylim[variable_name])
+        #     plt.xlabel(xlabel)
+        #     plt.ylabel(ylabel)
+        #     t_frame = X_train[i0, 0]
+        #     t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
+        #     t_label_x = 0.0
+        #     t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1])
+        #     plt.text(t_label_x, t_label_y, t_label)
+        #     plt.title(ylabel)
+        #     plt.grid()
+        #     path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
+        #     if verbose:
+        #         print(f"Saving {path}.")
+        #     plt.savefig(path)
+        #     frames.append(path)
+        #     plt.close()
 
         # Assemble the frames into a movie.
-        frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
-        movie_file = os.path.join(output_path, f"{variable_name}.mp4")
-        args = [
-            "ffmpeg", "-r", "4", "-s", "1920x1080",
-            "-i", frame_pattern,
-            "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-            movie_file
-        ]
-        subprocess.run(args)
+        # frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
+        # movie_file = os.path.join(output_path, f"{variable_name}.mp4")
+        # args = [
+        #     "ffmpeg", "-r", "4", "-s", "1920x1080",
+        #     "-i", frame_pattern,
+        #     "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+        #     movie_file
+        # ]
+        # subprocess.run(args)
+
+    # ------------------------------------------------------------------------
+
+    # Make a plot of the total energy.
+
+    # Extract the individual variables.
+    n = Y_trained[p.i_n]
+    P = Y_trained[p.iP]
+    ux = Y_trained[p.iux]
+
+    # Compute the total energy density at each point.
+    # Shape is (nt, nx)
+    Eden = 0.5*n*ux**2 + P
+
+    # Compute the integrated energy at each time.
+    t = X_train[::nx, 0]
+    x = X_train[:nx, 1]
+    E = np.zeros(nt)
+    for it in range(nt):
+        E[it] = scipy.integrate.simpson(Eden[it], x)
+
+    # Plot the integrated energy as a function of time.
+    plt.clf()
+    plt.plot(t, E)
+    plt.ylim(ylim["E"])
+    plt.xlabel("$t$")
+    plt.ylabel("$E$")
+    plt.title(f"Integrated energy")
+    plt.grid()
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "E.png")
+    if verbose:
+        print(f"Saving {path}.")
+    plt.savefig(path)
+    plt.close()
 
 
 if __name__ == "__main__":
