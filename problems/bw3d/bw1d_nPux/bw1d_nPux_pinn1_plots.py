@@ -250,8 +250,8 @@ def main():
             plt.ylabel(ylabel)
             t_frame = X_train[i0, 0]
             t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
-            t_label_x = 0.0
-            t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1])
+            t_label_x = X[0]
+            t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1] - ylim[variable_name][0])
             plt.text(t_label_x, t_label_y, t_label)
             plt.title(ylabel)
             plt.grid()
