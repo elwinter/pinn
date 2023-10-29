@@ -74,6 +74,10 @@ def create_command_line_argument_parser():
         "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
+    parser.add_argument(
+        "--no0", action="store_true",
+        help="Ignore the origin as a data point (default: %(default)s)."
+    )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
     return parser
 
@@ -88,6 +92,7 @@ def main():
     if args.debug:
         print(f"args = {args}")
     debug = args.debug
+    no0 = args.no0
     rest = args.rest
 
     # Fetch the remaining command-line arguments.
@@ -132,6 +137,8 @@ def main():
     # ux is arbitrary. so set to Gaussian centered at origin, using the same
     # standard deviation (this is not a requirement, just a convenience).
     for x in xg:
+        if np.isclose(x, 0):
+            continue
         P = P0 + P1*norm.pdf(np.abs(x), loc=0, scale=stddev_blast)/gaussian_max
         n = n0*P/P0
         ux = u0x + u1x*norm.pdf(np.abs(x), loc=0, scale=stddev_blast)/gaussian_max

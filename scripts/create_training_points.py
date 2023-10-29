@@ -66,6 +66,10 @@ def create_command_line_argument_parser():
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
+        "--no0", action="store_true",
+        help="Ignore the origin as a data point (default: %(default)s)."
+    )
+    parser.add_argument(
         "--random", "-r", action="store_true",
         help="Select points randomly within domain (default: %(default)s)."
     )
@@ -91,6 +95,7 @@ def main():
     if args.debug:
         print(f"args = {args}")
     debug = args.debug
+    no0 = args.no0
     random = args.random
     seed = args.seed
     verbose = args.verbose
@@ -145,6 +150,13 @@ def main():
         points = training_data.create_training_points_gridded(X_n, b)
     if debug:
         print(f"points = {points}")
+
+    # (Optional) Remove points with a *spatial* coordinate of 0.
+    if no0:
+        for i in range(len(b) - 1):
+            # Remove points where coordinate i is ~0.
+            w = np.where(~np.isclose(points[:, i + 1], 0))
+            points = points[w]
 
     # Send the points to standard output.
     # Include a header as a comment describing the data.
