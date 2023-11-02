@@ -180,6 +180,7 @@ def main():
     XY_data = np.loadtxt(path)
 
     # Read the data description from the header.
+    no0 = True
     with open(path, "r") as f:
         line = f.readline()
         line = f.readline()
@@ -192,6 +193,8 @@ def main():
         xmin = float(fields[3])
         xmax = float(fields[4])
         nx = int(fields[5])
+        if no0:
+            nx -= 1
 
     # Find the epoch of the last trained model.
     last_epoch = pinn.common.find_last_epoch(results_path)
