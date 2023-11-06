@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-"""Use PINNs to solve a set of coupled 1st-order PDE.
+"""Use PINNs to solve a set of coupled 2nd-order PDE.
 
 This program will use a set of Physics-Informed Neural Networks (PINNs) to
-solve a set of coupled 1st-order PDEs.
+solve a set of coupled 2nd-order PDEs.
 
 Author
 ------
@@ -14,7 +14,6 @@ Eric Winter (eric.winter62@gmail.com)
 # Import standard Python modules.
 import argparse
 import datetime
-import importlib.util
 import os
 import shutil
 import sys
@@ -30,7 +29,7 @@ from pinn import common
 # Program constants
 
 # Program description
-DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
+DESCRIPTION = "Solve a set of coupled 2nd-order PDE using the PINN method."
 
 # Program defaults
 
@@ -495,7 +494,7 @@ def main():
 
                 # Compute the 2nd-order derivatives of the network outputs wrt
                 # inputs.
-                d2Y_dX2_batch = [tape1.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
+                d2Y_dX2_batch = [tape2.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
                 if debug:
                     print(f"d2Y_dX2_batch = {d2Y_dX2_batch}", flush=True)
 
@@ -641,7 +640,9 @@ def main():
                 dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
                 if debug:
                     print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
-            d2Y_dX2_batch = [tape1.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
+            d2Y_dX2_batch = [tape2.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
+            if debug:
+                print(f"d2Y_dX2_batch = {d2Y_dX2_batch}", flush=True)
             G_batch = [f(X_batch, Y_batch, dY_dX_batch, d2Y_dX2_batch) for f in p.de]
             if debug:
                 print(f"G_batch = {G_batch}", flush=True)
