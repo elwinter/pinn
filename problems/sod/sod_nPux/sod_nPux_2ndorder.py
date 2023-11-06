@@ -214,9 +214,12 @@ def pde_ux(X, Y, del_Y, del2_Y):
     dP_dx = tf.reshape(del_P[:, ix], (nX, 1))
     dux_dt = tf.reshape(del_ux[:, it], (nX, 1))
     dux_dx = tf.reshape(del_ux[:, ix], (nX, 1))
+    d2ux_dt2 = tf.reshape(del_ux[:, it], (nX, 1))
+    d2ux_dx2 = tf.reshape(del_ux[:, ix], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = n*(dux_dt + ux*dux_dx) + dP_dx/m #- nu/m*d2ux_dx2
+    nu = 0.005
+    G = n*(dux_dt + ux*dux_dx) + dP_dx/m - nu/m*d2ux_dx2
     return G
 
 
