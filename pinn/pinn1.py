@@ -466,36 +466,45 @@ def main():
             # tape0 is for computing gradients wrt network parameters.
             # tape1 is for computing 1st-order derivatives of outputs wrt
             # inputs.
+            # tape2 is for computing 1st-order derivatives of outputs wrt
+            # inputs.
             with tf.GradientTape(persistent=True) as tape0:
-                with tf.GradientTape(persistent=True) as tape1:
+                with tf.GradientTape(persistent=True) as tape2:
+                    with tf.GradientTape(persistent=True) as tape1:
 
-                    # Compute the network outputs at all training points
-                    # in this batch. These are the values Y of the dependent
-                    # variables X to use in the differential equations G for
-                    # this batch.
-                    # Y_batch is a list of tf.Tensor objects.
+                        # Compute the network outputs at all training points
+                        # in this batch. These are the values Y of the dependent
+                        # variables X to use in the differential equations G for
+                        # this batch.
+                        # Y_batch is a list of tf.Tensor objects.
+                        # There are p.n_var Tensors in the list (one per model).
+                        # Each Tensor has shape (n_batch, 1).
+                        Y_batch = [model(X_batch) for model in models]
+                        if debug:
+                            print(f"Y_batch = {Y_batch}", flush=True)
+
+                    # Compute the gradients of the network outputs wrt inputs for
+                    # this batch. These are the values of the partial derivatives
+                    # dY/dX to use in the differential equations G for this batch.
+                    # dY_dX_batch is a list of tf.Tensor objects.
                     # There are p.n_var Tensors in the list (one per model).
-                    # Each Tensor has shape (n_batch, 1).
-                    Y_batch = [model(X_batch) for model in models]
+                    # Each Tensor has shape (n_batch, p.n_dim).
+                    dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
                     if debug:
-                        print(f"Y_batch = {Y_batch}", flush=True)
+                        print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
 
-                # Compute the gradients of the network outputs wrt inputs for
-                # this batch. These are the values of the partial derivatives
-                # dY/dX to use in the differential equations G for this batch.
-                # dY_dX_batch is a list of tf.Tensor objects.
-                # There are p.n_var Tensors in the list (one per model).
-                # Each Tensor has shape (n_batch, p.n_dim).
-                dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
+                # Compute the 2nd-order derivatives of the network outputs wrt
+                # inputs.
+                d2Y_dX2_batch = [tape1.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
                 if debug:
-                    print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
+                    print(f"d2Y_dX2_batch = {d2Y_dX2_batch}", flush=True)
 
                 # Compute the values of the differential equations at all
                 # points in this batch.
                 # G_batch is a list of Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_batch, 1).
-                G_batch = [f(X_batch, Y_batch, dY_dX_batch) for f in p.de]
+                G_batch = [f(X_batch, Y_batch, dY_dX_batch, d2Y_dX2_batch) for f in p.de]
                 if debug:
                     print(f"G_batch = {G_batch}", flush=True)
 
@@ -624,14 +633,16 @@ def main():
         # Compute the end-of-epoch residual loss functions.
         G2_sum = tf.zeros(p.n_var)
         for (i_batch, X_batch) in enumerate(batches):
-            with tf.GradientTape(persistent=True) as tape1:
-                Y_batch = [model(X_batch) for model in models]
+            with tf.GradientTape(persistent=True) as tape2:
+                with tf.GradientTape(persistent=True) as tape1:
+                    Y_batch = [model(X_batch) for model in models]
+                    if debug:
+                        print(f"Y_batch = {Y_batch}", flush=True)
+                dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
                 if debug:
-                    print(f"Y_batch = {Y_batch}", flush=True)
-            dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
-            if debug:
-                print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
-            G_batch = [f(X_batch, Y_batch, dY_dX_batch) for f in p.de]
+                    print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
+            d2Y_dX2_batch = [tape1.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
+            G_batch = [f(X_batch, Y_batch, dY_dX_batch, d2Y_dX2_batch) for f in p.de]
             if debug:
                 print(f"G_batch = {G_batch}", flush=True)
             G2_sum_batch = [tf.math.reduce_sum(G**2) for G in G_batch]
