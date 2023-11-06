@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-"""Use PINNs to solve a set of coupled 2nd-order PDE.
+"""Use PINNs to solve a set of coupled 1st-order PDE.
 
 This program will use a set of Physics-Informed Neural Networks (PINNs) to
-solve a set of coupled 2nd-order PDEs.
+solve a set of coupled 1st-order PDEs.
 
 Author
 ------
@@ -30,7 +30,7 @@ from pinn import common
 # Program constants
 
 # Program description
-DESCRIPTION = "Solve a set of coupled 2nd-order PDE using the PINN method."
+DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
 
 # Program defaults
 
@@ -466,7 +466,7 @@ def main():
             # tape0 is for computing gradients wrt network parameters.
             # tape1 is for computing 1st-order derivatives of outputs wrt
             # inputs.
-            # tape2 is for computing 2nd-order derivatives of outputs wrt
+            # tape2 is for computing 1st-order derivatives of outputs wrt
             # inputs.
             with tf.GradientTape(persistent=True) as tape0:
                 with tf.GradientTape(persistent=True) as tape2:
@@ -494,15 +494,10 @@ def main():
                         print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
 
                 # Compute the 2nd-order derivatives of the network outputs wrt
-                # inputs for this batch. These are the values of the partial
-                # derivatives d2Y/dX2 to use in the differential equations G
-                # for this batch.
-                # d2Y_dX2_batch is a list of tf.Tensor objects.
-                # There are p.n_var Tensors in the list (one per model).
-                # Each Tensor has shape (n_batch, p.n_dim)
-                d2Y_dX2_batch = [tape2.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
+                # inputs.
+                d2Y_dX2_batch = [tape1.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
                 if debug:
-                    print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
+                    print(f"d2Y_dX2_batch = {d2Y_dX2_batch}", flush=True)
 
                 # Compute the values of the differential equations at all
                 # points in this batch.
@@ -646,9 +641,7 @@ def main():
                 dY_dX_batch = [tape1.gradient(Y, X_batch) for Y in Y_batch]
                 if debug:
                     print(f"dY_dX_batch = {dY_dX_batch}", flush=True)
-            dY2_dX2_batch = [tape1.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
-            if debug:
-                print(f"d2Y_dX2_batch = {d2Y_dX2_batch}", flush=True)
+            d2Y_dX2_batch = [tape1.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
             G_batch = [f(X_batch, Y_batch, dY_dX_batch, d2Y_dX2_batch) for f in p.de]
             if debug:
                 print(f"G_batch = {G_batch}", flush=True)
