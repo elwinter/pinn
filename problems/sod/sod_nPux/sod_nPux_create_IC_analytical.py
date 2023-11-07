@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
-"""Create initial conditions for the Sod shock tube problem.
+"""Create analytical initial conditions for the Sod shock tube problem.
 
 This problem is described at:
 
 http://wonka.physics.ncsu.edu/pub/VH-1/bproblems.php
+
+The code for computing the analytical solution is from:
+
+https://github.com/ibackus/sod-shocktube
 
 Author
 ------
@@ -18,6 +22,7 @@ import argparse
 # Import supplemental Python modules.
 import numpy as np
 from scipy.stats import norm
+import sodshock
 
 # Import project Python modules.
 
@@ -25,12 +30,12 @@ from scipy.stats import norm
 # Program constants
 
 # Program description.
-description = "Create initial conditions for the Sod shock tube problem."
+description = "Create analytical initial conditions for the Sod shock tube problem."
 
 # Constants
 nl, nr = 1.0, 0.125   # Number density on left and right of shock at start
 Pl, Pr = 1.0, 0.1     # Pressure on left and right of shock at start
-ul, ur = 0.0, 0.0     # x-velocity on left and right of shock at start
+gamma = 1.4
 
 
 def create_command_line_argument_parser():
@@ -90,6 +95,16 @@ def main():
         print(f"tg = {tg}")
         print(f"xg = {xg}")
 
+    # Compute the analytical solution at the time resolution of the grid.
+    # Use the solution at t = tg[1] as the initial condition.
+    x_shock = 0.5
+    positions, regions, values = sodshock.solve(
+        left_state=[Pl, nl, 0.0],
+        right_state=[Pr, nr, 0.0],
+        geometry=(x_min, x_max, x_shock), t=tg[1], 
+        gamma=gamma, npts=n_x
+    )
+
     # Compute the data at each point.
     # First 4 lines are metadata header as comments.
     # Each subsequent line is:
@@ -102,17 +117,10 @@ def main():
     print(header)
     header = "# t x n P ux"
     print(header)
-    # Discontinuity at x = 0.5
-    for x in xg:
-        if x <= 0.5:
-            n = nl
-            P = Pl
-            u = ul
-        else:
-            n = nr
-            P = Pr
-            u = ur
-        print(tg[0], x, n, P, u)
+    # Smooth transition around x = 0.5
+    xmid = 0.5
+    for (x, n, P, ux) in zip(values["x"], values["rho"], values["p"], values["u"]):
+        print(tg[1], x, n, P, ux)
 
 
 if __name__ == "__main__":
