@@ -214,6 +214,7 @@ def main():
         plt.ylim(ylim[variable_name])
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
+        plt.grid()
         plt.title(f"Initial {ylabel}")
         path = os.path.join(output_path, f"{variable_name}0.png")
         if verbose:
@@ -244,6 +245,7 @@ def main():
             plt.ylim(ylim[variable_name])
             plt.xlabel(xlabel)
             plt.ylabel(ylabel)
+            plt.grid()
             t_frame = X_train[i0, 0]
             t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
             t_label_x = 0.0
