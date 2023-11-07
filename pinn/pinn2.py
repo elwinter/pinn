@@ -134,6 +134,10 @@ def create_command_line_argument_parser():
         help="Disable TensorFlow use of GPU(s) (default: %(default)s)."
     )
     parser.add_argument(
+        "--num2", action="store_true",
+        help="Compute numerical 2nd-order derivatives (default: %(default)s)."
+    )
+    parser.add_argument(
         "--precision", type=str, default=DEFAULT_PRECISION,
         help="Precision to use in TensorFlow solution (default: %(default)s)"
     )
@@ -190,6 +194,7 @@ def main():
     H = args.n_hid
     n_layers = args.n_layers
     nogpu = args.nogpu
+    num2 = args.num2
     precision = args.precision
     save_model = args.save_model
     seed = args.seed
@@ -266,6 +271,13 @@ def main():
         if debug:
             print(f"Reshaped X_train = {X_train}", flush=True)
     shutil.copy(training_points, os.path.join(output_dir, "X_train.dat"))
+
+    # Read the number of points in each dimension, for gridded data.
+    # If not gridded, ignore.
+    xg, ng = common.read_grid_description(training_points)
+    if debug:
+        print(f"xg = {xg}")
+        print(f"ng = {ng}")
 
     # Count the training points.
     n_train = X_train.shape[0]
@@ -385,7 +397,7 @@ def main():
     # Convert each batch to a tf.Variable for use in gradients.
     batches = []
     training_point_indices = np.arange(n_train)
-    np.random.shuffle(training_point_indices)
+    # np.random.shuffle(training_point_indices)
     i_start = i_stop = 0
     i_batch = 0
     while i_stop < n_train:
@@ -494,7 +506,38 @@ def main():
 
                 # Compute the 2nd-order derivatives of the network outputs wrt
                 # inputs.
-                d2Y_dX2_batch = [tape2.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
+                if num2:
+                    # <HACK>
+                    d2Y_dX2_batch = [[None, None]]*p.n_var  # Ignore d2Y/dt2
+                    nt = ng[0]
+                    nx = ng[1]
+                    # Compute d2y/dx2 for each variable.
+                    for (iv, dy_dx) in enumerate(dY_dX_batch):
+                        # Compute d2y/dx2 at each time
+                        df_tmp = []
+                        for it in range(nt):
+                            # Compute start and end indices for the time.
+                            j0 = it*nx
+                            j1 = j0 + nx
+                            # Extract the x values for this time.
+                            x = X_batch[j0:j1, 1]
+                            # Compute the interval.
+                            h = x[1] - x[0]
+                            # Extract the dy/dx values for this time.
+                            f = dy_dx[j0:j1, 1]
+                            # Compute the 2nd derivatives.
+                            df0 = tf.reshape((-3*f[0] + 4*f[1] - f[2])/(2*h), [1,])
+                            dfi = (f[2:] - f[:-2])/(2*h)
+                            df1 = tf.reshape((f[-3] - 4*f[-2] + 3*f[-1])/(2*h), [1,])
+                            df = tf.concat([df0, dfi, df1], 0)
+                            df_tmp.append(df)
+                        # Assemble each time into a single array.
+                        z = tf.zeros(nx)
+                        d2y_dx2 = tf.concat(df, 0)
+                        d2Y_dX2_batch[iv] = tf.transpose(tf.stack([z, d2y_dx2]))
+                    # <HACK>
+                else:
+                    d2Y_dX2_batch = [tape2.gradient(dY_dX, X_batch) for dY_dX in dY_dX_batch]
                 if debug:
                     print(f"d2Y_dX2_batch = {d2Y_dX2_batch}", flush=True)
 
