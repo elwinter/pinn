@@ -117,8 +117,6 @@ def main():
     print(header)
     header = "# t x n P ux"
     print(header)
-    # Smooth transition around x = 0.5
-    xmid = 0.5
     for (x, n, P, ux) in zip(values["x"], values["rho"], values["p"], values["u"]):
         print(tg[1], x, n, P, ux)
 
