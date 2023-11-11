@@ -6,7 +6,7 @@ and density. The wave has 3 frequency components.
 This problem specifies the initial condition, and the boundary condition at
 x = 0, so the result is a wave train propagating in t and x.
 
-This problem uses the linearized MHD equations.
+This problem uses the linearized MHD equations for n1, u1x, and E1x.
 
 NOTE: The functions in this module are defined using a combination of Numpy and
 TensorFlow operations, so they can be used efficiently by the TensorFlow
@@ -21,9 +21,9 @@ independent variables:
 NOTE: In all code, below, the following indices are assigned to physical
 dependent variables (these are 1st-order perturbation values):
 
-    0:  n1 (number density)
-    1:  u1x (x-component of velocity)
-    2:  E1x (x-component of electric field)
+    0:  n1 (number density perturbation)
+    1:  u1x (x-component of velocity perturbation)
+    2:  E1x (x-component of electric field perturbation)
 
 Author
 ------

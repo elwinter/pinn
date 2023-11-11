@@ -265,6 +265,8 @@ def main():
         X_train = X_train.reshape(X_train.shape[0], 1)
         if debug:
             print(f"Reshaped X_train = {X_train}", flush=True)
+
+    # Save a copy of the training data in the output directory.
     shutil.copy(training_points, os.path.join(output_dir, "X_train.dat"))
 
     # Count the training points.
@@ -289,6 +291,8 @@ def main():
             XY_data = XY_data.reshape(1, XY_data.shape[0])
             if debug:
                 print(f"Reshaped XY_data = {XY_data}", flush=True)
+
+        # Save a copy of the additional data in the output directory.
         shutil.copy(data, os.path.join(output_dir, "XY_data.dat"))
 
         # Extract the *locations* of the supplied data points.
@@ -316,6 +320,8 @@ def main():
             X_val = X_val.reshape(X_val.shape[0], 1)
             if debug:
                 print(f"Reshaped X_val = {X_val}", flush=True)
+
+        # Save a copy of the validation points in the output directory.
         np.savetxt(os.path.join(output_dir, "X_val.dat"), X_val)
 
         # Get the count of validation points.
@@ -469,8 +475,8 @@ def main():
                 with tf.GradientTape(persistent=True) as tape1:
 
                     # Compute the network outputs at all training points
-                    # in this batch. These are the values Y of the dependent
-                    # variables X to use in the differential equations G for
+                    # in this batch. These are the values of the dependent
+                    # variables Y to use in the differential equations G for
                     # this batch.
                     # Y_batch is a list of tf.Tensor objects.
                     # There are p.n_var Tensors in the list (one per model).
