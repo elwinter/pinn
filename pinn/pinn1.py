@@ -14,7 +14,6 @@ Eric Winter (eric.winter62@gmail.com)
 # Import standard Python modules.
 import argparse
 import datetime
-import importlib.util
 import os
 import shutil
 import sys
