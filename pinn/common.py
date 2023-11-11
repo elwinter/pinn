@@ -273,5 +273,51 @@ def disable_gpus():
         assert device.device_type != "GPU"
 
 
+def read_grid_description(data_file):
+    """Read grid description from a data file.
+
+    Read grid description from a data file. If the data is random, then return
+    None.
+
+    Parameters
+    ----------
+    data_file : str
+        Path to training data file
+
+    Returns
+    -------
+    xg : list of list of float
+        List of pairs of (min, max) for each grid dimension
+    ng : list of int
+        Number of grid points in each dimension
+
+    Raises
+    ------
+    None
+    """
+    # Read the grid description. Ignore if not a grid.
+    xg = None
+    ng = None
+    with open(data_file, "r") as f:
+        line = f.readline()
+        if line.startswith("# GRID"):
+            line = f.readline().rstrip()
+            line = line[2:]
+            f = line.split(" ")
+            xmin = f[::3]
+            xmax = f[1::3]
+            xn = f[2::3]
+            xg = []
+            ng = []
+            for (min, max, n) in zip(xmin, xmax, xn):
+                xg.append([None, None])
+                xg[-1][0] = float(min)
+                xg[-1][1] = float(max)
+                ng.append(int(n))
+        else:
+            pass
+    return xg, ng
+
+
 if __name__ == '__main__':
     pass

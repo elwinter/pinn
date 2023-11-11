@@ -1,0 +1,49 @@
+#!/bin/bash
+
+#PBS -N {{ run_id }}
+#PBS -j oe
+#PBS -l walltime={{ pbs_walltime }}
+#PBS -m abe
+#PBS -A {{ pbs_account }}
+#PBS -q {{ pbs_queue }}
+#PBS -l {{ pbs_select }}
+
+# Perform PBS-only tasks.
+run_id={{ run_id }}
+if [ "$PBS_JOBID" ]; then
+  echo "The following modules are loaded:"
+  module list
+fi
+
+# Define the pinn software installation to use.
+pinn_root={{ pinn_root }}
+echo "pinn_root=$pinn_root"
+
+# Load the python environment.
+source $HOME/bin/launch_conda {{ platform }}
+conda activate {{ python_environment }}
+echo "The active python environment is:"
+echo $CONDA_PREFIX
+
+# Add the pinn installation directory to the python module path.
+export PYTHONPATH="$pinn_root:$PYTHONPATH"
+
+# Define the PINN command.
+pinn_cmd=$pinn_root/pinn/pinn2.py
+echo "pinn_cmd=$pinn_cmd"
+
+echo "The active environment variables are:"
+printenv
+
+# Run the network.
+echo "Training network."
+cmd="$pinn_cmd --verbose --activation={{ pinn2_activation }} --batch_size={{ pinn2_batch_size }} --data={{ pinn2_data }} --learning_rate={{ pinn2_learning_rate }} --max_epochs={{ pinn2_max_epochs }} --n_hid={{ pinn2_n_hid }} --n_layers={{ pinn2_n_layers }} --precision={{ pinn2_precision }} --save_model={{ pinn2_save_model }} --seed={{ pinn2_seed }}  --w_data={{ pinn2_w_data }} {{ pinn2_problem }} {{ pinn2_training_points }}"
+echo "cmd=$cmd"
+eval $cmd >& pinn2.out
+
+# Create standard post-processing graphics.
+echo "Creating plots."
+plot_cmd={{ plot_cmd }}
+cmd="$plot_cmd {{ debug }} {{ verbose }} {{ results_dir }}"
+echo "cmd=$cmd"
+eval $cmd >& pinn2_plots.out
