@@ -40,8 +40,8 @@ PROBLEM_NAME = "eplasma3"
 # Plot limits for dependent variables.
 ylim = {}
 ylim["L"] = [1e-12, 10]
-ylim["n1"] = [-0.2, 0.2]
-ylim["u1x"] = [-0.5, 0.5]
+ylim["n1"] = [-0.25, 0.25]
+ylim["u1x"] = [-0.4, 0.4]
 ylim["E1x"] = [-0.1, 0.1]
 
 
@@ -227,7 +227,8 @@ def main():
 
     # ------------------------------------------------------------------------
 
-    # Make a movie for each predicted variable.
+    # Make a movie for each predicted variable. Include the analytical solution
+    # and the error.
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
         if verbose:
             print(f"Creating movie for {variable_name}.")
@@ -238,23 +239,31 @@ def main():
         os.mkdir(frame_dir)
         model = models[iv]
         Y_trained = model(X_train).numpy().reshape(nt, nx)
+        Y_analytical = p.analytical_solutions[iv](X_train).reshape(nt, nx)
         frames = []
         for i in range(nt):
             i0 = i*nx
             i1 = i0 + nx
             X = X_train[i0:i1, 1]
-            Y = Y_trained[i, :]
-            plt.plot(X, Y)
+            Yt = Y_trained[i, :]
+            Ya = Y_analytical[i, :]
+            Ye = Yt - Ya
+            rms_err = np.sqrt(np.sum(Ye**2)/nx)
+            plt.plot(X, Yt, label="trained")
+            plt.plot(X, Ya, label="analytical")
+            plt.plot(X, Ye, label="error")
             plt.ylim(ylim[variable_name])
             plt.xlabel(xlabel)
             plt.ylabel(ylabel)
+            plt.legend(loc="upper right")
             plt.grid()
             t_frame = X_train[i0, 0]
             t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
             t_label_x = 0.0
             t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1] - ylim[variable_name][0])
             plt.text(t_label_x, t_label_y, t_label)
-            plt.title(ylabel)
+            title = f"{ylabel}, RMS error = {rms_err:.2e}"
+            plt.title(title)
             path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
             if verbose:
                 print(f"Saving {path}.")
