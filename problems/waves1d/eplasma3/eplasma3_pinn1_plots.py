@@ -40,9 +40,9 @@ PROBLEM_NAME = "eplasma3"
 # Plot limits for dependent variables.
 ylim = {}
 ylim["L"] = [1e-12, 10]
-ylim["n1"] = [0, 1.2]
-ylim["u1x"] = [0, 1.2]
-ylim["E1x"] = [0, 1.2]
+ylim["n1"] = [-0.2, 0.2]
+ylim["u1x"] = [-0.5, 0.5]
+ylim["E1x"] = [-0.1, 0.1]
 
 
 def create_command_line_argument_parser():
@@ -208,8 +208,11 @@ def main():
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
         xlabel = p.independent_variable_labels[p.ix]
         ylabel = p.dependent_variable_labels[iv]
-        X = XY_data[:, p.ix]
-        Y = XY_data[:, p.n_dim + iv]
+        # <HACK>
+        # Assumes BC followed by IC.
+        X = XY_data[nt:, p.ix]
+        Y = XY_data[nt:, p.n_dim + iv]
+        # </HACK>
         plt.plot(X, Y)
         plt.ylim(ylim[variable_name])
         plt.xlabel(xlabel)
@@ -249,7 +252,7 @@ def main():
             t_frame = X_train[i0, 0]
             t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
             t_label_x = 0.0
-            t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1])
+            t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1] - ylim[variable_name][0])
             plt.text(t_label_x, t_label_y, t_label)
             plt.title(ylabel)
             path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
