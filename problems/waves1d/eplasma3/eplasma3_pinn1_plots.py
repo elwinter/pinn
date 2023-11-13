@@ -39,10 +39,10 @@ PROBLEM_NAME = "eplasma3"
 
 # Plot limits for dependent variables.
 ylim = {}
-ylim["L"] = [1e-12, 10]
-ylim["n1"] = [0, 1.2]
-ylim["u1x"] = [0, 1.2]
-ylim["E1x"] = [0, 1.2]
+ylim["L"] = [1e-6, 10]
+ylim["n1"] =  [-1e-3, 1e-3]
+ylim["u1x"] = [-1e-5, 1e-5]
+ylim["E1x"] = [-1e-5, 1e-5]
 
 
 def create_command_line_argument_parser():
