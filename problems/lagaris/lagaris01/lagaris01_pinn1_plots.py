@@ -31,13 +31,18 @@ import pinn.common
 DESCRIPTION = "Create plots for pinn1 results for lagaris01 problem."
 
 # Name of directory to hold output plots
-OUTPUT_DIR = "plots_1"
+OUTPUT_DIR = "pinn1_plots"
 
 # Name of problem
 PROBLEM_NAME = "lagaris01"
 
 # Number of points to use in comparison plot.
 NUM_POINTS = 101
+
+# Plot limits for dependent variables.
+ylim = {}
+ylim["L"] = [1e-12, 10]
+ylim["Ψ"] = [-0.1, 1.3]
 
 
 def create_command_line_argument_parser():
@@ -107,158 +112,131 @@ def main():
 
     # -------------------------------------------------------------------------
 
-    # Plot the data loss history.
+    # Plot the total residual, data, and weighted loss histories.
 
-    # Clear the figure.
-    plt.clf()
-
-    # Read the data.
+    # Load the data.
+    path = os.path.join(results_path, "L_res.dat")
+    L_res = np.loadtxt(path)
     path = os.path.join(results_path, "L_data.dat")
     L_dat = np.loadtxt(path)
+    path = os.path.join(results_path, "L.dat")
+    L = np.loadtxt(path)
 
     # Create the plot.
-    plt.semilogy(L_dat)
+    plt.clf()
+    plt.semilogy(L_res, label="$L_{res}$")
+    plt.semilogy(L_dat, label="$L_{dat}$")
+    plt.semilogy(L, label="$L$")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
-    plt.ylim([1e-6, 1])
-    plt.title("Data loss")
+    plt.ylim(ylim["L"])
+    plt.legend()
+    plt.title(f"Total residual, data, and weighted loss")
     plt.grid()
 
     # Save the plot to a PNG file.
-    path = os.path.join(output_path, "L_dat.png")
+    path = os.path.join(output_path, "L.png")
+    if verbose:
+        print(f"Saving {path}.")
     plt.savefig(path)
+    plt.close()
 
-    # -------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
 
-    # Plot the trained and analytical solutions, and the error.
+    # Plot the per-model residual, data, and weighted loss histories.
 
-    # Clear the figure.
-    plt.clf()
+    # Plot for each model.
+    for iv in range(p.n_var):
 
-    # Load the trained model.
+        # Load the data.
+        variable_name = p.dependent_variable_names[iv]
+        variable_label = p.dependent_variable_labels[iv]
+        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
+        L_res = np.loadtxt(path)
+        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
+        L_dat = np.loadtxt(path)
+        path = os.path.join(results_path, f"L_{variable_name}.dat")
+        L = np.loadtxt(path)
+
+        # Create the plot.
+        plt.semilogy(L_res, label="$L_{res}$")
+        plt.semilogy(L_dat, label="$L_{dat}$")
+        plt.semilogy(L, label="$L$")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.ylim(ylim["L"])
+        plt.legend()
+        plt.title(f"Residual, data, and weighted loss for {variable_label}")
+        plt.grid()
+
+        # Save the plot.
+        path = os.path.join(output_path, f"L_{variable_name}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+        plt.close()
+
+    # ------------------------------------------------------------------------
+
+    # Load the training points.
+    path = os.path.join(results_path, "X_train.dat")
+    X_train = np.loadtxt(path)
+
+    # Load the additional data.
+    path = os.path.join(results_path, "XY_data.dat")
+    XY_data = np.loadtxt(path)
+
+    # Read the data description from the header.
+    with open(path, "r") as f:
+        line = f.readline()
+        line = f.readline()
+        line = f.readline()
+        line = line[2:]
+        fields = line.split(" ")
+        xmin = float(fields[0])
+        xmax = float(fields[1])
+        nx = int(fields[2])
+
+    # Find the epoch of the last trained model.
     last_epoch = pinn.common.find_last_epoch(results_path)
-    path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-                        f"model_{p.dependent_variable_names[0]}")
-    model = tf.keras.models.load_model(path)
 
-    # Create a set of x points for comparison. Use it to compute the trained
-    # and analytical solutions, and error. Also compute RMS error.
-    x = np.linspace(p.x0, p.x1, NUM_POINTS)
-    yt = model(x).numpy().reshape(NUM_POINTS)
-    ya = p.Ψ_analytical(x)
-    yerr = yt - ya
-    rms_err = np.sqrt(np.sum(yerr**2)/NUM_POINTS)
+    # Load the trained model for each variable.
+    models = []
+    for variable_name in p.dependent_variable_names:
+        path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                            f"model_{variable_name}")
+        model = tf.keras.models.load_model(path)
+        models.append(model)
 
-    # Create the plot.
-    x_label = p.independent_variable_labels[0]
-    y_name = p.dependent_variable_names[0]
-    y_label = p.dependent_variable_labels[0]
-    plt.plot(x, yt, label=f"{y_label} (trained)")
-    plt.plot(x, ya, label=f"{y_label} (analytical)")
-    plt.plot(x, yerr, label=f"{y_label} (error)")
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.legend()
-    plt.suptitle("Trained and analytical solution, and error")
-    plt.title(f"N = {NUM_POINTS}, RMS error = {rms_err:.2e})")
-    plt.grid()
+    # ------------------------------------------------------------------------
 
-    # Save the plot to a PNG file.
-    path = os.path.join(output_path, f"{y_name}.png")
-    plt.savefig(path)
-
-    # -------------------------------------------------------------------------
-
-    # Plot the trained and analytical derivatives, and the error.
-
-    # Clear the figure.
-    plt.clf()
-
-    # Compute the trained and analytical derivatives, and error.
-    # Also compute RMS error.
-    xv = tf.Variable(x.reshape(NUM_POINTS, 1))
-    with tf.GradientTape(persistent=True) as tape1:
-        yt = model(xv)
-    dyt_dx = tape1.gradient(yt, xv).numpy().reshape(NUM_POINTS)
-    dya_dx = p.dΨ_dx_analytical(x)
-    dy_dx_err = dyt_dx - dya_dx
-    rms_err = np.sqrt(np.sum(dy_dx_err**2)/NUM_POINTS)
-
-    # Create the plot.
-    x_label = p.independent_variable_labels[0]
-    y_name = (
-        f"d{p.dependent_variable_names[0]}_d"
-        f"{p.independent_variable_names[0]}"
-    )
-    y_label = (
-        f"d{p.dependent_variable_labels[0]}/d"
-        f"{p.independent_variable_labels[0]}"
-    )
-    plt.plot(x, dyt_dx, label=f"{y_label} (trained)")
-    plt.plot(x, dya_dx, label=f"{y_label} (analytical)")
-    plt.plot(x, dy_dx_err, label=f"{y_label} (error)")
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.legend()
-    plt.suptitle("Trained and analytical derivative, and error")
-    plt.title(f"N = {NUM_POINTS}, RMS error = {rms_err:.2e})")
-    plt.grid()
-
-    # Save the plot to a PNG file.
-    path = os.path.join(output_path, f"{y_name}.png")
-    plt.savefig(path)
-
-    # -------------------------------------------------------------------------
-
-    # Plot the weights and biases for each layer
-
-    # Clear the figure.
-    plt.clf()
-
-    # Input/first hidden layer weights
-    i = 0
-    layer = model.layers[i]
-    w = layer.variables[0].numpy()
-    n_inputs = w.shape[0]
-    n_nodes = w.shape[1]
-    w.shape = (n_nodes,)
-    x = np.arange(n_nodes)
-    plt.bar(x, w)
-    plt.xlabel("Node")
-    plt.ylabel("$w$")
-    plt.title(f"Layer {i} weights")
-    path = os.path.join(output_path, f"w{i:02}.png")
-    plt.savefig(path)
-    plt.clf()
-
-    # Input layer biases
-    i = 0
-    layer = model.layers[i]
-    b = layer.variables[1].numpy()
-    w.shape = (n_nodes,)
-    x = np.arange(n_nodes)
-    plt.bar(x, b)
-    plt.xlabel("Node")
-    plt.ylabel("$b$")
-    plt.title(f"Layer {i} biases")
-    path = os.path.join(output_path, f"b{i:02}.png")
-    plt.savefig(path)
-    plt.clf()
-
-    # Output layer weights
-    i = 1
-    layer = model.layers[i]
-    w = layer.variables[0].numpy()
-    n_inputs = w.shape[0]
-    n_nodes = w.shape[1]
-    w.shape = (n_inputs,)
-    x = np.arange(n_inputs)
-    plt.bar(x, w)
-    plt.xlabel("Node")
-    plt.ylabel("$w$")
-    plt.title(f"Layer {i} weights")
-    path = os.path.join(output_path, f"w{i:02}.png")
-    plt.savefig(path)
+    # Plot each predicted variable, analytical solution, and error.
+    for (iv, variable_name) in enumerate(p.dependent_variable_names):
+        if verbose:
+            print(f"Creating plot for {variable_name}.")
+        xlabel = p.independent_variable_labels[p.ix]
+        ylabel = p.dependent_variable_labels[iv]
+        X = X_train
+        model = models[iv]
+        Ym = model(X_train).numpy().reshape(nx)
+        Ya = p.Ψ_analytical(X_train)
+        Ye = Ym - Ya
+        rms_err = np.sqrt(np.sum(Ye**2)/nx)
+        plt.plot(X, Ym, label="trained")
+        plt.plot(X, Ya, label="analytical")
+        plt.plot(X, Ye, label="error")
+        plt.ylim(ylim[variable_name])
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.grid()
+        plt.legend()
+        title = f"{ylabel}, RMS err = {rms_err:.2e}"
+        plt.title(title)
+        path = os.path.join(output_path, f"{variable_name}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+        plt.close()
 
 
 if __name__ == "__main__":
