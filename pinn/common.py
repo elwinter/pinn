@@ -19,6 +19,7 @@ import shutil
 import sys
 
 # Import 3rd-party modules.
+import git
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.client import device_lib
@@ -107,47 +108,20 @@ def save_hyperparameters(args, output_dir):
     path = os.path.join(output_dir, hyperparameter_file)
     with open(path, "w") as f:
         f.write(f"activation = {repr(args.activation)}\n")
-        if "batch_size" in args:
-            f.write(f"batch_size = {repr(args.batch_size)}\n")
-        f.write(f"data = {repr(args.data)}\n")
         f.write(f"learning_rate = {repr(args.learning_rate)}\n")
+        f.write(f"load_model = {repr(args.load_model)}")
         f.write(f"max_epochs = {repr(args.max_epochs)}\n")
         f.write(f"n_hid = {repr(args.n_hid)}\n")
         f.write(f"n_layers = {repr(args.n_layers)}\n")
         f.write(f"nogpu = {repr(args.nogpu)}\n")
         f.write(f"precision = {repr(args.precision)}\n")
-        f.write(f"random_seed = {repr(args.seed)}\n")
-        f.write(f"validation = {repr(args.validation)}\n")
-        if "w_data" in args:
-            f.write(f"w_data = {repr(args.w_data)}\n")
+        f.write(f"save_model = {repr(args.save_model)}\n")
+        f.write(f"seed = {repr(args.seed)}\n")
+        f.write(f"w_data = {repr(args.w_data)}\n")
         f.write(f"problem_path = {repr(args.problem_path)}\n")
-        if "training_points" in args:
-            f.write(f"training_points = {repr(args.training_points)}\n")
+        f.write(f"data_path = {repr(args.data_path)}\n")
+        f.write(f"training_path = {repr(args.training_path)}\n")
     return path
-
-
-def save_problem_definition(problem, output_dir):
-    """Save the problem definition for the run.
-
-    Copy the problem definition file to the output directory.
-
-    Parameters
-    ----------
-    problem : module
-        Imported module object for problem definition.
-    output_dir : str
-        Path to directory to contain the copy of the problem definition file.
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    None
-    """
-    # Copy the problem definition file to the output directory.
-    shutil.copy(problem.__file__, output_dir)
 
 
 def save_system_information(output_dir):
@@ -178,6 +152,9 @@ def save_system_information(output_dir):
         f.write(f"Python version: {sys.version}\n")
         f.write(f"Python build: {' '.join(platform.python_build())}\n")
         f.write(f"Python compiler: {platform.python_compiler()}\n")
+        repo = git.Repo(search_parent_directories=True)
+        sha = repo.head.object.hexsha
+        f.write(f"PINN code version: {sha}\n")
         f.write(f"Python implementation: {platform.python_implementation()}\n")
         f.write(f"NumPy version: {np.__version__}\n")
         f.write(f"TensorFlow version: {tf.__version__}\n")
