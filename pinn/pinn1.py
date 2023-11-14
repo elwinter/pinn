@@ -147,10 +147,6 @@ def create_command_line_argument_parser():
         help="Seed for random number generator (default: %(default)s)"
     )
     parser.add_argument(
-        "--validation", default=None,
-        help="Path to optional validation point file (default: %(default)s)."
-    )
-    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
@@ -193,7 +189,6 @@ def main():
     precision = args.precision
     save_model = args.save_model
     seed = args.seed
-    validation = args.validation
     verbose = args.verbose
     w_data = args.w_data
     problem_path = args.problem_path
@@ -306,29 +301,6 @@ def main():
         if debug:
             print(f"n_data = {n_data}", flush=True)
 
-    # If provided, read and count the validation points.
-    if validation:
-        if verbose:
-            print(f"Reading validation points from {validation}.", flush=True)
-        # Shape is (n_val, p.n_dim)
-        X_val = np.loadtxt(validation, dtype=precision)
-        if debug:
-            print(f"X_val = {X_val}", flush=True)
-        # If the data shape is 1-D (only one dimension), reshape to 2-D,
-        # to make compatible with later TensorFlow calls.
-        if len(X_val.shape) == 1:
-            X_val = X_val.reshape(X_val.shape[0], 1)
-            if debug:
-                print(f"Reshaped X_val = {X_val}", flush=True)
-
-        # Save a copy of the validation points in the output directory.
-        np.savetxt(os.path.join(output_dir, "X_val.dat"), X_val)
-
-        # Get the count of validation points.
-        n_val = X_val.shape[0]
-        if debug:
-            print(f"n_val = {n_val}", flush=True)
-
     # Compute the normalized weight for the equation residuals, based on the
     # value of the data weight.
     w_res = 1.0 - w_data
@@ -418,12 +390,6 @@ def main():
         X_data = tf.Variable(X_data)
         if debug:
             print(f"TF Variable of X_data = {X_data}", flush=True)
-
-    # Convert validation locations to tf.Variable.
-    if validation:
-        X_val = tf.Variable(X_val)
-        if debug:
-            print(f"TF Variable of X_val = {X_val}", flush=True)
 
     # Create loss histories.
     loss = {}
