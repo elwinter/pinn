@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Compute initial conditions for eplasma3.
+"""Compute data for eplasma3.
 
 Author
 ------
