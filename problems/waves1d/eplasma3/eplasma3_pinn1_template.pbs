@@ -37,7 +37,7 @@ printenv
 
 # Run the network.
 echo "Training network."
-cmd="$pinn_cmd --verbose --activation={{ pinn1_activation }} --batch_size={{ pinn1_batch_size }} --data={{ pinn1_data }} --learning_rate={{ pinn1_learning_rate }} --max_epochs={{ pinn1_max_epochs }} --n_hid={{ pinn1_n_hid }} --n_layers={{ pinn1_n_layers }} --precision={{ pinn1_precision }} --save_model={{ pinn1_save_model }} --seed={{ pinn1_seed }}  --w_data={{ pinn1_w_data }} {{ pinn1_problem }} {{ pinn1_training_points }}"
+cmd="$pinn_cmd --verbose --activation={{ pinn1_activation }} --learning_rate={{ pinn1_learning_rate }} --max_epochs={{ pinn1_max_epochs }} --n_hid={{ pinn1_n_hid }} --n_layers={{ pinn1_n_layers }} --precision={{ pinn1_precision }} --save_model={{ pinn1_save_model }} --seed={{ pinn1_seed }}  --w_data={{ pinn1_w_data }} {{ pinn1_problem }} {{ pinn1_data }} {{ pinn1_training_points }}"
 echo "cmd=$cmd"
 eval $cmd >& pinn1.out
 

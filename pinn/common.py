@@ -152,9 +152,9 @@ def save_system_information(output_dir):
         f.write(f"Python version: {sys.version}\n")
         f.write(f"Python build: {' '.join(platform.python_build())}\n")
         f.write(f"Python compiler: {platform.python_compiler()}\n")
-        repo = git.Repo(search_parent_directories=True)
-        sha = repo.head.object.hexsha
-        f.write(f"PINN code version: {sha}\n")
+        # repo = git.Repo(search_parent_directories=True)
+        # sha = repo.head.object.hexsha
+        # f.write(f"PINN code version: {sha}\n")
         f.write(f"Python implementation: {platform.python_implementation()}\n")
         f.write(f"NumPy version: {np.__version__}\n")
         f.write(f"TensorFlow version: {tf.__version__}\n")
