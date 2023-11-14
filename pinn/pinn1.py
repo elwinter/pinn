@@ -477,7 +477,7 @@ def main():
             # There are p.n_var Tensors in the list.
             # Each Tensor has shape (n_data, 1).
             E_data = [
-                Y_data_model[i] - Y_data_tf[:, i]
+                Y_data_model[i] - tf.reshape(Y_data_tf[:, i], (n_data, 1))
                 for i in range(p.n_var)
             ]
             if debug:
@@ -512,7 +512,7 @@ def main():
                 print(f"L_data = {L_data}", flush=True)
 
             # Compute the weighted aggregate loss function.
-            L = w_res*L_res + w_data*L_data
+            L = tf.math.reduce_sum(L_model)
             if debug:
                 print(f"L = {L}", flush=True)
 
