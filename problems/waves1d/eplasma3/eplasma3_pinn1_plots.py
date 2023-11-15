@@ -248,12 +248,12 @@ def main():
             i1 = i0 + nx
             X = X_train[i0:i1, p.ix]
             Yt = Y_trained[i, :]
-            # Ya = Y_analytical[i, :]
-            # Ye = Y_error[i, :]
-            # rms_err = np.sqrt(np.sum(Ye**2)/nx)
+            Ya = Y_analytical[i, :]
+            Ye = Y_error[i, :]
+            rms_err = np.sqrt(np.sum(Ye**2)/nx)
             plt.plot(X, Yt, label="trained")
-            # plt.plot(X, Ya, label="analytical")
-            # plt.plot(X, Ye, label="error")
+            plt.plot(X, Ya, label="analytical")
+            plt.plot(X, Ye, label="error")
             plt.ylim(ylim[variable_name])
             plt.xlabel(xlabel)
             plt.ylabel(ylabel)
