@@ -37,7 +37,7 @@ T = 1.0     # Ambient temperature
 n1_amp = np.array([0.1, 0.1, 0.1])
 
 # Wavelength and wavenumber of initial perturbations.
-λ = np.array([1.0, 2.0, 3.0])
+λ = np.array([0.5, 1.0, 2.0])
 kx = 2*np.pi/λ
 
 # Compute the electron plasma wave angular frequency for each component.

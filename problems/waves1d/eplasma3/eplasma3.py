@@ -102,7 +102,7 @@ n0 = 1.0
 n1_amp = np.array([0.1, 0.1, 0.1])
 
 # Compute the electron plasma wave angular frequency for each component.                           
-w = plasma.electron_plasma_wave_angular_frequency(n0, T, kx, normalize=True)
+w = plasma.electron_plasma_wave_angular_frequency(n0*me, T, kx, normalize=True)
 
 # Steady-state value and perturbation amplitudes for x-velocity.
 u1x0 = 0.0
