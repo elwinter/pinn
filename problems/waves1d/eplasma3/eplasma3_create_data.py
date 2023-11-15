@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-"""Compute data for eplasma3.
+"""Create data for eplasma3.
+
+The data are the perturbation values for number density, x-velocity, and
+x-electric field.
 
 Author
 ------
@@ -21,7 +24,7 @@ from pinn import plasma
 # Program constants
 
 # Program description.
-description = "Compute initial conditions for eplasma3 problem."
+description = "Create data for eplasma3 problem."
 
 me = 1.0    # Electron mass
 e = 1.0     # Unit charge
@@ -31,10 +34,10 @@ n0 = 1.0    # Ambient equilibrium number density
 T = 1.0     # Ambient temperature
 
 # Perturbation amplitudes for number density.
-n1_amp = np.array([0.1, 0.1])
+n1_amp = np.array([0.1, 0.1, 0.1])
 
 # Wavelength and wavenumber of initial perturbations.
-λ = np.array([1.0, 2.0])
+λ = np.array([1.0, 2.0, 3.0])
 kx = 2*np.pi/λ
 
 # Compute the electron plasma wave angular frequency for each component.
@@ -72,16 +75,15 @@ def create_command_line_argument_parser():
 
 def main():
     """Begin main program."""
-
     # Set up the command-line parser.
     parser = create_command_line_argument_parser()
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
     debug = args.debug
     rest = args.rest
-    if debug:
-        print(f"args = {args}")
 
     # Fetch the remaining command-line arguments.
     # They should be in 2 sets of 3:
@@ -94,44 +96,45 @@ def main():
         print(f"{t_min} <= t <= {t_max}, n_t = {n_t}")
         print(f"{x_min} <= x <= {x_max}, n_x = {n_x}")
 
-    # Create the grid points for the boundary conditions.
+    # Create the (t, x) grid points for the data.
     tg = np.linspace(t_min, t_max, n_t)
-    if debug:
-        print(f"tg = {tg}")
-
-    # Create the grid points for the initial conditions.
     xg = np.linspace(x_min, x_max, n_x)
     if debug:
+        print(f"tg = {tg}")
         print(f"xg = {xg}")
 
-    # Compute the boundary conditions at (t, x=0).
-    # Each line is:
-    # t x_min n1 u1x E1x
-    x = 0.0
-    for t in tg:
-        phi = kx*x - ω*t
-        # print(f"phi = {phi}")
-        n1 = np.sum(n1_amp*np.sin(phi))
-        # print(f"n1 = {n1}")
-        u1x = np.sum(u1x_amp*np.sin(phi))
-        # print(f"u1x = {u1x}")
-        E1x = np.sum(E1x_amp*np.sin(phi + np.pi/2))
-        # print(f"E1x = {E1x}")
-        print(t, x, n1, u1x, E1x)
+    # First 4 lines are metadata header as comments.
+    # Each subsequent line is:
+    # t x n1 u1x E1x
+    header = "# GRID"
+    print(header)
+    header = "# t x"
+    print(header)
+    header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
+    print(header)
+    header = "# t x n P ux"
+    print(header)
 
     # Compute the initial conditions at (t=0, x).
     # Each line is:
-    # t_min x n1 u1x E1x
-    t = 0.0
+    # tg[0] x n1 u1x E1x
+    t = tg[0]
     for x in xg:
         phi = kx*x - ω*t
-        # print(f"phi = {phi}")
         n1 = np.sum(n1_amp*np.sin(phi))
-        # print(f"n1 = {n1}")
         u1x = np.sum(u1x_amp*np.sin(phi))
-        # print(f"u1x = {u1x}")
         E1x = np.sum(E1x_amp*np.sin(phi + np.pi/2))
-        # print(f"E1x = {E1x}")
+        print(t, x, n1, u1x, E1x)
+
+    # Compute the boundary conditions at (t, x=0).
+    # Each line is:
+    # t xg[0] n1 u1x E1x
+    x = xg[0]
+    for t in tg:
+        phi = kx*x - ω*t
+        n1 = np.sum(n1_amp*np.sin(phi))
+        u1x = np.sum(u1x_amp*np.sin(phi))
+        E1x = np.sum(E1x_amp*np.sin(phi + np.pi/2))
         print(t, x, n1, u1x, E1x)
 
 

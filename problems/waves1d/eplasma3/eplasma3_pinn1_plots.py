@@ -209,9 +209,9 @@ def main():
         xlabel = p.independent_variable_labels[p.ix]
         ylabel = p.dependent_variable_labels[iv]
         # <HACK>
-        # Assumes BC followed by IC.
-        X = XY_data[nt:, p.ix]
-        Y = XY_data[nt:, p.n_dim + iv]
+        # Assumes IC followed by BC.
+        X = XY_data[:nx, p.ix]
+        Y = XY_data[:nx, p.n_dim + iv]
         # </HACK>
         plt.plot(X, Y)
         plt.ylim(ylim[variable_name])
@@ -248,12 +248,12 @@ def main():
             i1 = i0 + nx
             X = X_train[i0:i1, p.ix]
             Yt = Y_trained[i, :]
-            Ya = Y_analytical[i, :]
-            Ye = Y_error[i, :]
-            rms_err = np.sqrt(np.sum(Ye**2)/nx)
+            # Ya = Y_analytical[i, :]
+            # Ye = Y_error[i, :]
+            # rms_err = np.sqrt(np.sum(Ye**2)/nx)
             plt.plot(X, Yt, label="trained")
-            plt.plot(X, Ya, label="analytical")
-            plt.plot(X, Ye, label="error")
+            # plt.plot(X, Ya, label="analytical")
+            # plt.plot(X, Ye, label="error")
             plt.ylim(ylim[variable_name])
             plt.xlabel(xlabel)
             plt.ylabel(ylabel)
@@ -264,7 +264,8 @@ def main():
             t_label_x = 0.0
             t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1] - ylim[variable_name][0])
             plt.text(t_label_x, t_label_y, t_label)
-            title = f"{ylabel}, RMS error = {rms_err:.2e}"
+            # title = f"{ylabel}, RMS error = {rms_err:.2e}"
+            title = f"{ylabel}"
             plt.title(title)
             path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
             if verbose:
