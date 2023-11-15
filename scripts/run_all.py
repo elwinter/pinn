@@ -166,7 +166,6 @@ def main():
 
             # Render the template for this run and save as a file.
             pbs_content = pbs_template.render(options)
-            print(f"pbs_content = {pbs_content}")
             pbs_file = f"{options['run_id']}.pbs"
             with open(pbs_file, 'w') as f:
                 f.write(pbs_content)
