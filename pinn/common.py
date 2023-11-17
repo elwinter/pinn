@@ -109,7 +109,7 @@ def save_hyperparameters(args, output_dir):
     with open(path, "w") as f:
         f.write(f"activation = {repr(args.activation)}\n")
         f.write(f"learning_rate = {repr(args.learning_rate)}\n")
-        f.write(f"load_model = {repr(args.load_model)}")
+        f.write(f"load_model = {repr(args.load_model)}\n")
         f.write(f"max_epochs = {repr(args.max_epochs)}\n")
         f.write(f"n_hid = {repr(args.n_hid)}\n")
         f.write(f"n_layers = {repr(args.n_layers)}\n")
