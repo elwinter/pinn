@@ -268,8 +268,7 @@ def main():
             t_label_x = 0.0
             t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1] - ylim[variable_name][0])
             plt.text(t_label_x, t_label_y, t_label)
-            # title = f"{ylabel}, RMS error = {rms_err:.2e}"
-            title = f"{ylabel}"
+            title = f"{ylabel}, RMS error = {rms_err:.2e}"
             plt.title(title)
             path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
             if verbose:
@@ -282,7 +281,7 @@ def main():
         frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
         movie_file = os.path.join(output_path, f"{variable_name}.mp4")
         args = [
-            "ffmpeg", "-r", "4", "-s", "1920x1080",
+            "ffmpeg", "-r", "10", "-s", "1920x1080",
             "-i", frame_pattern,
             "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
             movie_file
