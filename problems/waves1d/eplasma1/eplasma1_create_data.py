@@ -4,7 +4,8 @@
 
 The data are the perturbation values for number density, x-velocity, and
 x-electric field for (t, x) = (0, x) (the initial conditions) and
-(t, x) = (t, 0) (the time-dependent boundary conditions at x=0).
+(t, x) = (t, 0) (the time-dependent boundary conditions at x=0). Now includes
+data at end time.
 
 Author
 ------
@@ -120,6 +121,18 @@ def main():
     u1x = p.u1x_analytical(tx)
     E1x = p.E1x_analytical(tx)
     for i in range(n_t):
+        print(tx[i, 0], tx[i, 1], n1[i], u1x[i], E1x[i])
+
+    # Compute the initial conditions at (t=end, x).
+    # Each line is:
+    # tg[-1] x n1 u1x E1x
+    tx = np.zeros((n_x, 2))
+    tx[:, 0] = tg[-1]
+    tx[:, 1] = xg
+    n1 = p.n1_analytical(tx)
+    u1x = p.u1x_analytical(tx)
+    E1x = p.E1x_analytical(tx)
+    for i in range(n_x):
         print(tx[i, 0], tx[i, 1], n1[i], u1x[i], E1x[i])
 
 
