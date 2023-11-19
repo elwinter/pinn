@@ -85,10 +85,13 @@ def main():
     header = "# x Ψ"
     print(header)
 
-    # Compute the data for the boundary condition at x = 0.
+    # Compute the data for the boundary condition at x = 0, 1.
     # Each line is:
     # x Ψ
     x = 0.0
+    Ψ = p.Ψ_analytical(x)
+    print(x, Ψ)
+    x = 1.0
     Ψ = p.Ψ_analytical(x)
     print(x, Ψ)
 
