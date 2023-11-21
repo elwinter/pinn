@@ -13,6 +13,7 @@ Eric Winter (eric.winter62@gmail.com)
 import argparse
 from importlib import import_module
 import os
+import subprocess
 import sys
 
 # Import supplemental modules.
@@ -23,6 +24,7 @@ import tensorflow as tf
 
 # Import project modules.
 import pinn.common
+import pinn.standard_plots
 
 
 # Program constants
@@ -56,6 +58,10 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(DESCRIPTION)
     parser.add_argument(
@@ -101,401 +107,389 @@ def main():
 
     # -------------------------------------------------------------------------
 
-# # Specify the run ID (aka problem name).
-# runid = "linecurrent_BxBy"
+    # Plot the total residual, data, and weighted loss histories.
 
-# # Add the subdirectory for the run results to the module search path.
-# run_path = os.path.join(".", runid)
-# sys.path.append(run_path)
+    # Load the data.
+    path = os.path.join(results_path, "L_res.dat")
+    L_res = np.loadtxt(path)
+    path = os.path.join(results_path, "L_data.dat")
+    L_dat = np.loadtxt(path)
+    path = os.path.join(results_path, "L.dat")
+    L = np.loadtxt(path)
 
-# # Import the problem definition from the run results directory.
-# p = import_module(runid)
+    # Create the plot.
+    plt.clf()
+    plt.semilogy(L_res, label="$L_{res}$")
+    plt.semilogy(L_dat, label="$L_{dat}$")
+    plt.semilogy(L, label="$L$")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.ylim(ylim["L"])
+    plt.legend()
+    plt.title(f"Total residual, data, and weighted loss")
+    plt.grid()
 
-# # Read the run hyperparameters from the run results directory.
-# import hyperparameters as hp
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "L.png")
+    if verbose:
+        print(f"Saving {path}.")
+    plt.savefig(path)
+    plt.close()
 
-# # Load the training point coordinates.
-# X_train = np.loadtxt(os.path.join(runid, "X_train.dat"))
-# t_train = X_train[:, p.it]
-# x_train = X_train[:, p.ix]
-# y_train = X_train[:, p.iy]
+    # ------------------------------------------------------------------------
 
-# # Load the data locations and values (includes initial conditions).
-# XY_data = np.loadtxt(os.path.join(runid, "XY_data.dat"))
+    # Plot the per-model residual, data, and weighted loss histories.
 
-# # Extract the initial conditions (everything after the coordinate values on each row).
-# ic = XY_data[p.n_dim:]
+    # Plot for each model.
+    for iv in range(p.n_var):
 
-# # Load the model-predicted values.
-# ψ = []
-# delψ = []
-# for var_name in p.dependent_variable_names:
-#     ψ.append(np.loadtxt(os.path.join(runid, "%s_train.dat" % var_name)))
-#     delψ.append(np.loadtxt(os.path.join(runid, "del_%s_train.dat" % var_name)))
+        # Load the data.
+        variable_name = p.dependent_variable_names[iv]
+        variable_label = p.dependent_variable_labels[iv]
+        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
+        L_res = np.loadtxt(path)
+        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
+        L_dat = np.loadtxt(path)
+        path = os.path.join(results_path, f"L_{variable_name}.dat")
+        L = np.loadtxt(path)
 
-# # Load the loss function histories.
-# losses_model = np.loadtxt(os.path.join(runid, "losses_model.dat"))
-# losses_model_res = np.loadtxt(os.path.join(runid, "losses_model_res.dat"))
-# losses_model_data = np.loadtxt(os.path.join(runid, "losses_model_data.dat"))
-# losses = np.loadtxt(os.path.join(runid, "losses.dat"))
-# losses_res = np.loadtxt(os.path.join(runid, "losses_res.dat"))
-# losses_data = np.loadtxt(os.path.join(runid, "losses_data.dat"))
+        # Create the plot.
+        plt.semilogy(L_res, label="$L_{res}$")
+        plt.semilogy(L_dat, label="$L_{dat}$")
+        plt.semilogy(L, label="$L$")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.ylim(ylim["L"])
+        plt.legend()
+        plt.title(f"Residual, data, and weighted loss for {variable_label}")
+        plt.grid()
 
-# # Compute the limits of the training domain.
-# t_min = t_train[0]
-# t_max = t_train[-1]
-# x_min = x_train[0]
-# x_max = x_train[-1]
-# y_min = y_train[0]
-# y_max = y_train[-1]
+        # Save the plot.
+        path = os.path.join(output_path, f"L_{variable_name}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+        plt.close()
 
-# # Extract the unique training point values (a grid is assumed).
-# t_train_vals = np.unique(t_train)
-# x_train_vals = np.unique(x_train)
-# y_train_vals = np.unique(y_train)
-# n_t_train_vals = len(t_train_vals)
-# n_x_train_vals = len(x_train_vals)
-# n_y_train_vals = len(y_train_vals)
+    # ------------------------------------------------------------------------
 
-# # Plotting options
+    # Load the training points.
+    path = os.path.join(results_path, "X_train.dat")
+    X_train = np.loadtxt(path)
 
-# # Specify the size (width, height) (in inches) for individual subplots.
-# SUBPLOT_WIDTH = 5.0
-# SUBPLOT_HEIGHT = 5.0
+    # Read the data description from the training points header.
+    with open(path, "r") as f:
+        line = f.readline()  # Skip 1st line
+        line = f.readline()  # Grid description on this line
+        line = line[2:]
+        fields = line.split(" ")
+        tmin = float(fields[0])
+        tmax = float(fields[1])
+        nt = int(fields[2])
+        xmin = float(fields[3])
+        xmax = float(fields[4])
+        nx = int(fields[5])
+        ymin = float(fields[6])
+        ymax = float(fields[7])
+        ny = int(fields[8])
 
-# # Compute the coordinate plot tick locations and labels.
-# XY_N_X_TICKS = 5
-# XY_x_tick_pos = np.linspace(x_min, x_max, XY_N_X_TICKS)
-# XY_x_tick_labels = ["%.1f" % x for x in XY_x_tick_pos]
-# XY_N_Y_TICKS = 5
-# XY_y_tick_pos = np.linspace(y_min, y_max, XY_N_Y_TICKS)
-# XY_y_tick_labels = ["%.1f" % y for y in XY_y_tick_pos]
+    # Load the additional data (boundary and initial conditions).
+    path = os.path.join(results_path, "XY_data.dat")
+    XY_data = np.loadtxt(path)
 
-# # Compute the heat map tick locations and labels.
-# HEATMAP_N_X_TICKS = 5
-# heatmap_x_tick_pos = np.linspace(0, n_x_train_vals - 1, HEATMAP_N_X_TICKS)
-# heatmap_x_tick_labels = ["%.1f" % (x_min + x/(n_x_train_vals - 1)*(x_max - x_min)) for x in heatmap_x_tick_pos]
-# HEATMAP_N_Y_TICKS = 5
-# heatmap_y_tick_pos = np.linspace(0, n_y_train_vals - 1, HEATMAP_N_Y_TICKS)
-# heatmap_y_tick_labels = ["%.1f" % (y_min + y/(n_y_train_vals - 1)*(y_max - y_min)) for y in heatmap_y_tick_pos]
-# heatmap_y_tick_labels = list(reversed(heatmap_y_tick_labels))
+    # Find the epoch of the last trained model.
+    last_epoch = pinn.common.find_last_epoch(results_path)
 
-# # Create figures in a memory buffer.
-# mpl.use("Agg")
+    # Load the trained model for each variable.
+    models = []
+    for variable_name in p.dependent_variable_names:
+        path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                            f"model_{variable_name}")
+        model = tf.keras.models.load_model(path)
+        models.append(model)
 
-# # Plot the loss history for each model.
-# fig = psp.plot_model_loss_functions(
-#     losses_model_res, losses_model_data, losses_model,
-#     p.dependent_variable_labels
-# )
-# plt.savefig("model_losses.png")
+    # ------------------------------------------------------------------------
 
-# # Plot the total loss function history.
-# total_loss_figsize = (SUBPLOT_WIDTH*2, SUBPLOT_HEIGHT)
-# plt.figure(figsize=total_loss_figsize)
-# psp.plot_loss_functions(
-#     [losses_res, losses_data, losses],
-#     ["$L_{res}$", "$L_{data}$", "$L$"],
-#     title="Total loss function history for %s" % runid
-# )
-# plt.savefig("loss.png")
+    # Plot the initial conditions as supplied to the models.
 
-# # Extract the coordinates of the training points at the initial time.
-# n_start = n_x_train_vals*n_y_train_vals
-# t0 = XY_data[:, p.it]
-# x0 = XY_data[:, p.ix]
-# y0 = XY_data[:, p.iy]
+    # Extract the coordinates of the training points at the initial time.
+    n_start = nx*ny
+    txy0 = tf.Variable(XY_data[:n_start, :p.n_dim])
+    x0 = txy0[:, p.ix].numpy()
+    y0 = txy0[:, p.iy].numpy()
 
-# # Plot the actual and predicted initial magnetic field vectors.
-# B0x_act = p.Bx_analytical(t0, x0, y0)
-# B0y_act = p.By_analytical(t0, x0, y0)
-# B0x_pred = ψ[p.iBx][:n_start]
-# B0y_pred = ψ[p.iBy][:n_start]
+    # Plot the actual and predicted initial magnetic field vectors.
+    B0x_act = XY_data[:n_start, p.n_dim + p.iBx].reshape(n_start)
+    B0y_act = XY_data[:n_start, p.n_dim + p.iBy].reshape(n_start)
+    B0x_pred = models[p.iBx](txy0).numpy().reshape(n_start)
+    B0y_pred = models[p.iBy](txy0).numpy().reshape(n_start)
+    title = "Magnetic field at t = 0"
+    pinn.standard_plots.plot_actual_predicted_B(
+        x0, y0, B0x_act, B0y_act, B0x_pred, B0y_pred, title=title
+    )
+    path = os.path.join(output_path, "B0_act_pred.png")
+    if verbose:
+        print(f"Saving {path}.")
+    plt.savefig(path)
+    plt.close()
 
-# # Create the figure.
-# fig = psp.plot_actual_predicted_B(
-#     x0, y0, B0x_act, B0y_act, B0x_pred, B0y_pred,
-#     title="Initial magnetic field",
-#     x_tick_pos=XY_x_tick_pos, x_tick_labels=XY_x_tick_labels,
-#     y_tick_pos=XY_y_tick_pos, y_tick_labels=XY_y_tick_labels,
-# )
-# plt.savefig("B0xB0y.png")
+    # ------------------------------------------------------------------------
 
-# # Plot the actual, predicted, and absolute error in initial magnetic field magnitudes.
-# B0_act = np.sqrt(B0x_act**2 + B0y_act**2)
-# B0_pred = np.sqrt(B0x_pred**2 + B0y_pred**2)
-# B0_err = B0_pred - B0_act
+    # Make a movie for each predicted variable. Include the analytical solution
+    # and the error.
 
-# # To get the proper orientation, reshape, transpose, flip.
-# B0_act_plot = np.flip(B0_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B0_pred_plot = np.flip(B0_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B0_err_plot = np.flip(B0_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
+    # Compute the heat map tick locations and labels.
+    HEATMAP_N_X_TICKS = 5
+    heatmap_x_tick_pos = np.linspace(0, nx - 1, HEATMAP_N_X_TICKS)
+    heatmap_x_tick_labels = ["%.1f" % (xmin + x/(nx - 1)*(xmax - xmin)) for x in heatmap_x_tick_pos]
+    HEATMAP_N_Y_TICKS = 5
+    heatmap_y_tick_pos = np.linspace(0, ny - 1, HEATMAP_N_Y_TICKS)
+    heatmap_y_tick_labels = ["%.1f" % (ymin + y/(ny - 1)*(ymax - ymin)) for y in heatmap_y_tick_pos]
+    heatmap_y_tick_labels = list(reversed(heatmap_y_tick_labels))
 
-# # Create the plot.
-# B_MIN = 1e-4
-# B_MAX = 1e-2
-# B_ERR_MIN = -1e-3
-# B_ERR_MAX = 1e-3
-# fig = psp.plot_log_actual_predicted_error(
-#     x0, y0, B0_act_plot, B0_pred_plot, B0_err_plot,
-#     vmin=B_MIN, vmax=B_MAX, err_vmin=B_ERR_MIN, err_vmax=B_ERR_MAX,
-#     title="Initial magnetic field magnitude",
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("B0.png")
+    # Plot parameters.
+    plot_min = {
+        "Bx": -5e-3,
+        "By": -5e-3,
+    }
+    plot_max = {
+        "Bx": 5e-3,
+        "By": 5e-3,
+    }
+    plot_err_min = {
+        "Bx": -1e-3,
+        "By": -1e-3,
+    }
+    plot_err_max = {
+        "Bx": 1e-3,
+        "By": 1e-3,
+    }
 
-# # Plot the actual, predicted, and absolute error in initial magnetic field divergence.
-# dB0x_dx_act = p.dBx_dx_analytical(t0, x0, y0)
-# dB0y_dy_act = p.dBy_dy_analytical(t0, x0, y0)
-# divB0_act = dB0x_dx_act + dB0y_dy_act
-# dB0x_dx_pred = delψ[p.iBx][:n_start, p.ix]
-# dB0y_dy_pred = delψ[p.iBy][:n_start, p.iy]
-# divB0_pred = dB0x_dx_pred + dB0y_dy_pred
-# divB0_err = divB0_pred - divB0_act
+    # Create and save each frame.
+    for (iv, variable_name) in enumerate(p.dependent_variable_names):
+        if verbose:
+            print(f"Creating movie for {variable_name}.")
+        xlabel = p.independent_variable_labels[p.ix]
+        ylabel = p.independent_variable_labels[p.iy]
+        frame_dir = os.path.join(output_path, f"frames_{variable_name}")
+        os.mkdir(frame_dir)
+        model = models[iv]
+        Z_trained = model(X_train).numpy().reshape(nt, nx, ny)
+        Z_analytical = p.analytical_solutions[iv](
+            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]).reshape(nt, nx, ny)
+        Z_error = Z_trained - Z_analytical
+        frames = []
+        for it in range(nt):
+            i0 = it*nx*ny
+            i1 = i0 + nx*ny
+            X = X_train[i0:i1, p.ix]
+            Y = X_train[i0:i1, p.iy]
+            # To get the proper orientation, reshape, transpose, flip.
+            Zt = np.flip(Z_trained[it, :].T, axis=0)
+            Za = np.flip(Z_analytical[it, :].T, axis=0)
+            Ze = np.flip(Z_error[it, :].T, axis=0)
+            pinn.standard_plots.plot_actual_predicted_error(
+                X, Y, Za, Zt, Ze,
+                title=f"{p.dependent_variable_labels[iv]}",
+                vmin=plot_min[variable_name], vmax=plot_max[variable_name],
+                err_vmin=plot_err_min[variable_name], err_vmax=plot_err_max[variable_name],
+                x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
+                y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
+            )
+            path = os.path.join(frame_dir, f"{variable_name}-{it:06}.png")
+            if verbose:
+                print(f"Saving {path}.")
+            plt.savefig(path)
+            frames.append(path)
+            plt.close()
 
-# # To get the proper orientation, reshape, transpose, flip.
-# divB0_act_plot = np.flip(divB0_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# divB0_pred_plot = np.flip(divB0_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# divB0_err_plot = np.flip(divB0_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
+        # Assemble the frames into a movie.
+        frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
+        movie_file = os.path.join(output_path, f"{variable_name}.mp4")
+        args = [
+            "ffmpeg", "-r", "10", "-s", "1920x1080",
+            "-i", frame_pattern,
+            "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+            movie_file
+        ]
+        subprocess.run(args)
 
-# # Create the figure.
-# DIVB_MIN = -1e-1
-# DIVB_MAX = 1e-1
-# DIVB_ERR_MIN = -1e-1
-# DIVB_ERR_MAX = 1e-1
-# fig = psp.plot_actual_predicted_error(
-#     x0, y0, divB0_act_plot, divB0_pred_plot, divB0_err_plot,
-#     vmin=DIVB_MIN, vmax=DIVB_MAX, err_vmin=DIVB_ERR_MIN, err_vmax=DIVB_ERR_MAX,
-#     title="Initial magnetic divergence",
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("divB0.png")
+    # ------------------------------------------------------------------------
 
-# # Plot the actual, predicted, and absolute errors in initial Bx.
-# B0x_err = B0x_pred - B0x_act
+    # Make a movie of a quiver plot of the trained and analytical solutions.
 
-# # To get the proper orientation, reshape, transpose, flip.
-# B0x_act_plot = np.flip(B0x_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B0x_pred_plot = np.flip(B0x_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B0x_err_plot = np.flip(B0x_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
+    if verbose:
+        print("Creating movie for magnetic field.")
+    frame_dir = os.path.join(output_path, "frames_BxBy")
+    os.mkdir(frame_dir)
+    frames = []
+    for it in range(nt):
+        i0 = it*n_start
+        i1 = i0 + n_start
+        txy = tf.Variable(X_train[i0:i1, :])
+        t = X_train[i0:i1, p.it]
+        x = X_train[i0:i1, p.ix]
+        y = X_train[i0:i1, p.iy]
+        Bx_act = p.Bx_analytical(t, x, y)
+        By_act = p.By_analytical(t, x, y)
+        Bx_pred = models[p.iBx](txy).numpy().reshape(n_start)
+        By_pred = models[p.iBy](txy).numpy().reshape(n_start)
+        title = f"Magnetic field at t = {t[0]:.3e}"
+        pinn.standard_plots.plot_actual_predicted_B(
+            x, y, Bx_act, By_act, Bx_pred, By_pred, title=title
+        )
+        path = os.path.join(frame_dir, f"BxBy-{it:06}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+        frames.append(path)
+        plt.close()
 
-# # Create the figure.
-# BX_MIN = -5e-3
-# BX_MAX = 5e-3
-# BX_ERR_MIN = -1e-3
-# BX_ERR_MAX = 1e-3
-# fig = psp.plot_actual_predicted_error(
-#     x0, y0, B0x_act_plot, B0x_pred_plot, B0x_err_plot,
-#     title="Initial %s" % p.dependent_variable_labels[p.iBx],
-#     vmin=BX_MIN, vmax=BX_MAX, err_vmin=BX_ERR_MIN, err_vmax=BX_ERR_MAX,
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("B0x.png")
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(frame_dir, f"BxBy-%06d.png")
+    movie_file = os.path.join(output_path, "BxBy.mp4")
+    args = [
+        "ffmpeg", "-r", "10", "-s", "1920x1080",
+        "-i", frame_pattern,
+        "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+        movie_file
+    ]
+    subprocess.run(args)
 
-# # Plot the actual, predicted, and absolute errors in initial By.
-# B0y_err = B0y_pred - B0y_act
+    # ------------------------------------------------------------------------
 
-# # To get the proper orientation, reshape, transpose, flip.
-# B0y_act_plot = np.flip(B0y_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B0y_pred_plot = np.flip(B0y_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B0y_err_plot = np.flip(B0y_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
+    # Make a movie of the magnetic field intensity.
 
-# # Create the figure.
-# BY_MIN = -5e-3
-# BY_MAX = 5e-3
-# BY_ERR_MIN = -1e-3
-# BY_ERR_MAX = 1e-3
-# fig = psp.plot_actual_predicted_error(
-#     x0, y0, B0y_act_plot, B0y_pred_plot, B0y_err_plot,
-#     title="Initial %s" % p.dependent_variable_labels[p.iBy],
-#     vmin=BY_MIN, vmax=BY_MAX, err_vmin=BY_ERR_MIN, err_vmax=BY_ERR_MAX,
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("B0y.png")
+    # Plot parameters.
+    plot_min = {
+        "B": 0.0,
+    }
+    plot_max = {
+        "B": 5e-3,
+    }
+    plot_err_min = {
+        "B": -1e-3,
+    }
+    plot_err_max = {
+        "B": 1e-3,
+    }
 
-# # Plot the actual, predicted, and absolute errors in initial dBx/dx.
-# dB0x_dx_err = dB0x_dx_pred - dB0x_dx_act
+    if verbose:
+        print("Creating movie for magnetic field intensity.")
+    frame_dir = os.path.join(output_path, "frames_B")
+    os.mkdir(frame_dir)
+    frames = []
+    for it in range(nt):
+        i0 = it*nx*ny
+        i1 = i0 + nx*ny
+        txy = tf.Variable(X_train[i0:i1, :])
+        t = X_train[i0:i1, p.it]
+        x = X_train[i0:i1, p.ix]
+        y = X_train[i0:i1, p.iy]
+        Bx_act = p.Bx_analytical(t, x, y)
+        By_act = p.By_analytical(t, x, y)
+        B_act = np.flip(np.sqrt(Bx_act**2 + By_act**2).reshape(nx, ny).T, axis=0)
+        Bx_pred = models[p.iBx](txy).numpy()
+        By_pred = models[p.iBy](txy).numpy()
+        B_pred = np.flip(np.sqrt(Bx_pred**2 + By_pred**2).reshape(nx, ny).T, axis=0)
+        B_err = B_pred - B_act
+        title = f"Magnetic field intensity at t = {t[0]:.3e}"
+        pinn.standard_plots.plot_actual_predicted_error(
+            x, y, B_act, B_pred, B_err,
+            title=title,
+            vmin=plot_min['B'], vmax=plot_max['B'],
+            err_vmin=plot_err_min['B'], err_vmax=plot_err_max['B'],
+            x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
+            y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
+        )
+        path = os.path.join(frame_dir, f"B-{it:06}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+        frames.append(path)
+        plt.close()
 
-# # To get the proper orientation, reshape, transpose, flip.
-# dB0x_dx_act_plot = np.flip(dB0x_dx_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# dB0x_dx_pred_plot = np.flip(dB0x_dx_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# dB0x_dx_err_plot = np.flip(dB0x_dx_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(frame_dir, f"B-%06d.png")
+    movie_file = os.path.join(output_path, "B.mp4")
+    args = [
+        "ffmpeg", "-r", "10", "-s", "1920x1080",
+        "-i", frame_pattern,
+        "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+        movie_file
+    ]
+    subprocess.run(args)
 
-# # Create the figure.
-# DBX_DX_MIN = -0.2
-# DBX_DX_MAX = 0.2
-# DBX_DX_ERR_MIN = -0.2
-# DBX_DX_ERR_MAX = 0.2
-# fig = psp.plot_actual_predicted_error(
-#     x0, y0, dB0x_dx_act_plot, dB0x_dx_pred_plot, dB0x_dx_err_plot,
-#     title="Initial d%s/d%s" % (p.dependent_variable_labels[p.iBx], p.independent_variable_labels[p.ix]),
-#     vmin=DBX_DX_MIN, vmax=DBX_DX_MAX, err_vmin=DBX_DX_ERR_MIN, err_vmax=DBX_DX_ERR_MAX,
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("dB0x_dx.png")
+    # ------------------------------------------------------------------------
 
-# # Plot the actual, predicted, and absolute errors in initial dBy/dy.
-# dB0y_dy_err = dB0y_dy_pred - dB0y_dy_act
+    # Make a movie of the magnetic field divergence.
 
-# # To get the proper orientation, reshape, transpose, flip.
-# dB0y_dy_act_plot = np.flip(dB0y_dy_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# dB0y_dy_pred_plot = np.flip(dB0y_dy_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# dB0y_dy_err_plot = np.flip(dB0y_dy_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
+    # Plot parameters.
+    plot_min = {
+        "divB": -1e-3,
+    }
+    plot_max = {
+        "divB": 1e-3,
+    }
+    plot_err_min = {
+        "divB": -1e-3,
+    }
+    plot_err_max = {
+        "divB": 1e-3,
+    }
 
-# # Create the figure.
-# DBY_DY_MIN = -0.2
-# DBY_DY_MAX = 0.2
-# DBY_DY_ERR_MIN = -0.2
-# DBY_DY_ERR_MAX = 0.2
-# fig = psp.plot_actual_predicted_error(
-#     x0, y0, dB0y_dy_act_plot, dB0y_dy_pred_plot, dB0y_dy_err_plot,
-#     title="Initial d%s/d%s" % (p.dependent_variable_labels[p.iBy], p.independent_variable_labels[p.iy]),
-#     vmin=DBY_DY_MIN, vmax=DBY_DY_MAX, err_vmin=DBY_DY_ERR_MIN, err_vmax=DBY_DY_ERR_MAX,
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("dB0y_dy.png")
+    if verbose:
+        print("Creating movie for magnetic field divergence.")
+    frame_dir = os.path.join(output_path, "frames_divB")
+    os.mkdir(frame_dir)
+    frames = []
+    for it in range(nt):
+        i0 = it*nx*ny
+        i1 = i0 + nx*ny
+        txy = tf.Variable(X_train[i0:i1, :])
+        t = X_train[i0:i1, p.it]
+        x = X_train[i0:i1, p.ix]
+        y = X_train[i0:i1, p.iy]
+        dBx_dx_act = p.dBx_dx_analytical(t, x, y)
+        dBy_dy_act = p.dBy_dy_analytical(t, x, y)
+        divB_act = dBx_dx_act + dBy_dy_act
+        divB_act = divB_act.reshape(nx, ny)
+        divB_act = np.flip(divB_act.T, axis=0)
+        with tf.GradientTape(persistent=True) as tape1:
+            Bx_pred = models[p.iBx](txy)
+            By_pred = models[p.iBy](txy)
+        dBx_dx_pred = tape1.gradient(Bx_pred, txy)[:, p.ix].numpy()
+        dBy_dy_pred = tape1.gradient(Bx_pred, txy)[:, p.iy].numpy()
+        divB_pred = dBx_dx_pred + dBy_dy_pred
+        divB_pred = divB_pred.reshape(nx, ny)
+        divB_pred = np.flip(divB_pred.T, axis=0)
+        divB_err = divB_pred - divB_act
+        title = f"Magnetic field divergence at t = {t[0]:.3e}"
+        pinn.standard_plots.plot_actual_predicted_error(
+            x, y, divB_act, divB_pred, divB_err,
+            title=title,
+            vmin=plot_min['divB'], vmax=plot_max['divB'],
+            err_vmin=plot_err_min['divB'], err_vmax=plot_err_max['divB'],
+            x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
+            y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
+        )
+        path = os.path.join(frame_dir, f"divB-{it:06}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+        frames.append(path)
+        plt.close()
 
-# # Extract the coordinates of the training points at the final time.
-# n_end = n_x_train_vals*n_y_train_vals
-# t1 = t_train[-n_end:]
-# x1 = x_train[-n_end:]
-# y1 = y_train[-n_end:]
-
-# # Plot the actual and predicted final magnetic field vectors.
-# B1x_act = p.Bx_analytical(t1, x1, y1)
-# B1y_act = p.By_analytical(t1, x1, y1)
-# B1x_pred = ψ[p.iBx][-n_end:]
-# B1y_pred = ψ[p.iBy][-n_end:]
-
-# # Create the figure.
-# fig = psp.plot_actual_predicted_B(
-#     x1, y1, B1x_act, B1y_act, B1x_pred, B1y_pred,
-#     title="Final magnetic field",
-#     x_tick_pos=XY_x_tick_pos, x_tick_labels=XY_x_tick_labels,
-#     y_tick_pos=XY_y_tick_pos, y_tick_labels=XY_y_tick_labels,
-# )
-# plt.savefig("B1xB1y.png")
-
-# # Plot the actual, predicted, and absolute error in final magnetic field magnitudes.
-# B1_act = np.sqrt(B1x_act**2 + B1y_act**2)
-# B1_pred = np.sqrt(B1x_pred**2 + B1y_pred**2)
-# B1_err = B1_pred - B1_act
-
-# # To get the proper orientation, reshape, transpose, flip.
-# B1_act_plot = np.flip(B1_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B1_pred_plot = np.flip(B1_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B1_err_plot = np.flip(B1_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-
-# # Create the plot.
-# fig = psp.plot_log_actual_predicted_error(
-#     x1, y1, B1_act_plot, B1_pred_plot, B1_err_plot,
-#     vmin=B_MIN, vmax=B_MAX, err_vmin=B_ERR_MIN, err_vmax=B_ERR_MAX,
-#     title="Final magnetic field magnitude",
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("B1.png")
-
-# # Plot the actual, predicted, and absolute error in final magnetic field divergence.
-# dB1x_dx_act = p.dBx_dx_analytical(t1, x1, y1)
-# dB1y_dy_act = p.dBy_dy_analytical(t1, x1, y1)
-# divB1_act = dB1x_dx_act + dB1y_dy_act
-# dB1x_dx_pred = delψ[p.iBx][-n_end:, p.ix]
-# dB1y_dy_pred = delψ[p.iBy][-n_end:, p.iy]
-# divB1_pred = dB1x_dx_pred + dB1y_dy_pred
-# divB1_err = divB1_pred - divB1_act
-
-# # To get the proper orientation, reshape, transpose, flip.
-# divB1_act_plot = np.flip(divB1_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# divB1_pred_plot = np.flip(divB1_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# divB1_err_plot = np.flip(divB1_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-
-# # Create the figure.
-# fig = psp.plot_actual_predicted_error(
-#     x1, y1, divB1_act_plot, divB1_pred_plot, divB1_err_plot,
-#     vmin=DIVB_MIN, vmax=DIVB_MAX, err_vmin=DIVB_ERR_MIN, err_vmax=DIVB_ERR_MAX,
-#     title="Final magnetic divergence",
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("divB1.png")
-
-# # Plot the actual, predicted, and absolute errors in final Bx.
-# B1x_err = B1x_pred - B1x_act
-
-# # To get the proper orientation, reshape, transpose, flip.
-# B1x_act_plot = np.flip(B1x_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B1x_pred_plot = np.flip(B1x_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B1x_err_plot = np.flip(B1x_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-
-# # Create the figure.
-# fig = psp.plot_actual_predicted_error(
-#     x1, y1, B1x_act_plot, B1x_pred_plot, B1x_err_plot,
-#     title="Final %s" % p.dependent_variable_labels[p.iBx],
-#     vmin=BX_MIN, vmax=BX_MAX, err_vmin=BX_ERR_MIN, err_vmax=BX_ERR_MAX,
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("B1x.png")
-
-# # Plot the actual, predicted, and absolute errors in final By.
-# B1y_err = B1y_pred - B1y_act
-
-# # To get the proper orientation, reshape, transpose, flip.
-# B1y_act_plot = np.flip(B1y_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B1y_pred_plot = np.flip(B1y_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# B1y_err_plot = np.flip(B1y_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-
-# # Create the figure.
-# fig = psp.plot_actual_predicted_error(
-#     x1, y1, B1y_act_plot, B1y_pred_plot, B1y_err_plot,
-#     title="Final %s" % p.dependent_variable_labels[p.iBy],
-#     vmin=BY_MIN, vmax=BY_MAX, err_vmin=BY_ERR_MIN, err_vmax=BY_ERR_MAX,
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("B1y.png")
-
-# # Plot the actual, predicted, and absolute errors in final dBx/dx.
-# dB1x_dx_err = dB1x_dx_pred - dB1x_dx_act
-
-# # To get the proper orientation, reshape, transpose, flip.
-# dB1x_dx_act_plot = np.flip(dB1x_dx_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# dB1x_dx_pred_plot = np.flip(dB1x_dx_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# dB1x_dx_err_plot = np.flip(dB1x_dx_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-
-# fig = psp.plot_actual_predicted_error(
-#     x1, y1, dB1x_dx_act_plot, dB1x_dx_pred_plot, dB1x_dx_err_plot,
-#     title="Final d%s/d%s" % (p.dependent_variable_labels[p.iBx], p.independent_variable_labels[p.ix]),
-#     vmin=DBX_DX_MIN, vmax=DBX_DX_MAX, err_vmin=DBX_DX_ERR_MIN, err_vmax=DBX_DX_ERR_MAX,
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("dB1x_dx.png")
-
-# # Plot the actual, predicted, and absolute errors in final dBy/dy.
-# dB1y_dy_err = dB1y_dy_pred - dB1y_dy_act
-
-# # To get the proper orientation, reshape, transpose, flip.
-# dB1y_dy_act_plot = np.flip(dB1y_dy_act.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# dB1y_dy_pred_plot = np.flip(dB1y_dy_pred.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-# dB1y_dy_err_plot = np.flip(dB1y_dy_err.reshape(n_x_train_vals, n_y_train_vals).T, axis=0)
-
-# # Create the figure.
-# fig = psp.plot_actual_predicted_error(
-#     x1, y1, dB1y_dy_act_plot, dB1y_dy_pred_plot, dB1y_dy_err_plot,
-#     title="Final d%s/d%s" % (p.dependent_variable_labels[p.iBy], p.independent_variable_labels[p.iy]),
-#     vmin=DBY_DY_MIN, vmax=DBY_DY_MAX, err_vmin=DBY_DY_ERR_MIN, err_vmax=DBY_DY_ERR_MAX,
-#     x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-# )
-# plt.savefig("dB1y_dy.png")
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(frame_dir, f"divB-%06d.png")
+    movie_file = os.path.join(output_path, "divB.mp4")
+    args = [
+        "ffmpeg", "-r", "10", "-s", "1920x1080",
+        "-i", frame_pattern,
+        "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+        movie_file
+    ]
+    subprocess.run(args)
 
 
 if __name__ == "__main__":
