@@ -466,13 +466,56 @@ def main():
             if debug:
                 print(f"G_train_model = {G_train_model}", flush=True)
 
+            # Compute the values of the constraint equations (if any) at all
+            # training points.
+            # NOTE: Constraints are not associated with models.
+            # C_train is a list of Tensor objects.
+            # There are p.n_constraint Tensors in the list (one per
+            # constraint).
+            # Each Tensor has shape (n_train, 1).
+            if use_constraints:
+                C_train = [f(X_train_tf, Y_train_model, dY_dX_train_model)
+                                for f in p.constraints]
+                if debug:
+                    print(f"C_train = {C_train}", flush=True)
+
+            # -----------------------------------------------------------------
+
             # Compute the loss function for the equation residuals at the
             # training points for each model.
             # L_res_model is a list of Tensor objects.
             # There are p.n_var Tensors in the list (one per model).
             # Each Tensor has shape () (scalar).
             L_res_model = [
-                tf.math.sqrt(tf.reduce_sum(G**2)/n_train) for G in G_train_model
+                tf.math.sqrt(tf.reduce_sum(G**2)/n_train)
+                for G in G_train_model
+            ]
+            if debug:
+                print(f"L_res_model = {L_res_model}", flush=True)
+
+            # Compute the loss function for the constraints (if any) at the
+            # training points.
+            # L_train_constraint is a list of Tensor objects.
+            # There are p.n_nconstraint Tensors in the list (one per
+            # constraint).
+            # Each Tensor has shape () (scalar).
+            if use_constraints:
+                L_train_constraint = [
+                    tf.math.sqrt(tf.reduce_sum(C**2)/n_train)
+                    for C in C_train
+                ]
+                if debug:
+                    print(f"L_train_constraint = {L_train_constraint}",
+                          flush=True)
+
+            # Compute the loss function for the equation residuals at the
+            # training points for each model.
+            # L_res_model is a list of Tensor objects.
+            # There are p.n_var Tensors in the list (one per model).
+            # Each Tensor has shape () (scalar).
+            L_res_model = [
+                tf.math.sqrt(tf.reduce_sum(G**2)/n_train)
+                for G in G_train_model
             ]
             if debug:
                 print(f"L_res_model = {L_res_model}", flush=True)
@@ -501,7 +544,8 @@ def main():
 
             # Compute the weighted aggregate loss function per model.
             L_model = [
-                w_res*L1 + w_data*L2 for (L1, L2) in zip(L_res_model, L_data_model)
+                w_res*L1 + w_data*L2 for (L1, L2)
+                in zip(L_res_model, L_data_model)
             ]
             if debug:
                 print(f"L_model = {L_model}", flush=True)
@@ -510,6 +554,14 @@ def main():
             L_res = tf.math.reduce_sum(L_res_model)
             if debug:
                 print(f"L_res = {L_res}", flush=True)
+
+            # Compute the aggregated constraint loss function.
+            # Add it to the residual loss function.
+            if use_constraints:
+                L_constraint = tf.math.reduce_sum(L_train_constraint)
+                if debug:
+                    print(f"L_constraint = {L_constraint}", flush=True)
+                L_res += L_constraint
 
             # Compute the aggregated data loss function.
             L_data = tf.math.reduce_sum(L_data_model)

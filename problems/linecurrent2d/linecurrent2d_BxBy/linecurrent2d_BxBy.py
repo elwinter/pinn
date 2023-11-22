@@ -102,7 +102,7 @@ constraint_names = ["divB"]
 constraint_index = {}
 for (i, s) in enumerate(constraint_names):
     constraint_index[s] = i
-idivB = dependent_variable_index["divB"]
+idivB = constraint_index["divB"]
 
 # Labels for constraints (may use LaTex) - use for plots.
 constraint_labels = [r"$\nabla \cdot \mathbf B$"]
@@ -290,10 +290,9 @@ def constraint_divB(X, Y, delY):
 
 
 # Make a list of all of the constraint equations.
-# Use same order as dependent_variable_names.
-de = [
-    pde_Bx,
-    pde_By,
+# Use same order as constraint_names.
+constraints = [
+    constraint_divB,
 ]
 
 
@@ -453,6 +452,11 @@ if __name__ == "__main__":
     print("dependent_variable_index = %s" % dependent_variable_index)
     print("dependent_variable_labels = %s" % dependent_variable_labels)
     print("n_var = %s" % n_var)
+
+    print("constraint_names = %s" % constraint_names)
+    print("constraint_index = %s" % constraint_index)
+    print("constraint_labels = %s" % constraint_labels)
+    print("n_constraint = %s" % n_constraint)
 
     print("μ0 = %s" % μ0)
     print("m = %s" % m)
