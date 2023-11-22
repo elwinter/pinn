@@ -131,6 +131,10 @@ def create_command_line_argument_parser():
         help="Seed for random number generator (default: %(default)s)"
     )
     parser.add_argument(
+        "--use_constraints", action="store_true",
+        help="Use constraint equations (if any) (default: %(default)s)."
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
@@ -175,6 +179,7 @@ def main():
     save_model = args.save_model
     seed = args.seed
     verbose = args.verbose
+    use_constraints = args.use_constraints
     w_data = args.w_data
     problem_path = args.problem_path
     data_path = args.data_path
