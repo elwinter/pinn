@@ -61,11 +61,15 @@ def create_command_line_argument_parser():
     """
     parser = argparse.ArgumentParser(DESCRIPTION)
     parser.add_argument(
-        "--debug", "-d", action="store_true",
+        "--clobber", action="store_true",
+        help="Clobber existing output directory (default: %(default)s)."
+    )
+    parser.add_argument(
+        "-d", "--debug", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
-        "--verbose", "-v", action="store_true",
+        "-v", "--verbose", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument(
@@ -82,6 +86,7 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    clobber = args.clobber
     debug = args.debug
     verbose = args.verbose
     results_path = args.results_path
@@ -96,7 +101,11 @@ def main():
 
     # Compute the path to the output directory. Then create it if needed.
     output_path = OUTPUT_DIR
-    os.mkdir(output_path)
+    if os.path.exists(output_path):
+        if not clobber:
+            raise FileExistsError(f"Output directory {output_path} exists!")
+    else:
+        os.mkdir(output_path)
 
     # Create the plots in a memory buffer.
     mpl.use("Agg")
@@ -201,7 +210,7 @@ def main():
 
     # ------------------------------------------------------------------------
 
-    # Plot the predicted and analytical solutions, and error.
+    # Plot each predicted variable, analytical solution, and error.
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
         if verbose:
             print(f"Creating plot for {variable_name}.")

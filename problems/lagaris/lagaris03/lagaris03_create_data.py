@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create data for lagaris01 problem.
+"""Create data for lagaris02 problem.
 
-This is for problem 1 from Lagaris (1998).
+This is for problem 3 from Lagaris (1998).
 
 Author
 ------
@@ -17,13 +17,13 @@ import argparse
 import numpy as np
 
 # Import project Python modules.
-import problems.lagaris.lagaris01.lagaris01 as p
+import problems.lagaris.lagaris03.lagaris03 as p
 
 
 # Program constants
 
 # Program description.
-description = "Create data for lagaris01 problem."
+description = "Create data for lagaris03 problem."
 
 
 def create_command_line_argument_parser():
@@ -85,10 +85,13 @@ def main():
     header = "# x Ψ"
     print(header)
 
-    # Compute the data for the boundary condition at x = 0.
+    # Compute the data for the boundary condition at x = 0, 1.
     # Each line is:
     # x Ψ
     x = 0.0
+    Ψ = p.Ψ_analytical(x)
+    print(x, Ψ)
+    x = 1.0
     Ψ = p.Ψ_analytical(x)
     print(x, Ψ)
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create plots for pinn1 results for lagaris01 problem.
+"""Create plots for pinn1 results for eplasma1 problem.
 
-Create plots for pinn1 results for lagaris01 problem.
+Create plots for pinn1 results for eplasma1 problem.
 
 Author
 ------
@@ -13,6 +13,7 @@ Eric Winter (eric.winter62@gmail.com)
 import argparse
 from importlib import import_module
 import os
+import subprocess
 import sys
 
 # Import supplemental modules.
@@ -28,21 +29,20 @@ import pinn.common
 # Program constants
 
 # Program description
-DESCRIPTION = "Create plots for pinn1 results for lagaris01 problem."
+DESCRIPTION = "Create plots for pinn1 results for eplasma1 problem."
 
 # Name of directory to hold output plots
 OUTPUT_DIR = "pinn1_plots"
 
 # Name of problem
-PROBLEM_NAME = "lagaris01"
-
-# Number of points to use in comparison plot.
-NUM_POINTS = 101
+PROBLEM_NAME = "eplasma1"
 
 # Plot limits for dependent variables.
 ylim = {}
 ylim["L"] = [1e-12, 10]
-ylim["Ψ"] = [-0.1, 1.3]
+ylim["n1"] = [-0.25, 0.25]
+ylim["u1x"] = [-0.25, 0.25]
+ylim["E1x"] = [-0.025, 0.025]
 
 
 def create_command_line_argument_parser():
@@ -58,6 +58,10 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(DESCRIPTION)
     parser.add_argument(
@@ -82,11 +86,11 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}", flush=True)
     debug = args.debug
     verbose = args.verbose
     results_path = args.results_path
-    if debug:
-        print(f"args = {args}", flush=True)
 
     # Add the run results directory to the module search path.
     sys.path.append(results_path)
@@ -184,9 +188,12 @@ def main():
         line = f.readline()
         line = line[2:]
         fields = line.split(" ")
-        xmin = float(fields[0])
-        xmax = float(fields[1])
-        nx = int(fields[2])
+        tmin = float(fields[0])
+        tmax = float(fields[1])
+        nt = int(fields[2])
+        xmin = float(fields[3])
+        xmax = float(fields[4])
+        nx = int(fields[5])
 
     # Find the epoch of the last trained model.
     last_epoch = pinn.common.find_last_epoch(results_path)
@@ -201,33 +208,85 @@ def main():
 
     # ------------------------------------------------------------------------
 
-    # Plot the predicted and analytical solutions, and error.
+    # Plot the initial values of the data.
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
-        if verbose:
-            print(f"Creating plot for {variable_name}.")
         xlabel = p.independent_variable_labels[p.ix]
         ylabel = p.dependent_variable_labels[iv]
-        X = X_train
-        model = models[iv]
-        Ym = model(X_train).numpy().reshape(nx)
-        Ya = p.Ψ_analytical(X_train)
-        Ye = Ym - Ya
-        rms_err = np.sqrt(np.sum(Ye**2)/nx)
-        plt.plot(X, Ym, label="trained")
-        plt.plot(X, Ya, label="analytical")
-        plt.plot(X, Ye, label="error")
+        # <HACK>
+        # Assumes IC followed by BC.
+        X = XY_data[:nx, p.ix]
+        Y = XY_data[:nx, p.n_dim + iv]
+        # </HACK>
+        plt.plot(X, Y)
         plt.ylim(ylim[variable_name])
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.grid()
-        plt.legend()
-        title = f"{ylabel}, RMS err = {rms_err:.2e}"
-        plt.title(title)
-        path = os.path.join(output_path, f"{variable_name}.png")
+        plt.title(f"Initial {ylabel}")
+        path = os.path.join(output_path, f"{variable_name}0.png")
         if verbose:
             print(f"Saving {path}.")
         plt.savefig(path)
         plt.close()
+
+    # ------------------------------------------------------------------------
+
+    # Make a movie for each predicted variable. Include the analytical solution
+    # and the error.
+
+    # Create and save each frame.
+    for (iv, variable_name) in enumerate(p.dependent_variable_names):
+        if verbose:
+            print(f"Creating movie for {variable_name}.")
+        xlabel = p.independent_variable_labels[p.ix]
+        ylabel = p.dependent_variable_labels[iv]
+        frame_dir = os.path.join(output_path, f"frames_{variable_name}")
+        os.mkdir(frame_dir)
+        model = models[iv]
+        Y_trained = model(X_train).numpy().reshape(nt, nx)
+        Y_analytical = p.analytical_solutions[iv](X_train).reshape(nt, nx)
+        Y_error = Y_trained - Y_analytical
+        frames = []
+        for i in range(nt):
+            i0 = i*nx
+            i1 = i0 + nx
+            X = X_train[i0:i1, p.ix]
+            Yt = Y_trained[i, :]
+            Ya = Y_analytical[i, :]
+            Ye = Y_error[i, :]
+            rms_err = np.sqrt(np.sum(Ye**2)/nx)
+            plt.plot(X, Yt, label="trained")
+            plt.plot(X, Ya, label="analytical")
+            plt.plot(X, Ye, label="error")
+            plt.ylim(ylim[variable_name])
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
+            plt.legend(loc="upper right")
+            plt.grid()
+            t_frame = X_train[i0, 0]
+            t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
+            t_label_x = 0.0
+            t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1] - ylim[variable_name][0])
+            plt.text(t_label_x, t_label_y, t_label)
+            title = f"{ylabel}, RMS error = {rms_err:.2e}"
+            plt.title(title)
+            path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
+            if verbose:
+                print(f"Saving {path}.")
+            plt.savefig(path)
+            frames.append(path)
+            plt.close()
+
+        # Assemble the frames into a movie.
+        frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
+        movie_file = os.path.join(output_path, f"{variable_name}.mp4")
+        args = [
+            "ffmpeg", "-r", "10", "-s", "1920x1080",
+            "-i", frame_pattern,
+            "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+            movie_file
+        ]
+        subprocess.run(args)
 
 
 if __name__ == "__main__":

@@ -55,32 +55,32 @@ import tensorflow as tf
 # Import project modules.
 
 
-# Names of independent variables.
-independent_variable_names = ["x"]
+# Names of independent variables
+independent_variable_names = ['x']
 
 # Invert the independent variable list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
-ix = independent_variable_index["x"]
+ix = independent_variable_index['x']
 
-# Labels for independent variables (may use LaTex) - use for plots.
-independent_variable_labels = ["$x$"]
+# Labels for independent variables (may use LaTex) - use for plots
+independent_variable_labels = ['$x$']
 
-# Number of problem dimensions (independent variables).
+# Number of problem dimensions (independent variables)
 n_dim = len(independent_variable_names)
 
-# Names of dependent variables.
-dependent_variable_names = ["Ψ"]
+# Names of dependent variables
+dependent_variable_names = ['Ψ']
 
 # Invert the dependent variable list to map name to index.
 dependent_variable_index = {}
 for (i, s) in enumerate(dependent_variable_names):
     dependent_variable_index[s] = i
-iΨ = dependent_variable_index["Ψ"]
+iΨ = dependent_variable_index['Ψ']
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = ["$\psi$"]
+dependent_variable_labels = ['$\psi$']
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
@@ -106,15 +106,23 @@ def ode_Ψ(X, Y, delY):
     -------
     G : tf.Tensor, shape (n, 1)
         Value of differential equation at each evaluation point.
+
+    Raises
+    ------
+    None
     """
     nX = X.shape[0]
+    # x is a Tensor of shape (nX, 1).
     x = tf.reshape(X[:, ix], (nX, 1))
+    # Ψ is a Tensor of shape (nX, 1).
     (Ψ,) = Y
+    # delΨ is a Tensor of shape (nX, 1).
     (delΨ,) = delY
+    # dΨ_dx is a Tensor of shape (nX, 1).
     dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = dΨ_dx + Ψ/5 - np.exp(-x/5)*np.cos(x)
+    G = dΨ_dx + Ψ/5 - tf.math.exp(-x/5)*tf.math.cos(x)
     return G
 
 
@@ -124,11 +132,7 @@ de = [ode_Ψ]
 
 # Parameters and functions for the analytical solution
 
-# Original problem domain
-x0 = 0.0
-x1 = 2.0
-
-# Initial condition
+# Initial condition for the analytical solution
 Ψ0 = 0.0
 
 
@@ -178,11 +182,9 @@ if __name__ == "__main__":
     print(f"dependent_variable_labels = {dependent_variable_labels}")
     print(f"n_var = {n_var}")
 
-    print(f"{x0} <= x <= {x1}")
-    print(f"Ψ0 = {Ψ0}")
-
-    nx = 11
-    x = np.linspace(x0, x1, nx)
+    # Test the analytical solution and derivative.
+    xmin, xmax, nx = 0.0, 1.0, 11
+    x = np.linspace(xmin, xmax, nx)
     Ψ = Ψ_analytical(x)
     dΨ_dx = dΨ_dx_analytical(x)
     for i in range(nx):

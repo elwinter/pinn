@@ -1,7 +1,7 @@
-"""Problem definition file for simple ODE (Lagaris problem 1).
+"""Problem definition file for simple ODE (Lagaris problem 2).
 
-This is a first-order, nonlinear ODE, defined on the domain [0, 1], with the
-initial condition Ψ(0) = 1.
+This is a first-order, nonlinear ODE, defined on the domain [0, 2], with the
+initial condition Ψ(0) = 0.
 
 This ordinary differential equation is taken from the paper:
 
@@ -80,7 +80,7 @@ for (i, s) in enumerate(dependent_variable_names):
 iΨ = dependent_variable_index["Ψ"]
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = [r"$\psi$"]
+dependent_variable_labels = ["$\psi$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
@@ -90,7 +90,7 @@ n_var = len(dependent_variable_names)
 def ode_Ψ(X, Y, delY):
     """Differential equation for Ψ.
 
-    Evaluate the ordinary differential equation for Ψ(x).
+    Evaluate the differential equation for Ψ.
 
     Parameters
     ----------
@@ -106,26 +106,15 @@ def ode_Ψ(X, Y, delY):
     -------
     G : tf.Tensor, shape (n, 1)
         Value of differential equation at each evaluation point.
-
-    Raises
-    ------
-    None
     """
     nX = X.shape[0]
-    # x is a Tensor of shape (nX, 1).
     x = tf.reshape(X[:, ix], (nX, 1))
-    # Ψ is a Tensor of shape (nX, 1).
     (Ψ,) = Y
-    # delΨ is a Tensor of shape (nX, 1).
     (delΨ,) = delY
-    # dΨ_dx is a Tensor of shape (nX, 1).
     dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = (
-        dΨ_dx + (x + (1 + 3*x**2)/(1 + x + x**3))*Ψ - x**3
-        - 2*x - x**2*(1 + 3*x**2)/(1 + x + x**3)
-    )
+    G = dΨ_dx + Ψ/5 - np.exp(-x/5)*np.cos(x)
     return G
 
 
@@ -133,14 +122,20 @@ def ode_Ψ(X, Y, delY):
 de = [ode_Ψ]
 
 
-# Initial condition for the analytical solution
-Ψ0 = 1.0
+# Parameters and functions for the analytical solution
+
+# Original problem domain
+x0 = 0.0
+x1 = 2.0
+
+# Initial condition
+Ψ0 = 0.0
 
 
 def Ψ_analytical(x):
-    """Analytical solution to lagaris01.
+    """Analytical solution to lagaris02.
 
-    Analytical solution to lagaris01.
+    Analytical solution to lagaris02.
 
     Parameters
     ----------
@@ -151,19 +146,15 @@ def Ψ_analytical(x):
     -------
     Ψ : np.array of float, shape (n,)
         Analytical solution at each x-value.
-
-    Raises
-    ------
-    None
     """
-    Ψ = np.exp(-x**2/2)/(1 + x + x**3) + x**2
+    Ψ = np.exp(-x/5)*np.sin(x)
     return Ψ
 
 
 def dΨ_dx_analytical(x):
-    """Analytical 1st derivative to lagaris01.
+    """Analytical 1st derivative to lagaris02.
 
-    Analytical 1st derivative of lagaris01 analytical solution.
+    Analytical 1st derivative of lagaris02 analytical solution.
 
     Parameters
     ----------
@@ -174,14 +165,8 @@ def dΨ_dx_analytical(x):
     -------
     dΨ_dx : np.array of float, shape (n,)
         Value of dΨ/dx for each evaluation point.
-
-    Raises
-    ------
-    None
     """
-    dΨ_dx = (
-        2*x - np.exp(-x**2/2)*(1 + x + 4*x**2 + x**4)/(1 + x + x**3)**2
-    )
+    dΨ_dx = 0.2*np.exp(-x/5)*(5.0*np.cos(x) - np.sin(x))
     return dΨ_dx
 
 
@@ -193,9 +178,11 @@ if __name__ == "__main__":
     print(f"dependent_variable_labels = {dependent_variable_labels}")
     print(f"n_var = {n_var}")
 
-    # Test the analytical solution and derivative.
-    xmin, xmax, nx = 0.0, 1.0, 11
-    x = np.linspace(xmin, xmax, nx)
+    print(f"{x0} <= x <= {x1}")
+    print(f"Ψ0 = {Ψ0}")
+
+    nx = 11
+    x = np.linspace(x0, x1, nx)
     Ψ = Ψ_analytical(x)
     dΨ_dx = dΨ_dx_analytical(x)
     for i in range(nx):

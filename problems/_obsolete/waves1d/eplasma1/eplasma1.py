@@ -3,6 +3,9 @@
 This problem definition file describes an electron plasma wave: unit pressure
 and density.
 
+This problem specifies the initial condition, and the boundary condition at
+x = 0, so the result is a wave train propagating in t and x.
+
 This problem uses the linearized MHD equations.
 
 NOTE: The functions in this module are defined using a combination of Numpy and
@@ -22,21 +25,6 @@ dependent variables (these are 1st-order perturbation values):
     1:  u1x (x-component of velocity)
     2:  E1x (x-component of electric field)
 
-NOTE: For all methods:
-
-X represents an a set of arbitrary evaluation points. It is a tf.Tensor with
-shape (n, n_dim), where n is the number of evaluation points, and n_dim is
-the number of dimensions (independent variables) in the problem. For an ODE,
-n_dim is 1, giving a shape of (n, 1).
-
-Y represents a set of dependent variables at each point in X. This variable is
-a list of n_var tf.Tensor, each shape (n, 1), where n_var is the number of
-dependent variables.
-
-delY contains the first derivatives of each dependent variable with respect
-to each independent variable, at each point in X. It is a list of n_var
-tf.Tensor, each shape (n, n_dim).
-
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
@@ -47,52 +35,55 @@ Eric Winter (eric.winter62@gmail.com)
 
 # Import supplemental modules.
 import numpy as np
-from numpy import pi as π
 import tensorflow as tf
 
 # Import project modules.
 from pinn import plasma
 
 
-# Names of independent variables
-independent_variable_names = ['t', 'x']
+# Names of independent variables.
+independent_variable_names = ["t", "x"]
 
 # Invert the independent variable name list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
-it = independent_variable_index['t']
-ix = independent_variable_index['x']
+it = independent_variable_index["t"]
+ix = independent_variable_index["x"]
 
-# Labels for independent variables (may use LaTex) - use for plots
-independent_variable_labels = ['$t$', '$x$']
+# Labels for independent variables (may use LaTex) - use for plots.
+independent_variable_labels = ["$t$", "$x$"]
 
-# Number of problem dimensions (independent variables)
+# Number of problem dimensions (independent variables).
 n_dim = len(independent_variable_names)
 
-# Names of dependent variables
-dependent_variable_names = ['n1', 'u1x', 'E1x']
+# Names of dependent variables.
+dependent_variable_names = [
+    "n1", "u1x", "E1x"
+]
 
 # Invert the dependent variable list to map name to index.
 dependent_variable_index = {}
 for (i, s) in enumerate(dependent_variable_names):
     dependent_variable_index[s] = i
-i_n1 = dependent_variable_index['n1']
-iu1x = dependent_variable_index['u1x']
-iE1x = dependent_variable_index['E1x']
+i_n1 = dependent_variable_index["n1"]
+iu1x = dependent_variable_index["u1x"]
+iE1x = dependent_variable_index["E1x"]
 
-# Labels for dependent variables (may use LaTex) - use for plots
-dependent_variable_labels = ['$n_1$', '$u_{1x}$', '$E_{1x}$']
+# Labels for dependent variables (may use LaTex) - use for plots.
+dependent_variable_labels = [
+    "$n_1$", "$u_{1x}$", "$E_{1x}$"
+]
 
-# Number of dependent variables
+# Number of dependent variables.
 n_var = len(dependent_variable_names)
 
 
-# Normalized physical constants
+# Normalized physical constants.
 e = 1.0     # Unit charge
 me = 1.0    # Electron mass
 kb = 1.0    # Boltzmann constant
-ε0 = 1.0    # Permittivity of free space
+eps0 = 1.0  # Permittivity of free space
 
 
 # Plasma parameters
@@ -101,21 +92,25 @@ P0 = 1.0  # Ambient equilibrium pressure
 ɣ = 5/3   # Adiabatic index = (N + 2)/N, N = # DOF
 T = 1.0   # Ambient temperature
 
-# Wavelength and wavenumber of initial n/vx/Ex perturbations
-λ = 1.0
-kx = 2*π/λ
+# Wavelength and wavenumber of initial n/vx/Ex perturbations.
+wavelengths = np.array([1.0])
+kx = 2*np.pi/wavelengths
+nc = len(kx)  # Number of wave components.
 
-# Perturbation amplitude for number density
-n1_amp = 0.1
+# Steady-state value and perturbation amplitudes for number density.
+n0 = 1.0
+n1_amp = np.array([0.1])
 
-# Compute the electron plasma wave angular frequency.
-ω = plasma.electron_plasma_wave_angular_frequency(n0, T, kx, normalize=True)
+# Compute the electron plasma wave angular frequency for each component.                           
+w = plasma.electron_plasma_wave_angular_frequency(n0, T, kx, normalize=True)
 
-# Perturbation amplitude for x-velocity
-u1x_amp = ω/kx*n1_amp/n0
+# Steady-state value and perturbation amplitudes for x-velocity.
+u1x0 = 0.0
+u1x_amp = w/kx*n1_amp/n0
 
-# Perturbation amplitude for x-electric field
-E1x_amp = e*n1_amp/(kx*ε0)
+# Steady-state value and perturbation amplitudes for x-electric field.
+E1x0 = 0.0
+E1x_amp = e*n1_amp/(kx*eps0)
 
 
 # @tf.function
@@ -141,10 +136,6 @@ def pde_n1(X, Y, del_Y):
     -------
     G : tf.Tensor, shape (n, 1)
         Value of differential equation at each evaluation point.
-
-    Raises
-    ------
-    None
     """
     nX = X.shape[0]
     # t = tf.reshape(X[:, it], (nX, 1))
@@ -172,7 +163,6 @@ def pde_u1x(X, Y, del_Y):
     x-momentum.
 
     Reference: Greenwald notes, equation (4.24)
-
     Parameters
     ----------
     X : tf.Variable, shape (n, n_dim)
@@ -187,10 +177,6 @@ def pde_u1x(X, Y, del_Y):
     -------
     G : tf.Tensor, shape (n, 1)
         Value of differential equation at each evaluation point.
-
-    Raises
-    ------
-    None
     """
     n = X.shape[0]
     # t = tf.reshape(X[:, 0], (n, 1))
@@ -232,10 +218,6 @@ def pde_E1x(X, Y, del_Y):
     -------
     G : tf.Tensor, shape (n, 1)
         Value of differential equation at each evaluation point.
-
-    Raises
-    ------
-    None
     """
     n = X.shape[0]
     # t = tf.reshape(X[:, 0], (n, 1))
@@ -250,7 +232,7 @@ def pde_E1x(X, Y, del_Y):
     dE1x_dx = tf.reshape(del_E1x[:, 1], (n, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = dE1x_dx + e/ε0*n1
+    G = dE1x_dx + e/eps0*n1
     return G
 
 
@@ -279,14 +261,12 @@ def n1_analytical(X: np.ndarray):
     -------
     n1 : np.ndarray of float, shape (n,)
         Analytical values for number density perturbation.
-
-    Raises
-    ------
-    None
     """
     t = X[:, it]
     x = X[:, ix]
-    n1 = n1_amp*np.sin(kx*x - ω*t)
+    n1 = np.zeros_like(x)
+    for (n1i, ki, wi) in zip(n1_amp, kx, w):
+        n1 += n1i*np.sin(ki*x - wi*t)
     return n1
 
 
@@ -304,14 +284,12 @@ def u1x_analytical(X: np.ndarray):
     -------
     u1x : np.ndarray of float, shape (n,)
         Analytical values for x-velocity perturbation.
-
-    Raises
-    ------
-    None
     """
     t = X[:, it]
     x = X[:, ix]
-    u1x = u1x_amp*np.sin(kx*x - ω*t)
+    u1x = np.zeros_like(x)
+    for (u1xi, ki, wi) in zip(u1x_amp, kx, w):
+        u1x += u1xi*np.sin(ki*x - wi*t)
     return u1x
 
 
@@ -329,14 +307,12 @@ def E1x_analytical(X: np.ndarray):
     -------
     E1x : np.ndarray of float, shape (n,)
         Analytical values for x-electric field perturbation.
-
-    Raises
-    ------
-    None
     """
     t = X[:, it]
     x = X[:, ix]
-    E1x = E1x_amp*np.sin(kx*x - ω*t + π/2)
+    E1x = np.zeros_like(x)
+    for (E1xi, ki, wi) in zip(E1x_amp, kx, w):
+        E1x += E1xi*np.sin(ki*x - wi*t + np.pi/2)
     return E1x
 
 
@@ -353,28 +329,33 @@ if __name__ == "__main__":
     print(f"independent_variable_index = {independent_variable_index}")
     print(f"independent_variable_labels = {independent_variable_labels}")
     print(f"n_dim = {n_dim}")
-    print(f"it = {it}, ix = {ix}")
 
     print(f"dependent_variable_names = {dependent_variable_names}")
     print(f"dependent_variable_index = {dependent_variable_index}")
     print(f"dependent_variable_labels = {dependent_variable_labels}")
     print(f"n_var = {n_var}")
-    print(f"i_n1 = {i_n1}, iu1x = {iu1x}, iW1x = {iE1x}")
 
     print(f"e = {e}")
     print(f"me = {me}")
     print(f"kb = {kb}")
-    print(f"ε0 = {ε0}")
+    print(f"eps0 = {eps0}")
 
     print(f"n0 = {n0}")
     print(f"P0 = {P0}")
     print(f"ɣ = {ɣ}")
     print(f"T = {T}")
 
-    print(f"λ = {λ}")
+    print(f"wavelengths = {wavelengths}")
     print(f"kx = {kx}")
-    print(f"ω = {ω}")
+    print(f"w = {w}")
 
+    print(f"n0 = {n0}")
     print(f"n1_amp = {n1_amp}")
+
+    print(f"w = {w}")
+
+    print(f"u1x0 = {u1x0}")
     print(f"u1x_amp = {u1x_amp}")
+
+    print(f"E1x0 = {E1x0}")
     print(f"E1x_amp = {E1x_amp}")

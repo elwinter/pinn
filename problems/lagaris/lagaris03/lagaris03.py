@@ -1,6 +1,6 @@
-"""Problem definition file for simple ODE (Lagaris problem 1).
+"""Problem definition file for simple ODE (Lagaris problem 3).
 
-This is a first-order, nonlinear ODE, defined on the domain [0, 1], with the
+This is a second-order, nonlinear ODE, defined on the domain [0, 2], with the
 initial condition Ψ(0) = 1.
 
 This ordinary differential equation is taken from the paper:
@@ -40,6 +40,11 @@ to each independent variable, at each point in X. It is a list of n_var
 tf.Tensor, each shape (n, n_dim). For an ODE, n_var and n_dim are 1, for a
 list of 1 Tensor of shape (n, 1).
 
+del2Y contains the second derivatives of each dependent variable with respect
+to each independent variable, at each point in X. It is a list of n_var
+tf.Tensor, each shape (n, n_dim). For an ODE, n_var and n_dim are 1, for a
+list of 1 Tensor of shape (n, 1).
+
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
@@ -55,42 +60,42 @@ import tensorflow as tf
 # Import project modules.
 
 
-# Names of independent variables.
-independent_variable_names = ["x"]
+# Names of independent variables
+independent_variable_names = ['x']
 
 # Invert the independent variable list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
-ix = independent_variable_index["x"]
+ix = independent_variable_index['x']
 
-# Labels for independent variables (may use LaTex) - use for plots.
-independent_variable_labels = ["$x$"]
+# Labels for independent variables (may use LaTex) - use for plots
+independent_variable_labels = ['$x$']
 
-# Number of problem dimensions (independent variables).
+# Number of problem dimensions (independent variables)
 n_dim = len(independent_variable_names)
 
-# Names of dependent variables.
-dependent_variable_names = ["Ψ"]
+# Names of dependent variables
+dependent_variable_names = ['Ψ']
 
 # Invert the dependent variable list to map name to index.
 dependent_variable_index = {}
 for (i, s) in enumerate(dependent_variable_names):
     dependent_variable_index[s] = i
-iΨ = dependent_variable_index["Ψ"]
+iΨ = dependent_variable_index['Ψ']
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = [r"$\psi$"]
+dependent_variable_labels = ['$\psi$']
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
 
 
 # @tf.function
-def ode_Ψ(X, Y, delY):
+def ode_Ψ(X, Y, delY, del2Y):
     """Differential equation for Ψ.
 
-    Evaluate the ordinary differential equation for Ψ(x).
+    Evaluate the differential equation for Ψ.
 
     Parameters
     ----------
@@ -101,6 +106,9 @@ def ode_Ψ(X, Y, delY):
     delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables at
         each evaluation point.
+    del2Y : list of n_var tf.Tensor, each shape (n, n_dim)
+        Values of 2nd derivatives of dependent variables wrt independent
+        variables at each evaluation point.
 
     Returns
     -------
@@ -120,12 +128,13 @@ def ode_Ψ(X, Y, delY):
     (delΨ,) = delY
     # dΨ_dx is a Tensor of shape (nX, 1).
     dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
+    # del2Ψ is a Tensor of shape (nX, 1).
+    (del2Ψ,) = delY
+    # d2Ψ_dx2 is a Tensor of shape (nX, 1).
+    d2Ψ_dx2 = tf.reshape(del2Ψ[:, ix], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = (
-        dΨ_dx + (x + (1 + 3*x**2)/(1 + x + x**3))*Ψ - x**3
-        - 2*x - x**2*(1 + 3*x**2)/(1 + x + x**3)
-    )
+    G = d2Ψ_dx2 + 1/5*dΨ_dx + Ψ + 1/5*tf.math.exp(-x/5)*tf.math.cos(x)
     return G
 
 
@@ -133,14 +142,13 @@ def ode_Ψ(X, Y, delY):
 de = [ode_Ψ]
 
 
-# Initial condition for the analytical solution
-Ψ0 = 1.0
+# Parameters and functions for the analytical solution
 
 
 def Ψ_analytical(x):
-    """Analytical solution to lagaris01.
+    """Analytical solution to lagaris02.
 
-    Analytical solution to lagaris01.
+    Analytical solution to lagaris02.
 
     Parameters
     ----------
@@ -156,14 +164,14 @@ def Ψ_analytical(x):
     ------
     None
     """
-    Ψ = np.exp(-x**2/2)/(1 + x + x**3) + x**2
+    Ψ = np.exp(-x/5)*np.sin(x)
     return Ψ
 
 
 def dΨ_dx_analytical(x):
-    """Analytical 1st derivative to lagaris01.
+    """Analytical 1st derivative to lagaris02.
 
-    Analytical 1st derivative of lagaris01 analytical solution.
+    Analytical 1st derivative of lagaris02 analytical solution.
 
     Parameters
     ----------
@@ -179,9 +187,7 @@ def dΨ_dx_analytical(x):
     ------
     None
     """
-    dΨ_dx = (
-        2*x - np.exp(-x**2/2)*(1 + x + 4*x**2 + x**4)/(1 + x + x**3)**2
-    )
+    dΨ_dx = 0.2*np.exp(-x/5)*(5.0*np.cos(x) - np.sin(x))
     return dΨ_dx
 
 

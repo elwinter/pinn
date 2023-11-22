@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create data for lagaris01 problem.
+"""Create data for lagaris02 problem.
 
-This is for problem 1 from Lagaris (1998).
+This is for problem 2 from Lagaris (1998).
 
 Author
 ------
@@ -17,13 +17,13 @@ import argparse
 import numpy as np
 
 # Import project Python modules.
-import problems.lagaris.lagaris01.lagaris01 as p
+import problems.lagaris.lagaris02.lagaris02 as p
 
 
 # Program constants
 
 # Program description.
-description = "Create data for lagaris01 problem."
+description = "Create data for lagaris02 problem."
 
 
 def create_command_line_argument_parser():

@@ -247,7 +247,7 @@ def main():
     # expect a 2D Tensor.
     if len(X_train.shape) == 1:
         if verbose:
-            print("Training data is 1-D, reshaping to 2-D.")
+            print("Training points are 1-D, reshaping to 2-D.")
         X_train = X_train.reshape(X_train.shape[0], 1)
         if debug:
             print(f"Reshaped X_train = {X_train}", flush=True)
@@ -427,7 +427,7 @@ def main():
                 # differential equations G.
                 # Y_train_model is a list of tf.Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
-                # Each Tensor has shape (n_batch, 1).
+                # Each Tensor has shape (n_train, 1).
                 Y_train_model = [model(X_train_tf) for model in models]
                 if debug:
                     print(f"Y_train_model = {Y_train_model}", flush=True)
@@ -437,7 +437,7 @@ def main():
                 # comparing to the supplied data.
                 # Y_data_model is a list of tf.Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
-                # Each Tensor has shape (n_batch, 1).
+                # Each Tensor has shape (n_data, 1).
                 Y_data_model = [model(X_data_tf) for model in models]
                 if debug:
                     print(f"Y_data_model = {Y_data_model}", flush=True)
@@ -447,19 +447,19 @@ def main():
             # derivatives dY/dX to use in the differential equations G.
             # dY_dX_train_model is a list of tf.Tensor objects.
             # There are p.n_var Tensors in the list (one per model).
-            # Each Tensor has shape (n_batch, p.n_dim).
+            # Each Tensor has shape (n_train, p.n_dim).
             dY_dX_train_model = [tape1.gradient(Y, X_train_tf) for Y in Y_train_model]
             if debug:
                 print(f"dY_dX_train_model = {dY_dX_train_model}", flush=True)
 
             # Compute the values of the differential equations at all
-            # points in this batch.
+            # training points.
             # G_train_model is a list of Tensor objects.
             # There are p.n_var Tensors in the list (one per model).
-            # Each Tensor has shape (n_batch, 1).
+            # Each Tensor has shape (n_train, 1).
             G_train_model = [f(X_train_tf, Y_train_model, dY_dX_train_model) for f in p.de]
             if debug:
-                print(f"G_batch = {G_train_model}", flush=True)
+                print(f"G_train_model = {G_train_model}", flush=True)
 
             # Compute the loss function for the equation residuals at the
             # training points for each model.

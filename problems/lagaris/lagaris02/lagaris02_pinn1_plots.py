@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create plots for pinn1 results for lagaris01 problem.
+"""Create plots for pinn1 results for lagaris02 problem.
 
-Create plots for pinn1 results for lagaris01 problem.
+Create plots for pinn1 results for lagaris02 problem.
 
 Author
 ------
@@ -28,13 +28,13 @@ import pinn.common
 # Program constants
 
 # Program description
-DESCRIPTION = "Create plots for pinn1 results for lagaris01 problem."
+DESCRIPTION = "Create plots for pinn1 results for lagaris02 problem."
 
 # Name of directory to hold output plots
 OUTPUT_DIR = "pinn1_plots"
 
 # Name of problem
-PROBLEM_NAME = "lagaris01"
+PROBLEM_NAME = "lagaris02"
 
 # Number of points to use in comparison plot.
 NUM_POINTS = 101
@@ -42,7 +42,7 @@ NUM_POINTS = 101
 # Plot limits for dependent variables.
 ylim = {}
 ylim["L"] = [1e-12, 10]
-ylim["Ψ"] = [-0.1, 1.3]
+ylim["Ψ"] = [-1.0, 1.0]
 
 
 def create_command_line_argument_parser():
