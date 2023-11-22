@@ -95,8 +95,24 @@ dependent_variable_labels = ["$B_x$", "$B_y$"]
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
 
+# Names of constraints.
+constraint_names = ["divB"]
+
+# Invert the constraint name list to map name to index.
+constraint_index = {}
+for (i, s) in enumerate(constraint_names):
+    constraint_index[s] = i
+idivB = dependent_variable_index["divB"]
+
+# Labels for constraints (may use LaTex) - use for plots.
+constraint_labels = [r"$\nabla \cdot \mathbf B$"]
+
+# Number of constraints.
+n_constraint = len(constraint_names)
+
 # Physical constants
 μ0 = 1.0  # Normalized vacuum permeability
+
 
 # Plasma parameters
 m = 1.0    # Plasma article mass
@@ -221,6 +237,59 @@ def pde_By(X, Y, delY):
 
 
 # Make a list of all of the differential equations.
+# Use same order as dependent_variable_names.
+de = [
+    pde_Bx,
+    pde_By,
+]
+
+
+# Define constraint equations.
+
+# @tf.function
+def constraint_divB(X, Y, delY):
+    """Differential equation for the magnetic divergence constraint.
+
+    Evaluate the differential equation for the magnetic divergence constraint.
+
+    Parameters
+    ----------
+    X : tf.Variable, shape (n, n_dim)
+        Values of independent variables at each evaluation point.
+    Y : list of n_var tf.Tensor, each shape (n, 1)
+        Values of dependent variables at each evaluation point.
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
+        Values of gradients of dependent variables wrt independent variables
+        at each evaluation point.
+
+    Returns
+    -------
+    divB : tf.Tensor, shape (n, 1)
+        Value of differential equation at each evaluation point.
+
+    Raises
+    ------
+    None
+    """
+    nX = X.shape[0]
+    # t = tf.reshape(X[:, it], (nX, 1))
+    # x = tf.reshape(X[:, ix], (nX, 1))
+    # y = tf.reshape(X[:, iy], (nX, 1))
+    # (Bx, By) = Y
+    (del_Bx, del_By) = delY
+    # dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
+    dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
+    # dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
+    # dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
+    # dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
+    dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
+
+    # divB is a Tensor of shape (n, 1).
+    divB = dBx_dx + dBy_dy
+    return divB
+
+
+# Make a list of all of the constraint equations.
 # Use same order as dependent_variable_names.
 de = [
     pde_Bx,
