@@ -47,7 +47,7 @@ Y represents a set of dependent variables at each point in X. This variable is
 a list of n_var tf.Tensor, each shape (n, 1), where n_var is the number of
 dependent variables.
 
-del_Y contains the first derivatives of each dependent variable with respect
+delY contains the first derivatives of each dependent variable with respect
 to each independent variable, at each point in X. It is a list of n_var
 tf.Tensor, each shape (n, n_dim).
 
@@ -151,13 +151,13 @@ m = 1.0   # Particle mass
 
 # NOTE: In the functions defined below for the differential equations, the
 # arguments can be unpacked as follows:
-# def pde_XXX(X, Y, del_Y):
+# def pde_XXX(X, Y, delY):
 #     nX = X.shape[0]
 #     t = tf.reshape(X[:, it], (nX, 1))
 #     x = tf.reshape(X[:, ix], (nX, 1))
 #     y = tf.reshape(X[:, iy], (nX, 1))
 #     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-#     (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+#     (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
 #     dn_dt = tf.reshape(del_n[:, it], (nX, 1))
 #     dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
 #     dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -185,7 +185,7 @@ m = 1.0   # Particle mass
 
 
 # @tf.function
-def pde_n(X, Y, del_Y):
+def pde_n(X, Y, delY):
     """Differential equation for number density.
 
     Evaluate the differential equation for number density. This equation is
@@ -197,7 +197,7 @@ def pde_n(X, Y, del_Y):
         Values of independent variables at each evaluation point.
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables
         at each evaluation point.
 
@@ -211,7 +211,7 @@ def pde_n(X, Y, del_Y):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -243,7 +243,7 @@ def pde_n(X, Y, del_Y):
 
 
 # @tf.function
-def pde_P(X, Y, del_Y):
+def pde_P(X, Y, delY):
     """Differential equation for P.
 
     Evaluate the differential equation for pressure (or energy density). This
@@ -255,7 +255,7 @@ def pde_P(X, Y, del_Y):
         Values of independent variables at each evaluation point.
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables
         at each evaluation point.
 
@@ -269,7 +269,7 @@ def pde_P(X, Y, del_Y):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -301,7 +301,7 @@ def pde_P(X, Y, del_Y):
 
 
 # @tf.function
-def pde_ux(X, Y, del_Y):
+def pde_ux(X, Y, delY):
     """Differential equation for x-velocity.
 
     Evaluate the differential equation for x-velocity. This equation is derived
@@ -313,7 +313,7 @@ def pde_ux(X, Y, del_Y):
         Values of independent variables at each evaluation point.
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables at
         each evaluation point.
 
@@ -327,7 +327,7 @@ def pde_ux(X, Y, del_Y):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     # dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     # dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     # dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -362,7 +362,7 @@ def pde_ux(X, Y, del_Y):
 
 
 # @tf.function
-def pde_uy(X, Y, del_Y):
+def pde_uy(X, Y, delY):
     """Differential equation for y-velocity.
 
     Evaluate the differential equation for y-velocity. This equation is derived
@@ -374,7 +374,7 @@ def pde_uy(X, Y, del_Y):
         Values of independent variables at each evaluation point.
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables at
         each evaluation point.
 
@@ -388,7 +388,7 @@ def pde_uy(X, Y, del_Y):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     # dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     # dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     # dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -423,7 +423,7 @@ def pde_uy(X, Y, del_Y):
 
 
 # @tf.function
-def pde_uz(X, Y, del_Y):
+def pde_uz(X, Y, delY):
     """Differential equation for z-velocity.
 
     Evaluate the differential equation for z-velocity. This equation is derived
@@ -435,7 +435,7 @@ def pde_uz(X, Y, del_Y):
         Values of independent variables at each evaluation point.
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables at
         each evaluation point.
 
@@ -449,7 +449,7 @@ def pde_uz(X, Y, del_Y):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     # dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     # dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     # dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -481,7 +481,7 @@ def pde_uz(X, Y, del_Y):
 
 
 # @tf.function
-def pde_Bx(X, Y, del_Y):
+def pde_Bx(X, Y, delY):
     """Differential equation for the x-component of the magnetic field.
 
     Evaluate the differential equation for the x-component of the magnetic
@@ -493,7 +493,7 @@ def pde_Bx(X, Y, del_Y):
         Values of independent variables at each evaluation point.
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables at
         each evaluation point.
 
@@ -507,7 +507,7 @@ def pde_Bx(X, Y, del_Y):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     # dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     # dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     # dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -539,7 +539,7 @@ def pde_Bx(X, Y, del_Y):
 
 
 # @tf.function
-def pde_By(X, Y, del_Y):
+def pde_By(X, Y, delY):
     """Differential equation for the y-component of the magnetic field.
 
     Evaluate the differential equation for the y-component of the magnetic
@@ -551,7 +551,7 @@ def pde_By(X, Y, del_Y):
         Values of independent variables at each evaluation point.
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables at
         each evaluation point.
 
@@ -565,7 +565,7 @@ def pde_By(X, Y, del_Y):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     # dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     # dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     # dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -597,7 +597,7 @@ def pde_By(X, Y, del_Y):
 
 
 # @tf.function
-def pde_Bz(X, Y, del_Y):
+def pde_Bz(X, Y, delY):
     """Differential equation for the z-component of the magnetic field.
 
     Evaluate the differential equation for the z-component of the magnetic
@@ -609,7 +609,7 @@ def pde_Bz(X, Y, del_Y):
         Values of independent variables at each evaluation point.
     Y : list of n_var tf.Tensor, each shape (n, 1)
         Values of dependent variables at each evaluation point.
-    del_Y : list of n_var tf.Tensor, each shape (n, n_dim)
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
         Values of gradients of dependent variables wrt independent variables at
         each evaluation point.
 
@@ -623,7 +623,7 @@ def pde_Bz(X, Y, del_Y):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     # dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     # dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     # dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
@@ -702,7 +702,7 @@ def constraint_divB(X, Y, delY):
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
     (n, P, ux, uy, uz, Bx, By, Bz) = Y
-    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = del_Y
+    (del_n, del_P, del_ux, del_uy, del_uz, del_Bx, del_By, del_Bz) = delY
     # dn_dt = tf.reshape(del_n[:, it], (nX, 1))
     # dn_dx = tf.reshape(del_n[:, ix], (nX, 1))
     # dn_dy = tf.reshape(del_n[:, iy], (nX, 1))
