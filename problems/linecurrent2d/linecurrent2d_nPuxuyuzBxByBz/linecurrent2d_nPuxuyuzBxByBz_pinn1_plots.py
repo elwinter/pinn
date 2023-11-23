@@ -267,20 +267,44 @@ def main():
 
     # Plot parameters.
     plot_min = {
+        "n": 0.0,
+        "P": 0.0,
+        "ux": -1.0,
+        "uy": -1.0,
+        "uz": -1.0,
         "Bx": -5e-3,
         "By": -5e-3,
+        "Bz": -5e-3,
     }
     plot_max = {
+        "n": 1.0,
+        "P": 1.0,
+        "ux": 1.0,
+        "uy": 1.0,
+        "uz": 1.0,
         "Bx": 5e-3,
         "By": 5e-3,
+        "Bz": 5e-3,
     }
     plot_err_min = {
+        "n": -1e-3,
+        "P": -1e-3,
+        "ux": -1e-3,
+        "uy": -1e-3,
+        "uz": -1e-3,
         "Bx": -1e-3,
         "By": -1e-3,
+        "Bz": -1e-3,
     }
     plot_err_max = {
+        "n": 1e-3,
+        "P": 1e-3,
+        "ux": 1e-3,
+        "uy": 1e-3,
+        "uz": 1e-3,
         "Bx": 1e-3,
         "By": 1e-3,
+        "Bz": 1e-3,
     }
 
     # Create and save each frame.
