@@ -36,8 +36,8 @@ options = {}
 options['pinn_root'] = os.environ['PINN_ROOT']
 
 # Options for problem to solve
-options['problem_class'] = 'lagaris'
-options['problem_name'] = 'lagaris01'
+options['problem_class'] = 'linecurrent2d'
+options['problem_name'] = 'linecurrent2d_BxBy'
 options['problem_root'] = os.path.join(
     options['pinn_root'], 'problems',
     options['problem_class'], options['problem_name']
@@ -46,10 +46,10 @@ options['pinn1_problem_path'] = os.path.join(
     options['problem_root'], f"{options['problem_name']}.py"
 )
 options['pinn1_data_path'] = os.path.join(
-    options['problem_root'], 'data', f"{options['problem_name']}_data.dat"
+    options['problem_root'], 'data', f"{options['problem_name']}_050x050x050_data.dat"
 )
 options['pinn1_training_path'] = os.path.join(
-    options['problem_root'], 'data', f"{options['problem_name']}_training_grid.dat"
+    options['problem_root'], 'data', f"{options['problem_name']}_050x050x050_training_grid.dat"
 )
 options['pinn1_results_dir'] = f"{options['problem_name']}-pinn1"
 options['pinn1_plot_cmd'] = os.path.join(
@@ -61,9 +61,9 @@ options['python_environment'] = 'research-3.10'
 
 
 # Range of data weights to use.
-W_MIN = 0.2
-W_MAX = 0.2
-N_W = 1
+W_MIN = 0.1
+W_MAX = 1.0
+N_W = 11
 WS = np.linspace(W_MIN, W_MAX, N_W)
 
 # Number of runs per data weight value.
@@ -86,13 +86,14 @@ options['pinn1_activation'] = 'sigmoid'
 options['pinn1_debug'] = ''
 options['pinn1_learning_rate'] = 0.01
 options['pinn1_load_model'] = ''
-options['pinn1_max_epochs'] = 1000
-options['pinn1_n_hid'] = 10
-options['pinn1_n_layers'] = 1
+options['pinn1_max_epochs'] = 100000
+options['pinn1_n_hid'] = 100
+options['pinn1_n_layers'] = 4
 options['pinn1_nogpu'] = ''
 options['pinn1_precision'] = 'float32'
-options['pinn1_save_model'] = -1
+options['pinn1_save_model'] = 10000
 options['pinn1_seed'] = None
+options['pinn1_use_constraints'] = '--use_constraints'
 options['pinn1_verbose'] = '--verbose'
 options['pinn1_w_data'] = None
 

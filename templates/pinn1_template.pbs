@@ -36,7 +36,7 @@ echo "The active environment variables are:"
 printenv
 
 # Run the network.
-cmd="$pinn_cmd --activation={{ pinn1_activation }} {{ pinn1_debug }} --learning_rate={{ pinn1_learning_rate }} {{ pinn1_load_model }} --max_epochs={{ pinn1_max_epochs }} --n_hid={{ pinn1_n_hid }} --n_layers={{ pinn1_n_layers }} {{ pinn1_nogpu }} --precision={{ pinn1_precision }} --save_model={{ pinn1_save_model }} --seed={{ pinn1_seed }} {{ pinn1_verbose }} --w_data={{ pinn1_w_data }} {{ pinn1_problem_path }} {{ pinn1_data_path }} {{ pinn1_training_path }}"
+cmd="$pinn_cmd --activation={{ pinn1_activation }} {{ pinn1_debug }} --learning_rate={{ pinn1_learning_rate }} {{ pinn1_load_model }} --max_epochs={{ pinn1_max_epochs }} --n_hid={{ pinn1_n_hid }} --n_layers={{ pinn1_n_layers }} {{ pinn1_nogpu }} --precision={{ pinn1_precision }} --save_model={{ pinn1_save_model }} --seed={{ pinn1_seed }} {{ pinn1_use_constraints }} {{ pinn1_verbose }} --w_data={{ pinn1_w_data }} {{ pinn1_problem_path }} {{ pinn1_data_path }} {{ pinn1_training_path }}"
 echo "cmd=$cmd"
 eval $cmd >& pinn1.out
 
