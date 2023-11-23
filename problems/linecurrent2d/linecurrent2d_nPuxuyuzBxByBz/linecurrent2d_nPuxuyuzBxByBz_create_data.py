@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create data for linecurrent_BxBy.
+"""Create data for linecurrent_nPuxuyuzBxByBz.
 
 Author
 ------
@@ -15,14 +15,13 @@ import argparse
 import numpy as np
 
 # Import project Python modules.
-import problems.linecurrent2d.linecurrent2d_BxBy.linecurrent2d_BxBy as p
+import problems.linecurrent2d.linecurrent2d_nPuxuyuzBxByBz.linecurrent2d_nPuxuyuzBxByBz as p
 
 
 # Program constants
 
 # Program description.
-description = "Create data for linecurrent2d_BxBy problem."
-
+description = "Compute initial conditions for linecurrent_nPuxuyuzBxByBz problem."
 
 def create_command_line_argument_parser():
     """Create the command-line argument parser.
@@ -37,10 +36,6 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
-
-    Raises
-    ------
-    None
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
@@ -58,10 +53,10 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
-    if args.debug:
-        print(f"args = {args}")
     debug = args.debug
     rest = args.rest
+    if debug:
+        print("args = %s" % args)
 
     # Fetch the remaining command-line arguments.
     # They should be in 3 sets of 3:
@@ -91,18 +86,24 @@ def main():
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x} {y_min} {y_max} {n_y}"
     print(header)
-    header = "# t x y Bx By"
+    header = "# t x y n P ux uy uz Bx By Bz"
     print(header)
 
     # Compute the initial conditions at spatial locations.
     # Each line is:
-    # tg[0] x y Bx By
+    # tg[0] x y n P ux uy uz Bx By Bz
     for x in xg:
         for y in yg:
             r = np.sqrt(x**2 + y**2)
+            n = p.n_analytical(tg[0], x, y)
+            P = p.P_analytical(tg[0], x, y)
+            ux = p.ux_analytical(tg[0], x, y)
+            uy = p.uy_analytical(tg[0], x, y)
+            uz = p.uz_analytical(tg[0], x, y)
             Bx = p.Bx_analytical(tg[0], x, y)
             By = p.By_analytical(tg[0], x, y)
-            print(tg[0], x, y, Bx, By)
+            Bz = p.Bz_analytical(tg[0], x, y)
+            print(tg[0], x, y, n, P, ux, uy, uz, Bx, By, Bz)
 
 
 if __name__ == "__main__":
