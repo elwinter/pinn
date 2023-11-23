@@ -392,7 +392,8 @@ def main():
         loss[v]["total"] = []
     loss["aggregate"] = {}
     loss["aggregate"]["residual"] = []
-    loss["aggregate"]["constraint"] = []
+    if use_constraints:
+        loss["aggregate"]["constraint"] = []
     loss["aggregate"]["data"] = []
     loss["aggregate"]["total"] = []
     if debug:
@@ -556,7 +557,10 @@ def main():
                 print(f"L_data = {L_data}", flush=True)
 
             # Compute the weighted aggregate loss function.
-            L = w_res*(L_res + L_constraint) + w_data*L_data
+            if use_constraints:
+                L = w_res*(L_res + L_constraint) + w_data*L_data
+            else:
+                L = w_res*L_res + w_data*L_data
             if debug:
                 print(f"L = {L}", flush=True)
 
@@ -566,7 +570,8 @@ def main():
                 loss[v]["data"].append(L_data_per_model[i].numpy())
                 loss[v]["total"].append(L_per_model[i].numpy())
             loss["aggregate"]["residual"].append(L_res.numpy())
-            loss["aggregate"]["constraint"].append(L_constraint.numpy())
+            if use_constraints:
+                loss["aggregate"]["constraint"].append(L_constraint.numpy())
             loss["aggregate"]["data"].append(L_data.numpy())
             loss["aggregate"]["total"].append(L.numpy())
             if debug:
@@ -596,8 +601,12 @@ def main():
         # --------------------------------------------------------------------
 
         if verbose:
-            print(f"epoch = {epoch}, (L_res, L_constraint, L_data, L) = "
-                  f"({L_res:6e}, {L_constraint:6e}, {L_data:6e}, {L:6e})", flush=True)
+            if use_constraints:
+                print(f"epoch = {epoch}, (L_res, L_constraint, L_data, L) = "
+                    f"({L_res:6e}, {L_constraint:6e}, {L_data:6e}, {L:6e})", flush=True)
+            else:
+                print(f"epoch = {epoch}, (L_res, L_data, L) = "
+                    f"({L_res:6e}, {L_data:6e}, {L:6e})", flush=True)
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
@@ -656,9 +665,10 @@ def main():
     np.savetxt(
         os.path.join(output_dir, "L_res.dat"), loss["aggregate"]["residual"]
     )
-    np.savetxt(
-        os.path.join(output_dir, "L_constraint.dat"), loss["aggregate"]["constraint"]
-    )
+    if use_constraints:
+        np.savetxt(
+            os.path.join(output_dir, "L_constraint.dat"), loss["aggregate"]["constraint"]
+        )
     np.savetxt(
         os.path.join(output_dir, "L_data.dat"), loss["aggregate"]["data"]
     )
