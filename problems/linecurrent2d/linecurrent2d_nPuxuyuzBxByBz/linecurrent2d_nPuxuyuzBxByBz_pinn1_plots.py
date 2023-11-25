@@ -121,10 +121,10 @@ def main():
     L_res = np.loadtxt(path)
     path = os.path.join(results_path, "L_constraint.dat")
     L_constraint = None
+    use_constraints = False
     if os.path.exists(path):
         use_constraints = True
         L_constraint = np.loadtxt(path)
-    L = np.loadtxt(path)
     path = os.path.join(results_path, "L_data.dat")
     L_dat = np.loadtxt(path)
     path = os.path.join(results_path, "L.dat")
