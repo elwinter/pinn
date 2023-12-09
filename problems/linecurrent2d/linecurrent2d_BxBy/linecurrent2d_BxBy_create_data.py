@@ -23,25 +23,6 @@ import problems.linecurrent2d.linecurrent2d_BxBy.linecurrent2d_BxBy as p
 # Program description.
 description = "Create data for linecurrent2d_BxBy problem."
 
-# # Physical constants
-# μ0 = 1.0  # Normalized vacuum permeability
-
-# # Plasma parameters
-# m = 1.0    # Plasma article mass
-# ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
-# n0 = 1.0   # Number density
-# P0 = 1.0   # Pressure
-# u0z = 0.0  # z-component of velocity
-# B0z = 0.0  # z-component of magnetic field
-# I = 1e-3   # Normalized current
-# C1 = μ0*I/(2*np.pi)  # Leading constant in analytical solutions for Bx, By.
-
-# # Define the constant fluid flow field.
-# θ = 60.0  # Angle in degrees clockwise from +y axis
-# u0 = 1.0  # Flow speed
-# u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
-# u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
-
 
 def create_command_line_argument_parser():
     """Create the command-line argument parser.
@@ -110,7 +91,7 @@ def main():
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x} {y_min} {y_max} {n_y}"
     print(header)
-    header = "# x Ψ"
+    header = "# t x y Bx By"
     print(header)
 
     # Compute the initial conditions at spatial locations.

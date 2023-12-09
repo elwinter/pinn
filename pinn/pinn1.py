@@ -131,6 +131,10 @@ def create_command_line_argument_parser():
         help="Seed for random number generator (default: %(default)s)"
     )
     parser.add_argument(
+        "--use_constraints", action="store_true",
+        help="Use constraint equations (if any) (default: %(default)s)."
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
@@ -175,6 +179,7 @@ def main():
     save_model = args.save_model
     seed = args.seed
     verbose = args.verbose
+    use_constraints = args.use_constraints
     w_data = args.w_data
     problem_path = args.problem_path
     data_path = args.data_path
@@ -387,6 +392,8 @@ def main():
         loss[v]["total"] = []
     loss["aggregate"] = {}
     loss["aggregate"]["residual"] = []
+    if use_constraints:
+        loss["aggregate"]["constraint"] = []
     loss["aggregate"]["data"] = []
     loss["aggregate"]["total"] = []
     if debug:
@@ -461,67 +468,110 @@ def main():
             if debug:
                 print(f"G_train_model = {G_train_model}", flush=True)
 
+            # Compute the values of the constraint equations (if any) at all
+            # training points.
+            # NOTE: Constraints are not associated with models.
+            # C_train is a list of Tensor objects.
+            # There are p.n_constraint Tensors in the list (one per
+            # constraint).
+            # Each Tensor has shape (n_train, 1).
+            if use_constraints:
+                C_train = [f(X_train_tf, Y_train_model, dY_dX_train_model)
+                                for f in p.constraints]
+                if debug:
+                    print(f"C_train = {C_train}", flush=True)
+
+            # -----------------------------------------------------------------
+
             # Compute the loss function for the equation residuals at the
             # training points for each model.
-            # L_res_model is a list of Tensor objects.
+            # L_res_per_model is a list of Tensor objects.
             # There are p.n_var Tensors in the list (one per model).
             # Each Tensor has shape () (scalar).
-            L_res_model = [
-                tf.math.sqrt(tf.reduce_sum(G**2)/n_train) for G in G_train_model
+            L_res_per_model = [
+                tf.math.sqrt(tf.reduce_sum(G**2)/n_train)
+                for G in G_train_model
             ]
             if debug:
-                print(f"L_res_model = {L_res_model}", flush=True)
+                print(f"L_res_per_model = {L_res_per_model}", flush=True)
+
+            # Compute the loss function for the constraints (if any) at the
+            # training points.
+            # L_constraint_per_constraint is a list of Tensor objects.
+            # There are p.n_nconstraint Tensors in the list (one per
+            # constraint).
+            # Each Tensor has shape () (scalar).
+            if use_constraints:
+                L_constraint_per_constraint = [
+                    tf.math.sqrt(tf.reduce_sum(C**2)/n_train)
+                    for C in C_train
+                ]
+                if debug:
+                    print(f"L_constraint_per_constraint = {L_constraint_per_constraint}",
+                          flush=True)
 
             # Compute the errors in the predicted values at the data points.
-            # E_data is a list of tf.Tensor objects.
+            # E_data_per_model is a list of tf.Tensor objects.
             # There are p.n_var Tensors in the list.
             # Each Tensor has shape (n_data, 1).
-            E_data = [
+            E_data_per_model = [
                 Y_data_model[i] - tf.reshape(Y_data_tf[:, i], (n_data, 1))
                 for i in range(p.n_var)
             ]
             if debug:
-                print(f"E_data = {E_data}", flush=True)
+                print(f"E_data_per_model = {E_data_per_model}", flush=True)
 
             # Compute the loss functions for the data points for each
             # model.
-            # L_data_model is a list of Tensor objects.
+            # L_data_per_model is a list of Tensor objects.
             # There are p.n_var Tensors in the list (one per model).
             # Each Tensor has shape () (scalar).
-            L_data_model = [
-                tf.math.sqrt(tf.reduce_sum(E**2)/n_data) for E in E_data
+            L_data_per_model = [
+                tf.math.sqrt(tf.reduce_sum(E**2)/n_data) for E in E_data_per_model
             ]
             if debug:
-                print(f"L_data_model = {L_data_model}", flush=True)
+                print(f"L_data_per_model = {L_data_per_model}", flush=True)
 
             # Compute the weighted aggregate loss function per model.
-            L_model = [
-                w_res*L1 + w_data*L2 for (L1, L2) in zip(L_res_model, L_data_model)
+            L_per_model = [
+                w_res*L1 + w_data*L2 for (L1, L2)
+                in zip(L_res_per_model, L_data_per_model)
             ]
             if debug:
-                print(f"L_model = {L_model}", flush=True)
+                print(f"L_per_model = {L_per_model}", flush=True)
 
             # Compute the aggregated residual loss function.
-            L_res = tf.math.reduce_sum(L_res_model)
+            L_res = tf.math.reduce_sum(L_res_per_model)
             if debug:
                 print(f"L_res = {L_res}", flush=True)
 
+            # Compute the aggregated constraint loss function.
+            if use_constraints:
+                L_constraint = tf.math.reduce_sum(L_constraint_per_constraint)
+                if debug:
+                    print(f"L_constraint = {L_constraint}", flush=True)
+
             # Compute the aggregated data loss function.
-            L_data = tf.math.reduce_sum(L_data_model)
+            L_data = tf.math.reduce_sum(L_data_per_model)
             if debug:
                 print(f"L_data = {L_data}", flush=True)
 
             # Compute the weighted aggregate loss function.
-            L = tf.math.reduce_sum(L_model)
+            if use_constraints:
+                L = w_res*(L_res + L_constraint) + w_data*L_data
+            else:
+                L = w_res*L_res + w_data*L_data
             if debug:
                 print(f"L = {L}", flush=True)
 
             # Save the losses for this epoch.
             for (i, v) in enumerate(p.dependent_variable_names):
-                loss[v]["residual"].append(L_res_model[i].numpy())
-                loss[v]["data"].append(L_data_model[i].numpy())
-                loss[v]["total"].append(L_model[i].numpy())
+                loss[v]["residual"].append(L_res_per_model[i].numpy())
+                loss[v]["data"].append(L_data_per_model[i].numpy())
+                loss[v]["total"].append(L_per_model[i].numpy())
             loss["aggregate"]["residual"].append(L_res.numpy())
+            if use_constraints:
+                loss["aggregate"]["constraint"].append(L_constraint.numpy())
             loss["aggregate"]["data"].append(L_data.numpy())
             loss["aggregate"]["total"].append(L.numpy())
             if debug:
@@ -551,8 +601,12 @@ def main():
         # --------------------------------------------------------------------
 
         if verbose:
-            print(f"epoch = {epoch}, (L_res, L_data, L) = "
-                  f"({L_res:6e}, {L_data:6e}, {L:6e})", flush=True)
+            if use_constraints:
+                print(f"epoch = {epoch}, (L_res, L_constraint, L_data, L) = "
+                    f"({L_res:6e}, {L_constraint:6e}, {L_data:6e}, {L:6e})", flush=True)
+            else:
+                print(f"epoch = {epoch}, (L_res, L_data, L) = "
+                    f"({L_res:6e}, {L_data:6e}, {L:6e})", flush=True)
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
@@ -611,6 +665,10 @@ def main():
     np.savetxt(
         os.path.join(output_dir, "L_res.dat"), loss["aggregate"]["residual"]
     )
+    if use_constraints:
+        np.savetxt(
+            os.path.join(output_dir, "L_constraint.dat"), loss["aggregate"]["constraint"]
+        )
     np.savetxt(
         os.path.join(output_dir, "L_data.dat"), loss["aggregate"]["data"]
     )
