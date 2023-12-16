@@ -324,33 +324,50 @@ def main():
 
     # -------------------------------------------------------------------------
 
-    # Create a model for each differential equation.
+    # Create a model for each differential equation, unless "multi" was
+    # requested. If "multi", create a single multi-output network.
     models = []
-    if load_model:
-        if verbose:
-            print(f"Loading trained models from {load_model}.", flush=True)
-        for (i, v) in enumerate(p.dependent_variable_names):
+    if multi:
+        if load_model:
             if verbose:
-                print(f"Loading model for {v}.", flush=True)
-            path = os.path.join(load_model, f"model_{v}")
-            if debug:
-                print(f"path = {path}", flush=True)
-            model = tf.keras.models.load_model(path)
+                print("Loading trained multi-output model.", flush=True)
+            raise TypeError(
+                "Loading trained multi-output model not implemented!"
+            )
+        else:
+            if verbose:
+                print("Creating untrained multi-output model.", flush=True)
+            model = common.build_multi_output_model(n_layers, H, activation,
+                                                    p.n_var)
             if debug:
                 print(f"model = {model}", flush=True)
             models.append(model)
     else:
-        if verbose:
-            print("Creating untrained models.", flush=True)
-        for (i, v) in enumerate(p.dependent_variable_names):
+        if load_model:
             if verbose:
-                print(f"Creating model for {v}.", flush=True)
-            model = common.build_model(n_layers, H, activation)
-            if debug:
-                print(f"model = {model}", flush=True)
-            models.append(model)
-    if debug:
-        print(f"models = {models}", flush=True)
+                print(f"Loading trained models from {load_model}.", flush=True)
+            for (i, v) in enumerate(p.dependent_variable_names):
+                if verbose:
+                    print(f"Loading model for {v}.", flush=True)
+                path = os.path.join(load_model, f"model_{v}")
+                if debug:
+                    print(f"path = {path}", flush=True)
+                model = tf.keras.models.load_model(path)
+                if debug:
+                    print(f"model = {model}", flush=True)
+                models.append(model)
+        else:
+            if verbose:
+                print("Creating untrained models.", flush=True)
+            for (i, v) in enumerate(p.dependent_variable_names):
+                if verbose:
+                    print(f"Creating model for {v}.", flush=True)
+                model = common.build_model(n_layers, H, activation)
+                if debug:
+                    print(f"model = {model}", flush=True)
+                models.append(model)
+        if debug:
+            print(f"models = {models}", flush=True)
 
     # -------------------------------------------------------------------------
 
@@ -440,7 +457,13 @@ def main():
                 # Y_train_model is a list of tf.Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_train, 1).
-                Y_train_model = [model(X_train_tf) for model in models]
+                Y_train_model = []
+                if multi:
+                    Y_multi = models[0](X_train_tf)
+                    Y_train_model = [tf.reshape(Y_multi[:, i], (n_train, 1))
+                                     for i in range(p.n_var)]
+                else:
+                    Y_train_model = [model(X_train_tf) for model in models]
                 if debug:
                     print(f"Y_train_model = {Y_train_model}", flush=True)
 
@@ -450,7 +473,13 @@ def main():
                 # Y_data_model is a list of tf.Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_data, 1).
-                Y_data_model = [model(X_data_tf) for model in models]
+                Y_data_model = []
+                if multi:
+                    Y_multi_data = models[0](X_data_tf)
+                    Y_data_model = [tf.reshape(Y_multi_data[:, i], (n_data, 1))
+                                     for i in range(p.n_var)]
+                else:
+                    Y_data_model = [model(X_data_tf) for model in models]
                 if debug:
                     print(f"Y_data_model = {Y_data_model}", flush=True)
 
@@ -460,7 +489,8 @@ def main():
             # dY_dX_train_model is a list of tf.Tensor objects.
             # There are p.n_var Tensors in the list (one per model).
             # Each Tensor has shape (n_train, p.n_dim).
-            dY_dX_train_model = [tape1.gradient(Y, X_train_tf) for Y in Y_train_model]
+            dY_dX_train_model = [tape1.gradient(Y, X_train_tf)
+                                 for Y in Y_train_model]
             if debug:
                 print(f"dY_dX_train_model = {dY_dX_train_model}", flush=True)
 
@@ -469,7 +499,8 @@ def main():
             # G_train_model is a list of Tensor objects.
             # There are p.n_var Tensors in the list (one per model).
             # Each Tensor has shape (n_train, 1).
-            G_train_model = [f(X_train_tf, Y_train_model, dY_dX_train_model) for f in p.de]
+            G_train_model = [f(X_train_tf, Y_train_model, dY_dX_train_model)
+                             for f in p.de]
             if debug:
                 print(f"G_train_model = {G_train_model}", flush=True)
 
@@ -482,7 +513,7 @@ def main():
             # Each Tensor has shape (n_train, 1).
             if use_constraints:
                 C_train = [f(X_train_tf, Y_train_model, dY_dX_train_model)
-                                for f in p.constraints]
+                           for f in p.constraints]
                 if debug:
                     print(f"C_train = {C_train}", flush=True)
 
@@ -491,7 +522,7 @@ def main():
             # Compute the loss function for the equation residuals at the
             # training points for each model.
             # L_res_per_model is a list of Tensor objects.
-            # There are p.n_var Tensors in the list (one per model).
+            # There are p.n_var Tensors in the list (one per equation).
             # Each Tensor has shape () (scalar).
             L_res_per_model = [
                 tf.math.sqrt(tf.reduce_sum(G**2)/n_train)
