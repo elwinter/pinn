@@ -26,7 +26,7 @@ import tensorflow as tf
 from pinn import common
 
 
-# Program constants
+# Program constants                                             
 
 # Program description
 DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
@@ -106,6 +106,10 @@ def create_command_line_argument_parser():
         help="Maximum number of training epochs (default: %(default)s)"
     )
     parser.add_argument(
+        "--multi", action="store_true",
+        help="Use a single multi-output network (default: %(default)s)"
+    )
+    parser.add_argument(
         "--n_hid", type=int, default=DEFAULT_N_HID,
         help="Number of hidden nodes per layer (default: %(default)s)"
     )
@@ -172,6 +176,7 @@ def main():
     learning_rate = args.learning_rate
     load_model = args.load_model
     max_epochs = args.max_epochs
+    multi = args.multi
     H = args.n_hid
     n_layers = args.n_layers
     nogpu = args.nogpu

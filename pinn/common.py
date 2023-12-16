@@ -111,6 +111,7 @@ def save_hyperparameters(args, output_dir):
         f.write(f"learning_rate = {repr(args.learning_rate)}\n")
         f.write(f"load_model = {repr(args.load_model)}\n")
         f.write(f"max_epochs = {repr(args.max_epochs)}\n")
+        f.write(f"multi = {repr(args.multi)}\n")
         f.write(f"n_hid = {repr(args.n_hid)}\n")
         f.write(f"n_layers = {repr(args.n_layers)}\n")
         f.write(f"nogpu = {repr(args.nogpu)}\n")
