@@ -19,7 +19,6 @@ import shutil
 import sys
 
 # Import 3rd-party modules.
-import git
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.client import device_lib
