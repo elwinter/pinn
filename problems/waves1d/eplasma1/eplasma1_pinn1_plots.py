@@ -207,7 +207,8 @@ def main():
     models = []
     if multi:
         path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-                            "model_multi")
+                            "model_n1")
+                            # "model_multi")   THIS IS WHAT IT SHOULD BE!
         model = tf.keras.models.load_model(path)
         models.append(model)
     else:
