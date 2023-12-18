@@ -646,12 +646,18 @@ def main():
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
-            for (i, model) in enumerate(models):
+            if multi:
                 path = os.path.join(
-                    output_dir, "models", f"{epoch:06d}",
-                    f"model_{p.dependent_variable_names[i]}"
+                    output_dir, "models", f"{epoch:06d}", "model_multi"
                 )
                 model.save(path)
+            else:
+                for (i, model) in enumerate(models):
+                    path = os.path.join(
+                        output_dir, "models", f"{epoch:06d}",
+                        f"model_{p.dependent_variable_names[i]}"
+                    )
+                    model.save(path)
 
         if debug:
             print(f"Ending epoch {epoch}.", flush=True)
