@@ -41,6 +41,6 @@ echo "cmd=$cmd"
 eval $cmd >& pinn1.out
 
 # Create standard post-processing graphics.
-cmd="{{ pinn1_plot_cmd }} {{ pinn1_debug }} {{ pinn1_verbose}} {{ pinn1_results_dir }}"
+cmd="{{ pinn1_plot_cmd }} {{ pinn1_debug }} {{ pinn1_multi }} {{ pinn1_verbose}} {{ pinn1_results_dir }}"
 echo "cmd=$cmd"
 eval $cmd >& pinn1_plots.out
