@@ -69,6 +69,10 @@ def create_command_line_argument_parser():
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
+        "--multi", action="store_true",
+        help="Use a single multi-output network (default: %(default)s)"
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
@@ -89,6 +93,7 @@ def main():
     if args.debug:
         print(f"args = {args}", flush=True)
     debug = args.debug
+    multi = args.multi
     verbose = args.verbose
     results_path = args.results_path
 
@@ -200,11 +205,17 @@ def main():
 
     # Load the trained model for each variable.
     models = []
-    for variable_name in p.dependent_variable_names:
+    if multi:
         path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-                            f"model_{variable_name}")
+                            "model_multi")
         model = tf.keras.models.load_model(path)
         models.append(model)
+    else:
+        for variable_name in p.dependent_variable_names:
+            path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                                f"model_{variable_name}")
+            model = tf.keras.models.load_model(path)
+            models.append(model)
 
     # ------------------------------------------------------------------------
 
@@ -242,8 +253,12 @@ def main():
         ylabel = p.dependent_variable_labels[iv]
         frame_dir = os.path.join(output_path, f"frames_{variable_name}")
         os.mkdir(frame_dir)
-        model = models[iv]
-        Y_trained = model(X_train).numpy().reshape(nt, nx)
+        if multi:
+            model = models[0]
+            Y_trained = model(X_train).numpy()[:, iv].reshape(nt, nx)
+        else:
+            model = models[iv]
+            Y_trained = model(X_train).numpy().reshape(nt, nx)
         Y_analytical = p.analytical_solutions[iv](X_train).reshape(nt, nx)
         Y_error = Y_trained - Y_analytical
         frames = []
