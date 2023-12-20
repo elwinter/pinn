@@ -75,6 +75,10 @@ def create_command_line_argument_parser():
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument(
+        "--multi", action="store_true",
+        help="Use a single multi-output network (default: %(default)s)"
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Print verbose output (default: %(default)s)."
     )
@@ -93,6 +97,7 @@ def main():
     # Parse the command-line arguments.
     args = parser.parse_args()
     debug = args.debug
+    multi = args.multi
     verbose = args.verbose
     results_path = args.results_path
     if debug:
@@ -220,11 +225,17 @@ def main():
 
     # Load the trained model for each variable.
     models = []
-    for variable_name in p.dependent_variable_names:
+    if multi:
         path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-                            f"model_{variable_name}")
+                            "model_multi")
         model = tf.keras.models.load_model(path)
         models.append(model)
+    else:
+        for variable_name in p.dependent_variable_names:
+            path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                                f"model_{variable_name}")
+            model = tf.keras.models.load_model(path)
+            models.append(model)
 
     # ------------------------------------------------------------------------
 
@@ -291,8 +302,12 @@ def main():
         ylabel = p.independent_variable_labels[p.iy]
         frame_dir = os.path.join(output_path, f"frames_{variable_name}")
         os.mkdir(frame_dir)
-        model = models[iv]
-        Z_trained = model(X_train).numpy().reshape(nt, nx, ny)
+        if multi:
+            model = models[0]
+            Z_trained = model(X_train).numpy()[:, iv].reshape(nt, nx, ny)
+        else:
+            model = models[iv]
+            Z_trained = model(X_train).numpy().reshape(nt, nx, ny)
         Z_analytical = p.analytical_solutions[iv](
             X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]).reshape(nt, nx, ny)
         Z_error = Z_trained - Z_analytical
