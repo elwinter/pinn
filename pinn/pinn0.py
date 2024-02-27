@@ -134,7 +134,7 @@ def create_command_line_argument_parser():
         help="Path to problem description file."
     )
     parser.add_argument(
-        "data",
+        "data_path",
         help="Path to file containing data points to fit."
     )
     return parser
@@ -210,7 +210,7 @@ def main():
     verbose = args.verbose
     validation = args.validation
     problem_path = args.problem_path
-    data = args.data
+    data_path = args.data_path
     if debug:
         print(f"args = {args}", flush=True)
 
@@ -249,15 +249,15 @@ def main():
               "problem definition.", flush=True)
     common.save_system_information(output_dir)
     common.save_hyperparameters(args, output_dir)
-    common.save_problem_definition(p, output_dir)
+    # common.save_problem_definition(p, output_dir)
 
     # If provided, read and count the additional training data, including
     # boundary conditions.
-    if data:
+    if data_path:
         if verbose:
-            print(f"Reading additional training data from {data}.", flush=True)
+            print(f"Reading additional training data from {data_path}.", flush=True)
         # Shape is (n_data, p.n_dim + p.n_var)
-        XY_data = np.loadtxt(data, dtype=precision)
+        XY_data = np.loadtxt(data_path, dtype=precision)
         if debug:
             print(f"XY_data = {XY_data}", flush=True)
         # If the data shape is 1-D (only one data point), reshape to 2-D,
@@ -302,7 +302,7 @@ def main():
     tf.random.set_seed(seed)
 
     # Convert additional data locations to tf.Variable.
-    if data:
+    if data_path:
         X_data = tf.Variable(X_data)
         if debug:
             print(f"TF Variable of X_data = {X_data}", flush=True)

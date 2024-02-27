@@ -153,19 +153,19 @@ def save_hyperparameters(args, output_dir):
     with open(path, "w") as f:
         f.write(f"activation = {repr(args.activation)}\n")
         f.write(f"learning_rate = {repr(args.learning_rate)}\n")
-        f.write(f"load_model = {repr(args.load_model)}\n")
+        # f.write(f"load_model = {repr(args.load_model)}\n")
         f.write(f"max_epochs = {repr(args.max_epochs)}\n")
-        f.write(f"multi = {repr(args.multi)}\n")
+        # f.write(f"multi = {repr(args.multi)}\n")
         f.write(f"n_hid = {repr(args.n_hid)}\n")
         f.write(f"n_layers = {repr(args.n_layers)}\n")
         f.write(f"nogpu = {repr(args.nogpu)}\n")
         f.write(f"precision = {repr(args.precision)}\n")
         f.write(f"save_model = {repr(args.save_model)}\n")
         f.write(f"seed = {repr(args.seed)}\n")
-        f.write(f"w_data = {repr(args.w_data)}\n")
+        # f.write(f"w_data = {repr(args.w_data)}\n")
         f.write(f"problem_path = {repr(args.problem_path)}\n")
-        f.write(f"data_path = {repr(args.data_path)}\n")
-        f.write(f"training_path = {repr(args.training_path)}\n")
+        # f.write(f"data_path = {repr(args.data_path)}\n")
+        # f.write(f"training_path = {repr(args.training_path)}\n")
     return path
 
 
