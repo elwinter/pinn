@@ -93,7 +93,6 @@ def main():
         print(f"{_Bz} {_fBz}")
 
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     """Begin main program."""
     main()

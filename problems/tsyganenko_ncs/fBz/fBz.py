@@ -60,7 +60,7 @@ n_var = len(dependent_variable_names)
 fBz_empirical = tncs.fBz_empirical
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     print(f"independent_variable_names = {independent_variable_names}")
     print(f"independent_variable_labels = {independent_variable_labels}")
     print(f"n_dim = {n_dim}")
