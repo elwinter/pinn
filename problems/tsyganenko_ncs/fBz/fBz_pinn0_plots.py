@@ -102,7 +102,7 @@ def main():
 
     # Plot the loss history.
     if verbose:
-        print(f"Plotting the loss history got {PROBLEM_NAME}.")
+        print(f"Plotting the loss history for {PROBLEM_NAME}.")
 
     # Load the loss data.
     path = os.path.join(results_path, 'L_data.dat')
