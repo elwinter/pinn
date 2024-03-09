@@ -55,7 +55,6 @@ dependent_variable_labels = [r"$f_{Bz}$"]
 n_var = len(dependent_variable_names)
 
 
-
 # Make the empirical function from the top-level module available in
 # this namespace.
 fBz_empirical = tncs.fBz_empirical
