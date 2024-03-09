@@ -19,34 +19,34 @@ Eric Winter (eric.winter62@gmail.com)
 
 # Import supplemental modules.
 import numpy as np
-# import tensorflow as tf
 
 # Import project modules.
+import problems.tsyganenko_ncs.tsyganenko_ncs as tncs
 
 
 # Names of independent variables.
-independent_variable_names = ["Bz"]
+independent_variable_names = ['Bz']
 
 # Invert the independent variable list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
-iBz = independent_variable_index["Bz"]
+iBz = independent_variable_index['Bz']
 
 # Labels for independent variables (may use LaTex) - use for plots.
-independent_variable_labels = [r"$B_z$ (nT)"]
+independent_variable_labels = [r"$B_z$"]
 
 # Number of problem dimensions (independent variables).
 n_dim = len(independent_variable_names)
 
 # Names of dependent variables.
-dependent_variable_names = ["fBz"]
+dependent_variable_names = ['fBz']
 
 # Invert the dependent variable list to map name to index.
 dependent_variable_index = {}
 for (i, s) in enumerate(dependent_variable_names):
     dependent_variable_index[s] = i
-ifBz = dependent_variable_index["fBz"]
+ifBz = dependent_variable_index['fBz']
 
 # Labels for dependent variables (may use LaTex) - use for plots.
 dependent_variable_labels = [r"$f_{Bz}$"]
@@ -55,30 +55,10 @@ dependent_variable_labels = [r"$f_{Bz}$"]
 n_var = len(dependent_variable_names)
 
 
-# Scale for Bz.
-Bz0 = 5.0  # nT
 
-def fBz_analytical(Bz):
-    """Analytical form for fBz.
-
-    Analytical form for fBz.
-
-    Parameters
-    ----------
-    Bz : np.array of float, shape (n,)
-        Value of Bz for each evaluation point.
-
-    Returns
-    -------
-    fBz : np.array of float, shape (n,)
-        Analytical value of fBz at each evaluation point.
-
-    Raises
-    ------
-    None
-    """
-    fBz = Bz/Bz0
-    return fBz
+# Make the empirical function from the top-level module available in
+# this namespace.
+fBz_empirical = tncs.fBz_empirical
 
 
 if __name__ == "__main__":
@@ -89,9 +69,9 @@ if __name__ == "__main__":
     print(f"dependent_variable_labels = {dependent_variable_labels}")
     print(f"n_var = {n_var}")
 
-    # Test the analytical solution and derivative.
-    Bzmin, Bzmax, nBz = -2.0, 2.0, 11
+    # Test the empirical equation.
+    Bzmin, Bzmax, nBz = -2*tncs.Bz0, 2*tncs.Bz0, 21
     Bz = np.linspace(Bzmin, Bzmax, nBz)
-    fBz = fBz_analytical(Bz)
+    fBz = fBz_empirical(Bz)
     for i in range(nBz):
         print(f"{i} {Bz[i]} {fBz[i]}")
