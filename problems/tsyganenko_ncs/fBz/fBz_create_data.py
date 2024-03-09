@@ -44,10 +44,10 @@ def create_command_line_argument_parser():
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
-        "--debug", "-d", action="store_true",
+        '--debug', '-d', action='store_true',
         help="Print debugging output (default: %(default)s)."
     )
-    parser.add_argument("rest", nargs=argparse.REMAINDER)
+    parser.add_argument('rest', nargs=argparse.REMAINDER)
     return parser
 
 
@@ -65,31 +65,32 @@ def main():
 
     # Fetch the remaining command-line arguments.
     # They should be in a set of 3:
-    # x_min x_max n_x
+    # Bzmin Bzmax nBz
     assert len(rest) == 3
-    xmin = float(rest[0])
-    xmax = float(rest[1])
-    nx = int(rest[2])
+    Bzmin = float(rest[0])
+    Bzmax = float(rest[1])
+    nBz = int(rest[2])
     if debug:
-        print(f"{xmin} <= x <= {xmax}, nx = {nx}")
+        print(f"{Bzmin} <= Bz <= {Bzmax}, nx = {nBz}")
 
     # Print the output header lines.
-    header = "# GRID"
+    header = '# GRID'
     print(header)
-    header = "# Bz"
+    header = f"# {p.independent_variable_names[p.iBz]}"
     print(header)
-    header = f"# {xmin} {xmax} {nx}"
+    header = f"# {Bzmin} {Bzmax} {nBz}"
     print(header)
-    header = "# Bz fBz"
+    header = (
+        f"# {p.independent_variable_names[p.iBz]} "
+        f"{p.dependent_variable_names[p.ifBz]}"
+    )
     print(header)
 
-    # Compute the data for the boundary condition at x = 0.
-    # Each line is:
-    # Bz fBz
-    Bz = np.linspace(xmin, xmax, nx)
-    fBz = p.fBz_analytical(Bz)
-    for bz, fbz in zip(Bz, fBz):
-        print(f"{bz} {fbz}")
+    # Compute the data and send to stdout.
+    Bz = np.linspace(Bzmin, Bzmax, nBz)
+    fBz = p.fBz_empirical(Bz)
+    for _Bz, _fBz in zip(Bz, fBz):
+        print(f"{_Bz} {_fBz}")
 
 
 
