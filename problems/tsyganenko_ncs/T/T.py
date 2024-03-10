@@ -25,16 +25,18 @@ import problems.tsyganenko_ncs.tsyganenko_ncs as tncs
 
 
 # Names of independent variables.
-independent_variable_names = ['fP']
+independent_variable_names = ['fP', 'fBz', 'phi']
 
 # Invert the independent variable list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
 ifP = independent_variable_index['fP']
+ifBz = independent_variable_index['fBz']
+iphi = independent_variable_index['phi']
 
 # Labels for independent variables (may use LaTex) - use for plots.
-independent_variable_labels = [r"$f_P$"]
+independent_variable_labels = [r"$f_P$", r"$f_{Bz}", r"$\phi$"]
 
 # Number of problem dimensions (independent variables).
 n_dim = len(independent_variable_names)
