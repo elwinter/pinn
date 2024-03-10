@@ -44,10 +44,10 @@ def create_command_line_argument_parser():
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
-        "--debug", "-d", action="store_true",
+        '--debug', '-d', action='store_true',
         help="Print debugging output (default: %(default)s)."
     )
-    parser.add_argument("rest", nargs=argparse.REMAINDER)
+    parser.add_argument('rest', nargs=argparse.REMAINDER)
     return parser
 
 
@@ -65,33 +65,34 @@ def main():
 
     # Fetch the remaining command-line arguments.
     # They should be in a set of 3:
-    # x_min x_max n_x
+    # Pmin Pmax nP
     assert len(rest) == 3
-    xmin = float(rest[0])
-    xmax = float(rest[1])
-    nx = int(rest[2])
+    Pmin = float(rest[0])
+    Pmax = float(rest[1])
+    nP = int(rest[2])
     if debug:
-        print(f"{xmin} <= x <= {xmax}, nx = {nx}")
+        print(f"{Pmin} <= P <= {Pmax}, nx = {nP}")
 
     # Print the output header lines.
-    header = "# GRID"
+    header = '# GRID'
     print(header)
-    header = "# P"
+    header = f"# {p.independent_variable_names[p.iP]}"
     print(header)
-    header = f"# {xmin} {xmax} {nx}"
+    header = f"# {Pmin} {Pmax} {nP}"
     print(header)
-    header = "# P fP"
+    header = (
+        f"# {p.independent_variable_names[p.iP]} "
+        f"{p.dependent_variable_names[p.ifP]}"
+    )
     print(header)
 
-    # Compute the data for the boundary condition at x = 0.
-    # Each line is:
-    # P fP
-    P = np.linspace(xmin, xmax, nx)
-    fP = p.fP_analytical(P)
-    for P, fP in zip(P, fP):
-        print(f"{P} {fP}")
+    # Compute the data and send to stdout.
+    P = np.linspace(Pmin, Pmax, nP)
+    fP = p.fP_empirical(P)
+    for _P, _fP in zip(P, fP):
+        print(f"{_P} {_fP}")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     """Begin main program."""
     main()
