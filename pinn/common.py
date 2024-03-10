@@ -226,8 +226,8 @@ def save_system_information(output_dir):
         f.write('Available TensorFlow devices: '
                 f"{device_lib.list_local_devices()}\n")
         f.write(f"conda environment: {os.environ['CONDA_DEFAULT_ENV']}\n")
-        f.write(f"Git branch: {get_git_branch()}")
-        f.write(f"Latest git hash: {get_git_hash()}")
+        f.write(f"Git branch: {get_git_branch()}\n")
+        f.write(f"Latest git hash: {get_git_hash()}\n")
     return path
 
 
