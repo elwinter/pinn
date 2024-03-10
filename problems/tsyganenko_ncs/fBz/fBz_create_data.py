@@ -71,7 +71,7 @@ def main():
     Bzmax = float(rest[1])
     nBz = int(rest[2])
     if debug:
-        print(f"{Bzmin} <= Bz <= {Bzmax}, nx = {nBz}")
+        print(f"{Bzmin} <= Bz <= {Bzmax}, nBz = {nBz}")
 
     # Print the output header lines.
     header = '# GRID'

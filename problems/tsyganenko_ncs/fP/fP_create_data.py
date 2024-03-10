@@ -71,7 +71,7 @@ def main():
     Pmax = float(rest[1])
     nP = int(rest[2])
     if debug:
-        print(f"{Pmin} <= P <= {Pmax}, nx = {nP}")
+        print(f"{Pmin} <= P <= {Pmax}, nP = {nP}")
 
     # Print the output header lines.
     header = '# GRID'
