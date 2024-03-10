@@ -21,7 +21,7 @@ import problems.tsyganenko_ncs.fP.fP as p
 # Program constants
 
 # Program description.
-description = "Create data for fP problem."
+description = 'Create data for fP problem.'
 
 
 def create_command_line_argument_parser():
