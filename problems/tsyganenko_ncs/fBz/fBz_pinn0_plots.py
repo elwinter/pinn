@@ -105,8 +105,8 @@ def main():
         print(f"Plotting the loss history for {PROBLEM_NAME}.")
 
     # Load the loss data.
-    path = os.path.join(results_path, 'L_data.dat')
-    L_data = np.loadtxt(path)
+    path = os.path.join(results_path, 'L.dat')
+    L = np.loadtxt(path)
 
     # Specify figure settings.
     figsize = (6.4, 4.8)  # This is the matplolib default.
@@ -123,17 +123,17 @@ def main():
     ax = fig.add_subplot(gs[0])
     ax.grid()
     ax.set_xlabel('Epoch')
-    ax.set_xlim([0, L_data.size])
+    ax.set_xlim([0, L.size])
     ax.set_ylabel("$L$")
     ax.set_ylim([1e-3, 10.0])
     ax.grid(visible=True)
 
     # Plot the data, then add the legend.
-    ax.semilogy(L_data, label="$L_{data}$")
+    ax.semilogy(L, label="$L$")
     ax.legend()
 
     # Save the plot to a PNG file.
-    path = os.path.join(output_path, 'L_data.png')
+    path = os.path.join(output_path, 'L.png')
     fig.savefig(path)
     plt.close(fig)
     if verbose:
@@ -162,7 +162,7 @@ def main():
     # Load the trained model for each variable.
     models = []
     for variable_name in p.dependent_variable_names:
-        path = os.path.join(results_path, 'models', f"{last_model_epoch:06d}",
+        path = os.path.join(results_path, 'models', f"{last_model_epoch}",
                             f"model_{variable_name}")
         model = tf.keras.models.load_model(path)
         models.append(model)

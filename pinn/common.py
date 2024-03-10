@@ -16,7 +16,7 @@ Eric Winter (eric.winter62@gmail.com)
 # Import standard modules.
 import argparse
 import datetime
-# import glob
+import glob
 import importlib
 import os
 import platform
@@ -427,43 +427,47 @@ def build_model(n_layers, n_hidden, activation):
 #     return model
 
 
-# def find_last_epoch(results_path):
-#     """Find the last epoch for a model in the results directory.
+def find_last_epoch(results_path):
+    """Find the last epoch for a model in the results directory.
 
-#     Find the last epoch for a model in the results directory.
+    Find the last epoch for a model in the results directory.
 
-#     Parameters
-#     ----------
-#     results_path : str
-#         Path to results directory.
+    Parameters
+    ----------
+    results_path : str
+        Path to results directory.
 
-#     Returns
-#     -------
-#     last_epoch : int
-#         Number for last epoch found in results directory.
-#     """
-#     # Save the current directory.
-#     original_directory = os.getcwd()
+    Returns
+    -------
+    last_epoch : int
+        Number for last epoch found in results directory.
 
-#     # Construct the path to the saved models.
-#     models_directory = os.path.join(results_path, "models")
+    Raises
+    ------
+    None
+    """
+    # Save the current directory.
+    original_directory = os.getcwd()
 
-#     # Move to the saved models directory.
-#     os.chdir(models_directory)
+    # Construct the path to the saved models.
+    models_directory = os.path.join(results_path, 'models')
 
-#     # Make a list of all subdirectories with names starting with digits.
-#     # These digits represent epoch numbers at which the models were saved.
-#     epoch_directories = glob.glob("[0-9]*")
+    # Move to the saved models directory.
+    os.chdir(models_directory)
 
-#     # Return to the original directory.
-#     os.chdir(original_directory)
+    # Make a list of all subdirectories with names starting with digits.
+    # These digits represent epoch numbers at which the models were saved.
+    epoch_directories = glob.glob("[0-9]*")
 
-#     # Find the largest epoch number.
-#     epochs = [int(s) for s in epoch_directories]
-#     last_epoch = max(epochs)
+    # Return to the original directory.
+    os.chdir(original_directory)
 
-#     # Return the largest epoch number.
-#     return last_epoch
+    # Find the largest epoch number.
+    epochs = [int(s) for s in epoch_directories]
+    last_epoch = max(epochs)
+
+    # Return the largest epoch number.
+    return last_epoch
 
 # ----------------------------------------------------------------------------
 
