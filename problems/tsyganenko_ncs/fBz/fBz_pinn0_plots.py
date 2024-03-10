@@ -10,7 +10,6 @@ Eric Winter (eric.winter62@gmail.com)
 """
 
 # Import standard modules.
-import argparse
 from importlib import import_module
 import os
 import sys
@@ -22,7 +21,7 @@ import numpy as np
 import tensorflow as tf
 
 # Import project modules.
-import pinn.common
+from pinn import common
 
 
 # Program constants
@@ -51,15 +50,7 @@ def create_command_line_argument_parser():
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
     """
-    parser = argparse.ArgumentParser(DESCRIPTION)
-    parser.add_argument(
-        '--debug', '-d', action="store_true",
-        help="Print debugging output (default: %(default)s)."
-    )
-    parser.add_argument(
-        '--verbose', '-v', action="store_true",
-        help="Print verbose output (default: %(default)s)."
-    )
+    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
     parser.add_argument(
         'results_path',
         help='Path to directory containing results to plot.'
@@ -157,7 +148,7 @@ def main():
         nBz = int(fields[2])
 
     # Find the epoch of the last trained model.
-    last_model_epoch = pinn.common.find_last_epoch(results_path)
+    last_model_epoch = common.find_last_epoch(results_path)
 
     # Load the trained model for each variable.
     models = []

@@ -10,7 +10,6 @@ Eric Winter (eric.winter62@gmail.com)
 """
 
 # Import standard modules.
-import argparse
 from importlib import import_module
 import os
 import sys
@@ -22,7 +21,7 @@ import numpy as np
 import tensorflow as tf
 
 # Import project modules.
-import pinn.common
+from pinn import common
 
 
 # Program constants
@@ -51,15 +50,7 @@ def create_command_line_argument_parser():
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
     """
-    parser = argparse.ArgumentParser(DESCRIPTION)
-    parser.add_argument(
-        '--debug', '-d', action="store_true",
-        help="Print debugging output (default: %(default)s)."
-    )
-    parser.add_argument(
-        '--verbose', '-v', action="store_true",
-        help="Print verbose output (default: %(default)s)."
-    )
+    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
     parser.add_argument(
         'results_path',
         help='Path to directory containing results to plot.'
@@ -105,8 +96,8 @@ def main():
         print(f"Plotting the loss history for {PROBLEM_NAME}.")
 
     # Load the loss data.
-    path = os.path.join(results_path, 'L_data.dat')
-    L_data = np.loadtxt(path)
+    path = os.path.join(results_path, 'L.dat')
+    L = np.loadtxt(path)
 
     # Specify figure settings.
     figsize = (6.4, 4.8)  # This is the matplolib default.
@@ -123,17 +114,17 @@ def main():
     ax = fig.add_subplot(gs[0])
     ax.grid()
     ax.set_xlabel('Epoch')
-    ax.set_xlim([0, L_data.size])
+    ax.set_xlim([0, L.size])
     ax.set_ylabel("$L$")
     ax.set_ylim([1e-3, 10.0])
     ax.grid(visible=True)
 
     # Plot the data, then add the legend.
-    ax.semilogy(L_data, label="$L_{data}$")
+    ax.semilogy(L, label="$L$")
     ax.legend()
 
     # Save the plot to a PNG file.
-    path = os.path.join(output_path, 'L_data.png')
+    path = os.path.join(output_path, 'L.png')
     fig.savefig(path)
     plt.close(fig)
     if verbose:
@@ -157,12 +148,12 @@ def main():
         nP = int(fields[2])
 
     # Find the epoch of the last trained model.
-    last_model_epoch = pinn.common.find_last_epoch(results_path)
+    last_model_epoch = common.find_last_epoch(results_path)
 
     # Load the trained model for each variable.
     models = []
     for variable_name in p.dependent_variable_names:
-        path = os.path.join(results_path, 'models', f"{last_model_epoch:06d}",
+        path = os.path.join(results_path, 'models', f"{last_model_epoch}",
                             f"model_{variable_name}")
         model = tf.keras.models.load_model(path)
         models.append(model)

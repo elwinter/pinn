@@ -9,19 +9,19 @@ eric.winter62@gmail.com
 
 
 # Import standard Python modules.
-import argparse
 
 # Import supplemental Python modules.
 import numpy as np
 
 # Import project Python modules.
+from pinn import common
 import problems.tsyganenko_ncs.fP.fP as p
 
 
 # Program constants
 
 # Program description.
-description = 'Create data for fP problem.'
+DESCRIPTION = 'Create data for fP problem.'
 
 
 def create_command_line_argument_parser():
@@ -42,12 +42,19 @@ def create_command_line_argument_parser():
     ------
     None
     """
-    parser = argparse.ArgumentParser(description)
+    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
     parser.add_argument(
-        '--debug', '-d', action='store_true',
-        help="Print debugging output (default: %(default)s)."
+        'Pmin', type=float,
+        help='Minimum value for P (nPa)'
     )
-    parser.add_argument('rest', nargs=argparse.REMAINDER)
+    parser.add_argument(
+        'Pmax', type=float,
+        help='Maximum value for P (nPa)'
+    )
+    parser.add_argument(
+        'nP', type=int,
+        help='Number of P steps'
+    )
     return parser
 
 
@@ -61,17 +68,10 @@ def main():
     if args.debug:
         print(f"args = {args}")
     debug = args.debug
-    rest = args.rest
-
-    # Fetch the remaining command-line arguments.
-    # They should be in a set of 3:
-    # Pmin Pmax nP
-    assert len(rest) == 3
-    Pmin = float(rest[0])
-    Pmax = float(rest[1])
-    nP = int(rest[2])
-    if debug:
-        print(f"{Pmin} <= P <= {Pmax}, nP = {nP}")
+    verbose = args.verbose
+    Pmin = args.Pmin
+    Pmax = args.Pmax
+    nP = args.nP
 
     # Print the output header lines.
     header = '# GRID'
