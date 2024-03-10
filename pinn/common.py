@@ -254,9 +254,12 @@ def get_git_branch():
     ------
     None
     """
+    cwd = os.getcwd()
+    os.chdir(os.environ['PINN_ROOT'])
     cmd = 'git branch'
     cproc = subprocess.run(cmd, shell=True, check=True, capture_output=True)
     git_branch = cproc.stdout.rstrip()
+    os.chdir(cwd)
     return git_branch
 
 
@@ -278,9 +281,12 @@ def get_git_hash():
     ------
     None
     """
+    cwd = os.getcwd()
+    os.chdir(os.environ['PINN_ROOT'])
     cmd = 'git rev-parse HEAD'
     cproc = subprocess.run(cmd, shell=True, check=True, capture_output=True)
     git_hash = cproc.stdout.rstrip()
+    os.chdir(cwd)
     return git_hash
 
 
