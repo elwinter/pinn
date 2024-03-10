@@ -21,21 +21,20 @@ Eric Winter (eric.winter62@gmail.com)
 import numpy as np
 
 # Import project modules.
+import problems.tsyganenko_ncs.tsyganenko_ncs as tncs
 
 
 # Names of independent variables.
-independent_variable_names = ['fP', 'fBz', 'phi']
+independent_variable_names = ['fP']
 
 # Invert the independent variable list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
 ifP = independent_variable_index['fP']
-ifBz = independent_variable_index['fBz']
-iphi = independent_variable_index['phi']
 
 # Labels for independent variables (may use LaTex) - use for plots.
-independent_variable_labels = ["$f_P$", "$f_{Bz}$", r"$\phi$"]
+independent_variable_labels = [r"$f_P$"]
 
 # Number of problem dimensions (independent variables).
 n_dim = len(independent_variable_names)
@@ -50,45 +49,18 @@ for (i, s) in enumerate(dependent_variable_names):
 iT = dependent_variable_index['T']
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = ["$T$"]
+dependent_variable_labels = [r"$T$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
 
 
-# Empirical constants for T equation, and RMS mean absolute deviation
-T0, T0_rms = 0.29, 0.02
-T1, T1_rms = 0.18, 0.08
+# Make the empirical function from the top-level module available in
+# this namespace.
+T_empirical = tncs.T_empirical
 
 
-def T_analytical(fP, fBz, phi):
-    """Analytical form for T.
-
-    Analytical form for T.
-
-    Parameters
-    ----------
-    fp : np.array of float, shape (n,)
-        Values of fp for each evaluation point.
-    fBz : np.array of float, shape (n,)
-        Values of fBz for each evaluation point.
-    phi : np.array of float, shape (n,)
-        Values of phi for each evaluation point.
-
-    Returns
-    -------
-    T : np.array of float, shape (n,)
-        Analytical value of T at each evaluation point.
-
-    Raises
-    ------
-    None
-    """
-    T = T0 + T1*fP
-    return T
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     print(f"independent_variable_names = {independent_variable_names}")
     print(f"independent_variable_labels = {independent_variable_labels}")
     print(f"n_dim = {n_dim}")
@@ -96,14 +68,13 @@ if __name__ == "__main__":
     print(f"dependent_variable_labels = {dependent_variable_labels}")
     print(f"n_var = {n_var}")
 
-    # Test the analytical solution.
-    n = 11
-    fPmin, fPmax, nfP = -2.0, 2.0, n
+    # Test the empirical equation.
+    fPmin, fPmax, nfP = -1.0, 2.0, 21
+    fBz_ = 0.0
+    phi_ = 0.0
     fP = np.linspace(fPmin, fPmax, nfP)
-    fBzmin, fBzmax, nfBz = -2.0, 2.0, n
-    fBz = np.linspace(fBzmin, fBzmax, nfBz)
-    phimin, phimax, nphi = 0.0, 2*np.pi, n
-    phi = np.linspace(phimin, phimax, nphi)
-    T = T_analytical(fP, fBz, phi)
-    for i in range(n):
-        print(f"{i} {fP[i]} {fBz[i]} {phi[i]} {T[i]}")
+    fBz = np.full(fP.shape, fBz_)
+    phi = np.full(fP.shape, phi_)
+    T = T_empirical(fP, fBz, phi)
+    for i in range(nfP):
+        print(f"{i} {fP[i]} {T[i]}")
