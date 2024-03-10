@@ -76,11 +76,6 @@ def main():
 
     # Configure TensorFlow.
 
-    # Set the random number seed for reproducibility.
-    if verbose:
-        print(f"Seeding Tensorflow random number generator with {seed}.")
-    tf.random.set_seed(seed)
-
     # If requested, disable TensorFlow use of GPU.
     if nogpu:
         if verbose:
@@ -91,6 +86,11 @@ def main():
     if verbose:
         print(f"Setting TensorFlow precision to {precision}.")
     tf.keras.backend.set_floatx(precision)
+
+    # Set the random number seed for reproducibility.
+    if verbose:
+        print(f"Seeding Tensorflow random number generator with {seed}.")
+    tf.random.set_seed(seed)
 
     # ------------------------------------------------------------------------
 
