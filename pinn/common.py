@@ -3,6 +3,10 @@
 This module provides a set of standard functions used by all of the programs
 in the pinn package.
 
+Notes on code:
+
+* cproc = generic CompletedProcess object from subprocess,run()
+
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
@@ -10,162 +14,180 @@ Eric Winter (eric.winter62@gmail.com)
 
 
 # Import standard modules.
+import argparse
 import datetime
-import glob
+# import glob
 import importlib
 import os
 import platform
-import shutil
+import subprocess
 import sys
 
-# Import 3rd-party modules.
+# Import supplemental modules.
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 
 
-# Module constants
+# ----------------------------------------------------------------------------
 
-# Name of file to hold the system information report.
-system_information_file = "system_information.txt"
-
-# Name of file to hold the network hyperparameters, as an importable Python
-# module.
-hyperparameter_file = "hyperparameters.py"
-
-# Initial parameter ranges
-w0_range = [-0.1, 0.1]  # Hidden layer weights
-u0_range = [-0.1, 0.1]  # Hidden layer biases
-v0_range = [-0.1, 0.1]  # Output layer weights
+# Command-line utilities
 
 
-def build_model(n_layers, n_hidden, activation):
-    """Build a multi-layer neural network model.
+def create_minimal_command_line_argument_parser(description=''):
+    """Create a minimal command-line argument parser.
 
-    Build a fully-connected, multi-layer neural network with single output.
-    Each layer will have H hidden nodes. Each hidden node has weights and
-    a bias, and uses the specified activation function.
-
-    The number of inputs is determined when the network is first used.
+    Create a minimal command-line argument parser.
 
     Parameters
     ----------
-    n_layers : int
-        Number of hidden layers to create.
-    n_hidden : int
-        Number of nodes to use in each hidden layer.
-    activation : str
-        Name of activation function (from TensorFlow) to use.
+    None
 
     Returns
     -------
-    model : tf.keras.Sequential
-        The neural network.
-    """
-    layers = []
-    for _ in range(n_layers):
-        hidden_layer = tf.keras.layers.Dense(
-            units=n_hidden, use_bias=True,
-            activation=tf.keras.activations.deserialize(activation),
-            kernel_initializer=tf.keras.initializers.RandomUniform(*w0_range),
-            bias_initializer=tf.keras.initializers.RandomUniform(*u0_range)
-        )
-        layers.append(hidden_layer)
-    output_layer = tf.keras.layers.Dense(
-        units=1,
-        activation=tf.keras.activations.linear,
-        kernel_initializer=tf.keras.initializers.RandomUniform(*v0_range),
-        use_bias=False,
-    )
-    layers.append(output_layer)
-    model = tf.keras.Sequential(layers)
-    return model
-
-
-def build_multi_output_model(n_layers, n_hidden, activation, n_out):
-    """Build a multi-output, multi-layer neural network model.
-
-    Build a fully-connected, multi-layer neural network with multiple outputs.
-    Each layer will have H hidden nodes. Each hidden node has weights and
-    a bias, and uses the specified activation function.
-
-    The number of inputs is determined when the network is first used.
-
-    Parameters
-    ----------
-    n_layers : int
-        Number of hidden layers to create.
-    n_hidden : int
-        Number of nodes to use in each hidden layer.
-    activation : str
-        Name of activation function (from TensorFlow) to use.
-    n_out : int
-        Number of network outputs
-
-    Returns
-    -------
-    model : tf.keras.Sequential
-        The neural network.
-    """
-    layers = []
-    for _ in range(n_layers):
-        hidden_layer = tf.keras.layers.Dense(
-            units=n_hidden, use_bias=True,
-            activation=tf.keras.activations.deserialize(activation),
-            kernel_initializer=tf.keras.initializers.RandomUniform(*w0_range),
-            bias_initializer=tf.keras.initializers.RandomUniform(*u0_range)
-        )
-        layers.append(hidden_layer)
-    output_layer = tf.keras.layers.Dense(
-        units=n_out,
-        activation=tf.keras.activations.linear,
-        kernel_initializer=tf.keras.initializers.RandomUniform(*v0_range),
-        use_bias=False,
-    )
-    layers.append(output_layer)
-    model = tf.keras.Sequential(layers)
-    return model
-
-
-def save_hyperparameters(args, output_dir):
-    """Save the neural network hyperparameters.
-
-    Print a record of the hyperparameters of the neural network in the
-    specified directory, as an importable python module.
-
-    Parameters
-    ----------
-    args : dict
-        Dictionary of command-line arguments.
-    output_dir : str
-        Path to directory to contain the report.
-
-    Returns
-    -------
-    path : str
-        Path to hyperparameter file.
+    parser : argparse.ArgumentParser
+        Parser for command-line arguments.
 
     Raises
     ------
     None
     """
-    path = os.path.join(output_dir, hyperparameter_file)
-    with open(path, "w") as f:
-        f.write(f"activation = {repr(args.activation)}\n")
-        f.write(f"learning_rate = {repr(args.learning_rate)}\n")
-        # f.write(f"load_model = {repr(args.load_model)}\n")
-        f.write(f"max_epochs = {repr(args.max_epochs)}\n")
-        # f.write(f"multi = {repr(args.multi)}\n")
-        f.write(f"n_hid = {repr(args.n_hid)}\n")
-        f.write(f"n_layers = {repr(args.n_layers)}\n")
-        f.write(f"nogpu = {repr(args.nogpu)}\n")
-        f.write(f"precision = {repr(args.precision)}\n")
-        f.write(f"save_model = {repr(args.save_model)}\n")
-        f.write(f"seed = {repr(args.seed)}\n")
-        # f.write(f"w_data = {repr(args.w_data)}\n")
-        f.write(f"problem_path = {repr(args.problem_path)}\n")
-        # f.write(f"data_path = {repr(args.data_path)}\n")
-        # f.write(f"training_path = {repr(args.training_path)}\n")
+    parser = argparse.ArgumentParser(description)
+    parser.add_argument(
+        '--debug', '-d', action='store_true',
+        help="Print debugging output (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--verbose', '-v', action='store_true',
+        help="Print verbose output (default: %(default)s)."
+    )
+    return parser
+
+
+# Defaults for neural network command-line options
+DEFAULT_ACTIVATION = 'sigmoid'
+DEFAULT_LEARNING_RATE = 0.01
+DEFAULT_N_LAYERS = 1
+DEFAULT_N_HID = 10
+DEFAULT_MAX_EPOCHS = 100
+DEFAULT_TENSORFLOW_PRECISION = 'float32'
+DEFAULT_SEED = 0
+
+# Default model save interval (in epochs) for saving the model.
+# 0 = do not save model
+# -1 = only save at end
+# n > 0: Save after every n epochs.
+DEFAULT_SAVE_MODEL = -1
+
+
+def create_neural_network_command_line_argument_parser(description=''):
+    """Create a command-line argument parser for neural network code.
+
+    Create a command-line argument parser for neural network code.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    parser : argparse.ArgumentParser
+        Parser for command-line arguments.
+
+    Raises
+    ------
+    None
+    """
+    parser = create_minimal_command_line_argument_parser(description)
+    parser.add_argument(
+        '--n_layers', type=int, default=DEFAULT_N_LAYERS,
+        help="Number of hidden layers (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--n_hid', type=int, default=DEFAULT_N_HID,
+        help="Number of hidden nodes per layer (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--activation', '-a', default=DEFAULT_ACTIVATION,
+        help="Specify activation function (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--learning_rate', type=float, default=DEFAULT_LEARNING_RATE,
+        help="Initial learning rate for training (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--max_epochs', type=int, default=DEFAULT_MAX_EPOCHS,
+        help="Maximum number of training epochs (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--precision', type=str, default=DEFAULT_TENSORFLOW_PRECISION,
+        help="Precision to use in TensorFlow solution (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--seed', type=int, default=DEFAULT_SEED,
+        help="Seed for random number generator (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--save_model', type=int, default=DEFAULT_SAVE_MODEL,
+        help="Save interval (epochs) for trained model (0 = do not save, "
+        "-1 = save at end, n > 0 = save every n epochs) (default: %(default)s)"
+    )
+    parser.add_argument(
+        '--nogpu', action='store_true',
+        help="Disable TensorFlow use of GPU(s) (default: %(default)s)"
+    )
+    parser.add_argument(
+        'problem_path',
+        help="Path to problem description file (in python)"
+    )
+    parser.add_argument(
+        'training_path',
+        help='Path to training points file (as a PINN grid file)'
+    )
+    return parser
+
+
+# ----------------------------------------------------------------------------
+
+# General program utilities
+
+# Name of file to hold the system information report.
+SYSTEM_INFORMATION_FILE = 'system_information.txt'
+
+# Name of file to hold the program arguments, as an importable Python
+# module.
+ARGUMENTS_FILE = 'arguments.py'
+
+
+def save_arguments(args_ns, output_dir):
+    """Save the program arguments.
+
+    Save a record of the program arguments in the specified directory, as an
+    importable python module. The arguments are saved to the file in sorted
+    order.
+
+    Parameters
+    ----------
+    args_ns : Namespace
+        Namespace of command-line arguments
+    output_dir : str
+        Path to directory to contain the report
+
+    Returns
+    -------
+    path : str
+        Path to arguments file
+
+    Raises
+    ------
+    None
+    """
+    # Convert argument Namespace to a dict.
+    args = vars(args_ns)
+    path = os.path.join(output_dir, ARGUMENTS_FILE)
+    with open(path, 'w', encoding='utf-8') as f:
+        for arg in sorted(args):
+            f.write(f"{arg} = {repr(args[arg])}\n")
     return path
 
 
@@ -181,15 +203,16 @@ def save_system_information(output_dir):
 
     Returns
     -------
-    None
+    path : str
+        Path to system information file
 
     Raises
     ------
     None
     """
-    path = os.path.join(output_dir, system_information_file)
-    with open(path, "w") as f:
-        f.write("System report:\n")
+    path = os.path.join(output_dir, SYSTEM_INFORMATION_FILE)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write('System information:\n')
         f.write(f"Start time: {datetime.datetime.now()}\n")
         f.write(f"Host name: {platform.node()}\n")
         f.write(f"Platform: {platform.platform()}\n")
@@ -197,53 +220,248 @@ def save_system_information(output_dir):
         f.write(f"Python version: {sys.version}\n")
         f.write(f"Python build: {' '.join(platform.python_build())}\n")
         f.write(f"Python compiler: {platform.python_compiler()}\n")
-        # repo = git.Repo(search_parent_directories=True)
-        # sha = repo.head.object.hexsha
-        # f.write(f"PINN code version: {sha}\n")
         f.write(f"Python implementation: {platform.python_implementation()}\n")
         f.write(f"NumPy version: {np.__version__}\n")
         f.write(f"TensorFlow version: {tf.__version__}\n")
-        f.write("Available TensorFlow devices: "
+        f.write('Available TensorFlow devices: '
                 f"{device_lib.list_local_devices()}\n")
+        f.write(f"conda environment: {os.environ['CONDA_DEFAULT_ENV']}\n")
+        f.write(f"Git branch: {get_git_branch()}")
+        f.write(f"Latest git hash: {get_git_hash()}")
+    return path
 
 
-def find_last_epoch(results_path):
-    """Find the last epoch for a model in the results directory.
+# ----------------------------------------------------------------------------
 
-    Find the last epoch for a model in the results directory.
+# git utilities
+
+
+def get_git_branch():
+    """Get the current git branch.
+
+    Get the current git branch.
 
     Parameters
     ----------
-    results_path : str
-        Path to results directory.
+    None
 
     Returns
     -------
-    last_epoch : int
-        Number for last epoch found in results directory.
+    git_branch : str
+        Name of current gir branch
+
+    Raises
+    ------
+    None
     """
-    # Save the current directory.
-    original_directory = os.getcwd()
+    cmd = 'git branch'
+    cproc = subprocess.run(cmd, shell=True, check=True, capture_output=True)
+    git_branch = cproc.stdout.rstrip()
+    return git_branch
 
-    # Construct the path to the saved models.
-    models_directory = os.path.join(results_path, "models")
 
-    # Move to the saved models directory.
-    os.chdir(models_directory)
+def get_git_hash():
+    """Get the current git hash.
 
-    # Make a list of all subdirectories with names starting with digits.
-    # These digits represent epoch numbers at which the models were saved.
-    epoch_directories = glob.glob("[0-9]*")
+    Get the current git hash.
 
-    # Return to the original directory.
-    os.chdir(original_directory)
+    Parameters
+    ----------
+    None
 
-    # Find the largest epoch number.
-    epochs = [int(s) for s in epoch_directories]
-    last_epoch = max(epochs)
+    Returns
+    -------
+    git_hash : str
+        Hash for current commit
 
-    # Return the largest epoch number.
-    return last_epoch
+    Raises
+    ------
+    None
+    """
+    cmd = 'git rev-parse HEAD'
+    cproc = subprocess.run(cmd, shell=True, check=True, capture_output=True)
+    git_hash = cproc.stdout.rstrip()
+    return git_hash
+
+
+# ----------------------------------------------------------------------------
+
+# Tensorflow utilities
+
+
+def disable_gpus():
+    """Tell TensorFlow not to use GPU.
+
+    Tell TensorFlow not to use GPU.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    AssertionError : If this code cannot disable a GPU.
+    """
+    # Disable all GPUS.
+    tf.config.set_visible_devices([], 'GPU')
+
+    # Make sure the GPU were disabled.
+    visible_devices = tf.config.get_visible_devices()
+    for device in visible_devices:
+        assert device.device_type != 'GPU'
+
+
+# ----------------------------------------------------------------------------
+
+# Neural network utilities
+
+# Initial parameter ranges
+W0_RANGE = [-0.1, 0.1]  # Hidden layer weights
+U0_RANGE = [-0.1, 0.1]  # Hidden layer biases
+V0_RANGE = [-0.1, 0.1]  # Output layer weights
+
+
+def build_model(n_layers, n_hidden, activation):
+    """Build a multi-layer neural network model.
+
+    Build a fully-connected, multi-layer neural network with single output.
+    Each layer will have H hidden nodes. Each hidden node has weights and
+    a bias, and uses the specified activation function. The output layer
+    does not use a bias.
+
+    Weights and biases are initialized with a uniformed rndom distribution
+    in the ranges defined in W0_RANGE, U0_RANGE, and V0_RANGE.
+
+    The number of inputs is determined when the network is first used.
+
+    Parameters
+    ----------
+    n_layers : int
+        Number of hidden layers to create.
+    n_hidden : int
+        Number of nodes to use in each hidden layer.
+    activation : str
+        Name of activation function (from TensorFlow) to use.
+
+    Returns
+    -------
+    model : tf.keras.Sequential
+        The neural network.
+
+    Raises
+    ------
+    None
+    """
+    layers = []
+    for _ in range(n_layers):
+        hidden_layer = tf.keras.layers.Dense(
+            units=n_hidden, use_bias=True,
+            activation=tf.keras.activations.deserialize(activation),
+            kernel_initializer=tf.keras.initializers.RandomUniform(*W0_RANGE),
+            bias_initializer=tf.keras.initializers.RandomUniform(*U0_RANGE)
+        )
+        layers.append(hidden_layer)
+    output_layer = tf.keras.layers.Dense(
+        units=1,
+        activation=tf.keras.activations.linear,
+        kernel_initializer=tf.keras.initializers.RandomUniform(*V0_RANGE),
+        use_bias=False,
+    )
+    layers.append(output_layer)
+    model = tf.keras.Sequential(layers)
+    return model
+
+
+# def build_multi_output_model(n_layers, n_hidden, activation, n_out):
+#     """Build a multi-output, multi-layer neural network model.
+
+#     Build a fully-connected, multi-layer neural network with multiple outputs.
+#     Each layer will have H hidden nodes. Each hidden node has weights and
+#     a bias, and uses the specified activation function.
+
+#     The number of inputs is determined when the network is first used.
+
+#     Parameters
+#     ----------
+#     n_layers : int
+#         Number of hidden layers to create.
+#     n_hidden : int
+#         Number of nodes to use in each hidden layer.
+#     activation : str
+#         Name of activation function (from TensorFlow) to use.
+#     n_out : int
+#         Number of network outputs
+
+#     Returns
+#     -------
+#     model : tf.keras.Sequential
+#         The neural network.
+#     """
+#     layers = []
+#     for _ in range(n_layers):
+#         hidden_layer = tf.keras.layers.Dense(
+#             units=n_hidden, use_bias=True,
+#             activation=tf.keras.activations.deserialize(activation),
+#             kernel_initializer=tf.keras.initializers.RandomUniform(*w0_range),
+#             bias_initializer=tf.keras.initializers.RandomUniform(*u0_range)
+#         )
+#         layers.append(hidden_layer)
+#     output_layer = tf.keras.layers.Dense(
+#         units=n_out,
+#         activation=tf.keras.activations.linear,
+#         kernel_initializer=tf.keras.initializers.RandomUniform(*v0_range),
+#         use_bias=False,
+#     )
+#     layers.append(output_layer)
+#     model = tf.keras.Sequential(layers)
+#     return model
+
+
+# def find_last_epoch(results_path):
+#     """Find the last epoch for a model in the results directory.
+
+#     Find the last epoch for a model in the results directory.
+
+#     Parameters
+#     ----------
+#     results_path : str
+#         Path to results directory.
+
+#     Returns
+#     -------
+#     last_epoch : int
+#         Number for last epoch found in results directory.
+#     """
+#     # Save the current directory.
+#     original_directory = os.getcwd()
+
+#     # Construct the path to the saved models.
+#     models_directory = os.path.join(results_path, "models")
+
+#     # Move to the saved models directory.
+#     os.chdir(models_directory)
+
+#     # Make a list of all subdirectories with names starting with digits.
+#     # These digits represent epoch numbers at which the models were saved.
+#     epoch_directories = glob.glob("[0-9]*")
+
+#     # Return to the original directory.
+#     os.chdir(original_directory)
+
+#     # Find the largest epoch number.
+#     epochs = [int(s) for s in epoch_directories]
+#     last_epoch = max(epochs)
+
+#     # Return the largest epoch number.
+#     return last_epoch
+
+# ----------------------------------------------------------------------------
+
+# General PINN utilities
 
 
 def import_problem(problem_path):
@@ -269,76 +487,50 @@ def import_problem(problem_path):
     return p
 
 
-def disable_gpus():
-    """Tell TensorFlow not to use GPU.
+# def read_grid_description(data_file):
+#     """Read grid description from a data file.
 
-    Tell TensorFlow not to use GPU.
+#     Read grid description from a data file. If the data is random, then return
+#     None.
 
-    Parameters
-    ----------
-    None
+#     Parameters
+#     ----------
+#     data_file : str
+#         Path to training data file
 
-    Returns
-    -------
-    None
+#     Returns
+#     -------
+#     xg : list of list of float
+#         List of pairs of (min, max) for each grid dimension
+#     ng : list of int
+#         Number of grid points in each dimension
 
-    Raises
-    ------
-    AssertionError : If this code cannot disable a GPU.
-    """
-    # Disable all GPUS.
-    tf.config.set_visible_devices([], "GPU")
-
-    # Make sure the GPU were disabled.
-    visible_devices = tf.config.get_visible_devices()
-    for device in visible_devices:
-        assert device.device_type != "GPU"
-
-
-def read_grid_description(data_file):
-    """Read grid description from a data file.
-
-    Read grid description from a data file. If the data is random, then return
-    None.
-
-    Parameters
-    ----------
-    data_file : str
-        Path to training data file
-
-    Returns
-    -------
-    xg : list of list of float
-        List of pairs of (min, max) for each grid dimension
-    ng : list of int
-        Number of grid points in each dimension
-
-    Raises
-    ------
-    None
-    """
-    # Read the grid description. Ignore if not a grid.
-    xg = None
-    ng = None
-    with open(data_file, "r") as f:
-        line = f.readline()
-        if line.startswith("# GRID"):
-            line = f.readline().rstrip()
-            line = line[2:]
-            f = line.split(" ")
-            xmin = f[::3]
-            xmax = f[1::3]
-            xn = f[2::3]
-            xg = []
-            ng = []
-            for (min, max, n) in zip(xmin, xmax, xn):
-                xg.append([None, None])
-                xg[-1][0] = float(min)
-                xg[-1][1] = float(max)
-                ng.append(int(n))
-        else:
-            pass
-    return xg, ng
+#     Raises
+#     ------
+#     None
+#     """
+#     # Read the grid description. Ignore if not a grid.
+#     xg = None
+#     ng = None
+#     with open(data_file, "r") as f:
+#         line = f.readline()
+#         if line.startswith("# GRID"):
+#             line = f.readline().rstrip()
+#             line = line[2:]
+#             f = line.split(" ")
+#             xmin = f[::3]
+#             xmax = f[1::3]
+#             xn = f[2::3]
+#             xg = []
+#             ng = []
+#             for (min, max, n) in zip(xmin, xmax, xn):
+#                 xg.append([None, None])
+#                 xg[-1][0] = float(min)
+#                 xg[-1][1] = float(max)
+#                 ng.append(int(n))
+#         else:
+#             pass
+#     return xg, ng
 
 
 if __name__ == '__main__':
