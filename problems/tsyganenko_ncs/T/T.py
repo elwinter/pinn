@@ -25,18 +25,16 @@ import problems.tsyganenko_ncs.tsyganenko_ncs as tncs
 
 
 # Names of independent variables.
-independent_variable_names = ['fP', 'fBz', 'phi']
+independent_variable_names = ['fP']
 
 # Invert the independent variable list to map name to index.
 independent_variable_index = {}
 for (i, s) in enumerate(independent_variable_names):
     independent_variable_index[s] = i
 ifP = independent_variable_index['fP']
-ifBz = independent_variable_index['fBz']
-iphi = independent_variable_index['phi']
 
 # Labels for independent variables (may use LaTex) - use for plots.
-independent_variable_labels = [r"$f_P$", r"$f_{Bz}", r"$\phi$"]
+independent_variable_labels = ["$f_P$"]
 
 # Number of problem dimensions (independent variables).
 n_dim = len(independent_variable_names)
@@ -51,7 +49,7 @@ for (i, s) in enumerate(dependent_variable_names):
 iT = dependent_variable_index['T']
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = [r"$T$"]
+dependent_variable_labels = ["$T$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
@@ -71,12 +69,8 @@ if __name__ == '__main__':
     print(f"n_var = {n_var}")
 
     # Test the empirical equation.
-    fPmin, fPmax, nfP = -1.0, 2.0, 21
-    fBz_ = 0.0
-    phi_ = 0.0
+    fPmin, fPmax, nfP = -2.0, 2.0, 21
     fP = np.linspace(fPmin, fPmax, nfP)
-    fBz = np.full(fP.shape, fBz_)
-    phi = np.full(fP.shape, phi_)
-    T = T_empirical(fP, fBz, phi)
+    T = T_empirical(fP)
     for i in range(nfP):
         print(f"{i} {fP[i]} {T[i]}")
