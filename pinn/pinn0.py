@@ -14,7 +14,6 @@ Eric Winter (eric.winter62@gmail.com)
 import datetime
 import os
 import shutil
-# import sys
 
 # Import supplemental modules.
 import numpy as np
@@ -154,7 +153,7 @@ def main():
         print(f"n_train = {n_train}")
 
     # Convert training point locations to tf.Variable.
-    X_train = tf.Variable(XY_train[:, :p.n_var], dtype=precision)
+    X_train = tf.Variable(XY_train[:, :p.n_dim], dtype=precision)
     if debug:
         print(f"X_train = {X_train}")
 
