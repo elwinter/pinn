@@ -83,7 +83,7 @@ def alpha_empirical(fP, fBz, phi):
     return alpha0 + alpha1*np.cos(phi) + alpha2*fP + alpha3*fBz
 
 
-def beta_empirical(fP, fBz, phi):
+def beta_empirical(fBz,):
     """Equation 9"""
     return beta0 + beta1*fBz
 
