@@ -58,14 +58,14 @@ Bz0 = 5.0  # P6C1L3
 rho0 = 10.0  # P5C2L7
 
 
-def fP_empirical(P):
-    """Equation 10"""
-    return (P/Pmean)**chi - 1
+def RH_empirical(fP, fBz, phi):
+    """Equation 4"""
+    return RH0 + RH1*fP + RH2*fBz + (RH3 + RH4*fP + RH5*fBz)*np.cos(phi)
 
 
-def fBz_empirical(Bz):
-    """Equation 10"""
-    return Bz/Bz0
+def T_empirical(fP, fBz, phi):
+    """Equation 5"""
+    return T0 + T1*fP
 
 
 def a0_empirical(fP, fBz, phi):
@@ -78,16 +78,6 @@ def a1_empirical(fP, fBz, phi):
     return a10 + a11*fP + a12*fBz
 
 
-def RH_empirical(fP, fBz, phi):
-    """Equation 4"""
-    return RH0 + RH1*fP + RH2*fBz + (RH3 + RH4*fP + RH5*fBz)*np.cos(phi)
-
-
-def T_empirical(fP, fBz, phi):
-    """Equation 5"""
-    return T0 + T1*fP
-
-
 def alpha_empirical(fP, fBz, phi):
     """Equation 8"""
     return alpha0 + alpha1*np.cos(phi) + alpha2*fP + alpha3*fBz
@@ -96,6 +86,16 @@ def alpha_empirical(fP, fBz, phi):
 def beta_empirical(fP, fBz, phi):
     """Equation 9"""
     return beta0 + beta1*fBz
+
+
+def fP_empirical(P):
+    """Equation 10"""
+    return (P/Pmean)**chi - 1
+
+
+def fBz_empirical(Bz):
+    """Equation 10"""
+    return Bz/Bz0
 
 
 def Zs_empirical(P, By, Bz, psi, rho, phi):
