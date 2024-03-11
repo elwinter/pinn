@@ -10,6 +10,7 @@ Eric Winter (eric.winter62@gmail.com)
 """
 
 # Import standard modules.
+import argparse
 from importlib import import_module
 import os
 import sys
@@ -87,7 +88,7 @@ def main():
     os.mkdir(output_path)
 
     # Create the plots in a memory buffer.
-    mpl.use("Agg")
+    mpl.use('Agg')
 
     # -------------------------------------------------------------------------
 
