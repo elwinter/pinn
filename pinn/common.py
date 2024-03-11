@@ -252,13 +252,21 @@ def get_git_branch():
 
     Raises
     ------
-    None
+    subprocess.CalledProcessError
+        If unable to determine git branch
     """
     cwd = os.getcwd()
     os.chdir(os.environ['PINN_ROOT'])
     cmd = 'git branch'
-    cproc = subprocess.run(cmd, shell=True, check=True, capture_output=True)
-    git_branch = cproc.stdout.rstrip()
+    cproc = subprocess.run(cmd, shell=True, check=True, text=True,
+                           capture_output=True)
+    lines = cproc.stdout.splitlines()
+    git_branch = None
+    for line in lines:
+        if line.startswith('*'):
+            git_branch = line[2:]
+    if git_branch is None:
+        raise subprocess.CalledProcessError('Unable to determine git branch!')
     os.chdir(cwd)
     return git_branch
 
@@ -279,13 +287,15 @@ def get_git_hash():
 
     Raises
     ------
-    None
+    subprocess.CalledProcessError
+        If unable to determine git hash
     """
     cwd = os.getcwd()
     os.chdir(os.environ['PINN_ROOT'])
     cmd = 'git rev-parse HEAD'
-    cproc = subprocess.run(cmd, shell=True, check=True, capture_output=True)
-    git_hash = cproc.stdout.rstrip()
+    cproc = subprocess.run(cmd, shell=True, check=True, text=True,
+                           capture_output=True)
+    git_hash = str(cproc.stdout.rstrip())  # Originally bytes
     os.chdir(cwd)
     return git_hash
 
