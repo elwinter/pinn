@@ -198,11 +198,6 @@ def main():
             if debug:
                 print(f"Y_model = {Y_model}")
 
-            # <HACK>
-            print(np.min(Y_model), np.max(Y_model))
-            print(np.min(Y_train), np.max(Y_train))
-            # </HACK>
-
             # Compute the errors in the models at each training point.
             # E_model is a list of tf.Tensor objects.
             # There are p.n_var Tensors in the list.
