@@ -63,7 +63,7 @@ def RH_empirical(fP, fBz, phi):
     return RH0 + RH1*fP + RH2*fBz + (RH3 + RH4*fP + RH5*fBz)*np.cos(phi)
 
 
-def T_empirical(fP, fBz, phi):
+def T_empirical(fP):
     """Equation 5"""
     return T0 + T1*fP
 
