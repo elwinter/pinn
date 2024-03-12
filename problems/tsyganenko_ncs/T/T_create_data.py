@@ -2,6 +2,8 @@
 
 """Create data for the T problem.
 
+Create data for the T problem.
+
 Author
 ------
 eric.winter62@gmail.com
@@ -42,7 +44,9 @@ def create_command_line_argument_parser():
     ------
     None
     """
-    parser = pinn.common.create_minimal_command_line_argument_parser(DESCRIPTION)
+    parser = pinn.common.create_minimal_command_line_argument_parser(
+        DESCRIPTION
+    )
     parser.add_argument(
         'fPmin', type=float,
         help='Minimum value for fP'

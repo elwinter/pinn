@@ -30,7 +30,7 @@ DESCRIPTION = 'Create plots for pinn0 results for the T problem.'
 # Name of directory to hold output plots
 OUTPUT_DIR = 'pinn0_plots'
 
-# Name of problem
+# Name and file of problem (in output directory)
 PROBLEM_NAME = 'T'
 PROBLEM_FILE = f"{PROBLEM_NAME}.py"
 
@@ -87,9 +87,6 @@ def main():
     output_path = OUTPUT_DIR
     os.mkdir(output_path)
 
-    # Create the plots in a memory buffer.
-    mpl.use('Agg')
-
     # ------------------------------------------------------------------------
 
     # Load the training points, and count them.
@@ -111,6 +108,11 @@ def main():
 
     # -------------------------------------------------------------------------
 
+    # Create the plots in a memory buffer.
+    mpl.use('Agg')
+
+    # -------------------------------------------------------------------------
+
     # Plot the loss history.
     if verbose:
         print(f"Plotting the loss history for {PROBLEM_NAME}.")
@@ -122,6 +124,15 @@ def main():
     # Specify figure settings.
     figsize = (6.4, 4.8)  # This is the matplolib default.
     nrows, ncols = 1, 1
+    ivar = p.iT
+    varname = p.dependent_variable_names[ivar]
+    varlabel = p.dependent_variable_labels[ivar]
+    suptitle = f"Loss function evolution for {varlabel}"
+    xlabel = 'Epoch'
+    xlim = [0, L.size]
+    ylabel = '$L$'
+    ylim = [1e-3, 10.0]
+    plot_filename = 'L.png'
 
     # Create the figure.
     fig = plt.figure(figsize=figsize)
@@ -144,7 +155,7 @@ def main():
     ax.legend()
 
     # Save the plot to a PNG file.
-    path = os.path.join(output_path, 'L.png')
+    path = os.path.join(output_path, plot_filename)
     fig.savefig(path)
     plt.close(fig)
     if verbose:

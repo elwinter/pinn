@@ -49,7 +49,7 @@ for (i, s) in enumerate(dependent_variable_names):
 ibeta = dependent_variable_index['beta']
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = ["$\beta$"]
+dependent_variable_labels = [r"$\beta$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     print(f"n_var = {n_var}")
 
     # Test the empirical equation.
-    fBzmin, fBzmax, nfBz = -2.0, 2.0, 21
+    fBzmin, fBzmax, nfBz = -2.0, 2.0, 11
     fBz = np.linspace(fBzmin, fBzmax, nfBz)
     beta = beta_empirical(fBz)
     for i in range(nfBz):

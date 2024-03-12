@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create data for beta problem.
+"""Create data for the beta problem.
 
 Author
 ------
@@ -14,14 +14,14 @@ eric.winter62@gmail.com
 import numpy as np
 
 # Import project Python modules.
-from pinn import common
+import pinn.common
 import problems.tsyganenko_ncs.beta.beta as p
 
 
 # Program constants
 
 # Program description
-DESCRIPTION = 'Create data for beta problem.'
+DESCRIPTION = 'Create data for the beta problem.'
 
 
 def create_command_line_argument_parser():
@@ -42,7 +42,9 @@ def create_command_line_argument_parser():
     ------
     None
     """
-    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
+    parser = pinn.common.create_minimal_command_line_argument_parser(
+        DESCRIPTION
+    )
     parser.add_argument(
         'fBzmin', type=float,
         help='Minimum value for fBz'
@@ -81,8 +83,8 @@ def main():
     header = f"# {fBzmin} {fBzmax} {nfBz}"
     print(header)
     header = (
-        f"# {p.independent_variable_names[p.ifBz]} "
-        f"{p.dependent_variable_names[p.ibeta]}"
+        f"# {p.independent_variable_names[p.ifBz]}"
+        f" {p.dependent_variable_names[p.ibeta]}"
     )
     print(header)
 

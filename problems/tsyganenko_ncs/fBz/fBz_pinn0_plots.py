@@ -91,6 +91,27 @@ def main():
     output_path = OUTPUT_DIR
     os.mkdir(output_path)
 
+    # ------------------------------------------------------------------------
+
+    # Load the training points, and count them.
+    path = os.path.join(results_directory, training_data_file)
+    column_descriptions, training_data = pinn.common.read_grid_file(path)
+    ivname, ivmin, ivmax, ivn = 0, 1, 2, 3  # Description field indices
+    n_train = training_data.shape[0]
+
+    # Find the epoch of the last trained model.
+    last_model_epoch = pinn.common.find_last_epoch(results_directory)
+
+    # Load the trained model for each variable.
+    models = []
+    for varname in p.dependent_variable_names:
+        path = os.path.join(results_directory, 'models', f"{last_model_epoch}",
+                            f"model_{varname}")
+        model = tf.keras.models.load_model(path)
+        models.append(model)
+
+    # -------------------------------------------------------------------------
+
     # Create the plots in a memory buffer.
     mpl.use('Agg')
 
@@ -140,25 +161,6 @@ def main():
     plt.close(fig)
     if verbose:
         print(f"Saved figure as {path}.")
-
-    # ------------------------------------------------------------------------
-
-    # Load the training points, and count them.
-    path = os.path.join(results_directory, training_data_file)
-    column_descriptions, training_data = pinn.common.read_grid_file(path)
-    ivname, ivmin, ivmax, ivn = 0, 1, 2, 3  # Description field indices
-    n_train = training_data.shape[0]
-
-    # Find the epoch of the last trained model.
-    last_model_epoch = pinn.common.find_last_epoch(results_directory)
-
-    # Load the trained model for each variable.
-    models = []
-    for varname in p.dependent_variable_names:
-        path = os.path.join(results_directory, 'models', f"{last_model_epoch}",
-                            f"model_{varname}")
-        model = tf.keras.models.load_model(path)
-        models.append(model)
 
     # ------------------------------------------------------------------------
 

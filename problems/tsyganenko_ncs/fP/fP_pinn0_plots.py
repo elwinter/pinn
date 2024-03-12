@@ -30,7 +30,7 @@ DESCRIPTION = 'Create plots for pinn0 results for the fP problem.'
 # Name of directory to hold output plots
 OUTPUT_DIR = 'pinn0_plots'
 
-# Name of problem
+# Name and file of problem (in output directory)
 PROBLEM_NAME = 'fP'
 PROBLEM_FILE = f"{PROBLEM_NAME}.py"
 
@@ -87,9 +87,6 @@ def main():
     output_path = OUTPUT_DIR
     os.mkdir(output_path)
 
-    # Create the plots in a memory buffer.
-    mpl.use('Agg')
-
     # ------------------------------------------------------------------------
 
     # Load the training points, and count them.
@@ -111,6 +108,11 @@ def main():
 
     # -------------------------------------------------------------------------
 
+    # Create the plots in a memory buffer.
+    mpl.use('Agg')
+
+    # -------------------------------------------------------------------------
+
     # Plot the loss history.
     if verbose:
         print(f"Plotting the loss history for {PROBLEM_NAME}.")
@@ -122,29 +124,35 @@ def main():
     # Specify figure settings.
     figsize = (6.4, 4.8)  # This is the matplolib default.
     nrows, ncols = 1, 1
+    ivar = p.ifP
+    varname = p.dependent_variable_names[ivar]
+    varlabel = p.dependent_variable_labels[ivar]
+    suptitle = f"Loss function evolution for {varlabel}"
+    xlabel = 'Epoch'
+    xlim = [0, L.size]
+    ylabel = '$L$'
+    ylim = [1e-3, 10.0]
+    plot_filename = 'L.png'
 
     # Create the figure.
     fig = plt.figure(figsize=figsize)
-    fig.suptitle(
-        f"Loss function evolution for {p.dependent_variable_labels[p.ifP]}"
-    )
+    fig.suptitle(suptitle)
     gs = mpl.gridspec.GridSpec(nrows, ncols)
 
     # Create the plot.
     ax = fig.add_subplot(gs[0])
+    ax.set_xlabel(xlabel)
+    ax.set_xlim(xlim)
+    ax.set_ylabel(ylabel)
+    ax.set_ylim(ylim)
     ax.grid()
-    ax.set_xlabel('Epoch')
-    ax.set_xlim([0, L.size])
-    ax.set_ylabel("$L$")
-    ax.set_ylim([1e-3, 10.0])
-    ax.grid(visible=True)
 
     # Plot the data, then add the legend.
-    ax.semilogy(L, label="$L$")
+    ax.semilogy(L, label=ylabel)
     ax.legend()
 
     # Save the plot to a PNG file.
-    path = os.path.join(output_path, 'L.png')
+    path = os.path.join(output_path, plot_filename)
     fig.savefig(path)
     plt.close(fig)
     if verbose:
