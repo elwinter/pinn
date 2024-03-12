@@ -68,7 +68,7 @@ def T_empirical(fP):
     return T0 + T1*fP
 
 
-def a0_empirical(fP, fBz, phi):
+def a0_empirical(fP, fBz):
     """Equation 6"""
     return a00 + a01*fP + a02*fBz
 
@@ -102,12 +102,12 @@ def Zs_empirical(P, By, Bz, psi, rho, phi):
     """Equation 3"""
     fP = fP_empirical(P)
     fBz = fBz_empirical(Bz)
-    a0 = a0_empirical(fP, fBz, phi)
+    a0 = a0_empirical(fP, fBz)
     a1 = a1_empirical(fP, fBz, phi)
     RH = RH_empirical(fP, fBz, phi)
-    T = T_empirical(fP, fBz, phi)
+    T = T_empirical(fP)
     alpha = alpha_empirical(fP, fBz, phi)
-    beta = beta_empirical(fP, fBz, phi)
+    beta = beta_empirical(fBz)
     Zs = (
         RH*np.tan(psi) *
         (1 - (1 + (rho/RH)**alpha)**(1/alpha)) *
