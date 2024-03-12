@@ -98,12 +98,12 @@ def fBz_empirical(Bz):
     return Bz/Bz0
 
 
-def Zs_empirical(P, By, Bz, psi, rho, phi):
+def Zs_empirical(rho, phi, P, By, Bz, psi):
     """Equation 3"""
     fP = fP_empirical(P)
     fBz = fBz_empirical(Bz)
     a0 = a0_empirical(fP, fBz)
-    a1 = a1_empirical(fP, fBz, phi)
+    a1 = a1_empirical(fP, fBz)
     RH = RH_empirical(fP, fBz, phi)
     T = T_empirical(fP)
     alpha = alpha_empirical(fP, fBz, phi)
