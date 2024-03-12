@@ -73,7 +73,7 @@ def a0_empirical(fP, fBz):
     return a00 + a01*fP + a02*fBz
 
 
-def a1_empirical(fP, fBz, phi):
+def a1_empirical(fP, fBz):
     """Equation 7"""
     return a10 + a11*fP + a12*fBz
 
