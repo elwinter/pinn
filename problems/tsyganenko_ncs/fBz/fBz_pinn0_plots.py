@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create plots for pinn0 results for fBz problem.
+"""Create plots for pinn0 results for the fBz problem.
 
-Create plots for pinn0 results for fBz problem.
+Create plots for pinn0 results for the fBz problem.
 
 Author
 ------
@@ -25,7 +25,7 @@ import pinn.common
 # Program constants
 
 # Program description
-DESCRIPTION = 'Create plots for pinn0 results for fBz problem.'
+DESCRIPTION = 'Create plots for pinn0 results for the fBz problem.'
 
 # Name of directory to hold output plots
 OUTPUT_DIR = 'pinn0_plots'
@@ -33,6 +33,7 @@ OUTPUT_DIR = 'pinn0_plots'
 # Name and file of problem (in output directory)
 PROBLEM_NAME = 'fBz'
 PROBLEM_FILE = f"{PROBLEM_NAME}.py"
+
 
 def create_command_line_argument_parser():
     """Create the command-line argument parser.
@@ -46,18 +47,22 @@ def create_command_line_argument_parser():
     Returns
     -------
     parser : argparse.ArgumentParser
-        Parser for command-line arguments.
+        Parser for command-line arguments
+
+    Raises
+    ------
+    None
     """
     parser = pinn.common.create_minimal_command_line_argument_parser(
         DESCRIPTION
     )
     parser.add_argument(
         'results_directory',
-        help='Path to directory containing results to plot.'
+        help='Path to directory containing results to plot'
     )
     parser.add_argument(
         'training_data_file',
-        help='Name of file in results_directory which contains training data.'
+        help='Name of file in results_directory which contains training data'
     )
     return parser
 
@@ -82,7 +87,7 @@ def main():
     path = os.path.join(results_directory, PROBLEM_FILE)
     p = pinn.common.import_problem(path)
 
-    # Compute the path to the output directory, then create it.
+    # Compute the path to the plot output directory, then create it.
     output_path = OUTPUT_DIR
     os.mkdir(output_path)
 

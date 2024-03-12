@@ -34,7 +34,7 @@ for (i, s) in enumerate(independent_variable_names):
 iBz = independent_variable_index['Bz']
 
 # Labels for independent variables (may use LaTex) - use for plots.
-independent_variable_labels = [r"$B_z$"]
+independent_variable_labels = ["$B_z$"]
 
 # Number of problem dimensions (independent variables).
 n_dim = len(independent_variable_names)
@@ -49,7 +49,7 @@ for (i, s) in enumerate(dependent_variable_names):
 ifBz = dependent_variable_index['fBz']
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = [r"$f_{Bz}$"]
+dependent_variable_labels = ["$f_{Bz}$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     print(f"n_var = {n_var}")
 
     # Test the empirical equation.
-    Bzmin, Bzmax, nBz = -2*tncs.Bz0, 2*tncs.Bz0, 21
+    Bzmin, Bzmax, nBz = -2*tncs.Bz0, 2*tncs.Bz0, 11
     Bz = np.linspace(Bzmin, Bzmax, nBz)
     fBz = fBz_empirical(Bz)
     for i in range(nBz):
