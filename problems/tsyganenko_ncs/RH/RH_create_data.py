@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create data for RH problem.
+"""Create data for the RH problem.
 
 Author
 ------
@@ -9,19 +9,19 @@ eric.winter62@gmail.com
 
 
 # Import standard Python modules.
-import argparse
 
 # Import supplemental Python modules.
 import numpy as np
 
 # Import project Python modules.
+import pinn.common
 import problems.tsyganenko_ncs.RH.RH as p
 
 
 # Program constants
 
 # Program description.
-description = "Create data for RH problem."
+DESCRIPTION = 'Create data for the RH problem.'
 
 
 def create_command_line_argument_parser():
@@ -42,12 +42,43 @@ def create_command_line_argument_parser():
     ------
     None
     """
-    parser = argparse.ArgumentParser(description)
+    parser = pinn.common.create_minimal_command_line_argument_parser(DESCRIPTION)
     parser.add_argument(
-        "--debug", "-d", action="store_true",
-        help="Print debugging output (default: %(default)s)."
+        'fPmin', type=float,
+        help='Minimum value for fP'
     )
-    parser.add_argument("rest", nargs=argparse.REMAINDER)
+    parser.add_argument(
+        'fPmax', type=float,
+        help='Maximum value for fP'
+    )
+    parser.add_argument(
+        'nfP', type=int,
+        help='Number of fP steps'
+    )
+    parser.add_argument(
+        'fBzmin', type=float,
+        help='Minimum value for fBz'
+    )
+    parser.add_argument(
+        'fBzmax', type=float,
+        help='Maximum value for fBz'
+    )
+    parser.add_argument(
+        'nfBz', type=int,
+        help='Number of fBz steps'
+    )
+    parser.add_argument(
+        'phimin', type=float,
+        help='Minimum value for phi'
+    )
+    parser.add_argument(
+        'phimax', type=float,
+        help='Maximum value for phi'
+    )
+    parser.add_argument(
+        'nphi', type=int,
+        help='Number of phi steps'
+    )
     return parser
 
 
@@ -61,49 +92,51 @@ def main():
     if args.debug:
         print(f"args = {args}")
     debug = args.debug
-    rest = args.rest
-
-    # Fetch the remaining command-line arguments.
-    # They should be in a set of 3:
-    # x_min x_max n_x
-    assert len(rest) == 9
-    fPmin = float(rest[0])
-    fPmax = float(rest[1])
-    nfP = int(rest[2])
-    fBzmin = float(rest[3])
-    fBzmax = float(rest[4])
-    nfBz = int(rest[5])
-    phimin = float(rest[6])
-    phimax = float(rest[7])
-    nphi = int(rest[8])
-    if debug:
-        print(f"{fPmin} <= fP <= {fPmax}, nfP = {nfP}")
-        print(f"{fBzmin} <= fBz <= {fBzmax}, nfPz = {nfBz}")
-        print(f"{phimin} <= phi <= {phimax}, nphi = {nphi}")
+    verbose = args.verbose
+    fPmin = args.fPmin
+    fPmax = args.fPmax
+    nfP = args.nfP
+    fBzmin = args.fBzmin
+    fBzmax = args.fBzmax
+    nfBz = args.nfBz
+    phimin = args.phimin
+    phimax = args.phimax
+    nphi = args.nphi
 
     # Print the output header lines.
-    header = "# GRID"
+    header = '# GRID'
     print(header)
-    header = "# fP fPz phi"
+    header = (
+        f"# {p.independent_variable_names[p.ifP]}"
+        f" {p.independent_variable_names[p.ifBz]}"
+        f" {p.independent_variable_names[p.iphi]}"
+    )
     print(header)
-    header = f"# {fPmin} {fPmax} {nfP} {fBzmin} {fBzmax} {nfBz} {phimin} {phimax} {nphi}"
+    header = (
+        f"# {fPmin} {fPmax} {nfP}"
+        f" {fBzmin} {fBzmax} {nfBz}"
+        f" {phimin} {phimax} {nphi}"
+    )
     print(header)
-    header = "# fP fBz phi RH"
+    header = (
+        f"# {p.independent_variable_names[p.ifP]} "
+        f"{p.independent_variable_names[p.ifBz]} "
+        f"{p.independent_variable_names[p.iphi]} "
+        f"{p.dependent_variable_names[p.iRH]}"
+    )
     print(header)
 
-    # Compute the data for the boundary condition at x = 0.
-    # Each line is:
-    # fP fBz phi RH
+    # Compute the data and send to stdout.
     fP = np.linspace(fPmin, fPmax, nfP)
     fBz = np.linspace(fBzmin, fBzmax, nfBz)
     phi = np.linspace(phimin, phimax, nphi)
     for fP_ in fP:
         for fBz_ in fBz:
             for phi_ in phi:
-                RH = p.RH_analytical(fP_, fBz_, phi_)
+                RH = p.RH_empirical(fP_, fBz_, phi_)
                 print(f"{fP_} {fBz_} {phi_} {RH}")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     """Begin main program."""
     main()

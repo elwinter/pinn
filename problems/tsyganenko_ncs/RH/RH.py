@@ -21,6 +21,7 @@ Eric Winter (eric.winter62@gmail.com)
 import numpy as np
 
 # Import project modules.
+import problems.tsyganenko_ncs.tsyganenko_ncs as tncs
 
 
 # Names of independent variables.
@@ -56,43 +57,12 @@ dependent_variable_labels = ["$R_H$"]
 n_var = len(dependent_variable_names)
 
 
-# Empirical constants for RH equation, and RMS mean absolute deviation
-RH0, RH0_rms = 11.02, 0.05
-RH1, RH1_rms = 6.05, 0.88
-RH2, RH2_rms = 0.84, 0.09
-RH3, RH3_rms = -2.28, 0.08
-RH4, RH4_rms = -0.25, 0.37
-RH5, RH5_rms = -0.96, 0.16
+# Make the empirical function from the top-level module available in
+# this namespace.
+RH_empirical = tncs.RH_empirical
 
 
-def RH_analytical(fP, fBz, phi):
-    """Analytical form for RH.
-
-    Analytical form for RH.
-
-    Parameters
-    ----------
-    fp : np.array of float, shape (n,)
-        Values of fp for each evaluation point.
-    fBz : np.array of float, shape (n,)
-        Values of fBz for each evaluation point.
-    phi : np.array of float, shape (n,)
-        Values of phi for each evaluation point.
-
-    Returns
-    -------
-    RH : np.array of float, shape (n,)
-        Analytical value of RH at each evaluation point.
-
-    Raises
-    ------
-    None
-    """
-    RH = RH0 + RH1*fP + RH2*fBz + (RH3 + RH4*fP + RH5*fBz)*np.cos(phi)
-    return RH
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     print(f"independent_variable_names = {independent_variable_names}")
     print(f"independent_variable_labels = {independent_variable_labels}")
     print(f"n_dim = {n_dim}")
@@ -103,11 +73,11 @@ if __name__ == "__main__":
     # Test the analytical solution.
     n = 11
     fPmin, fPmax, nfP = -2.0, 2.0, n
-    fP = np.linspace(fPmin, fPmax, nfP)
     fBzmin, fBzmax, nfBz = -2.0, 2.0, n
+    phimin, phimax, nphi = 0.0, 0.0, n
+    fP = np.linspace(fPmin, fPmax, nfP)
     fBz = np.linspace(fBzmin, fBzmax, nfBz)
-    phimin, phimax, nphi = 0.0, 2*np.pi, n
     phi = np.linspace(phimin, phimax, nphi)
-    RH = RH_analytical(fP, fBz, phi)
+    RH = RH_empirical(fP, fBz, phi)
     for i in range(n):
         print(f"{i} {fP[i]} {fBz[i]} {phi[i]} {RH[i]}")
