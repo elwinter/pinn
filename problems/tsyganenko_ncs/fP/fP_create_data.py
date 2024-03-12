@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create data for fP problem.
+"""Create data for the fP problem.
 
 Author
 ------
@@ -21,7 +21,7 @@ import problems.tsyganenko_ncs.fP.fP as p
 # Program constants
 
 # Program description.
-DESCRIPTION = 'Create data for fP problem.'
+DESCRIPTION = 'Create data for the fP problem.'
 
 
 def create_command_line_argument_parser():
@@ -81,8 +81,8 @@ def main():
     header = f"# {Pmin} {Pmax} {nP}"
     print(header)
     header = (
-        f"# {p.independent_variable_names[p.iP]} "
-        f"{p.dependent_variable_names[p.ifP]}"
+        f"# {p.independent_variable_names[p.iP]}"
+        f" {p.dependent_variable_names[p.ifP]}"
     )
     print(header)
 

@@ -149,8 +149,6 @@ def main():
     ivname, ivmin, ivmax, ivn = 0, 1, 2, 3  # Description field indices
     n_train = training_data.shape[0]
 
-    # Extract the training data needed for this plot.
-
     # Find the epoch of the last trained model.
     last_model_epoch = pinn.common.find_last_epoch(results_directory)
 

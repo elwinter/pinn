@@ -34,7 +34,7 @@ for (i, s) in enumerate(independent_variable_names):
 iP = independent_variable_index['P']
 
 # Labels for independent variables (may use LaTex) - use for plots.
-independent_variable_labels = [r"$P$"]
+independent_variable_labels = ["$P$"]
 
 # Number of problem dimensions (independent variables).
 n_dim = len(independent_variable_names)
@@ -49,7 +49,7 @@ for (i, s) in enumerate(dependent_variable_names):
 ifP = dependent_variable_index['fP']
 
 # Labels for dependent variables (may use LaTex) - use for plots.
-dependent_variable_labels = [r"$f_P$"]
+dependent_variable_labels = ["$f_P$"]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     print(f"n_var = {n_var}")
 
     # Test the empirical equation.
-    Pmin, Pmax, nP = 0.0, 10.0, 21
+    Pmin, Pmax, nP = 0.0, 10.0, 11
     P = np.linspace(Pmin, Pmax, nP)
     fP = fP_empirical(P)
     for i in range(nP):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create data for fBz problem.
+"""Create data for the fBz problem.
 
 Author
 ------
@@ -21,7 +21,7 @@ import problems.tsyganenko_ncs.fBz.fBz as p
 # Program constants
 
 # Program description
-DESCRIPTION = 'Create data for fBz problem.'
+DESCRIPTION = 'Create data for the fBz problem.'
 
 
 def create_command_line_argument_parser():
