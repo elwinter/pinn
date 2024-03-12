@@ -14,7 +14,7 @@ eric.winter62@gmail.com
 import numpy as np
 
 # Import project Python modules.
-from pinn import common
+import pinn.common
 import problems.tsyganenko_ncs.fBz.fBz as p
 
 
@@ -42,7 +42,9 @@ def create_command_line_argument_parser():
     ------
     None
     """
-    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
+    parser = pinn.common.create_minimal_command_line_argument_parser(
+        DESCRIPTION
+    )
     parser.add_argument(
         'Bzmin', type=float,
         help='Minimum value for Bz (nT)'
@@ -81,8 +83,8 @@ def main():
     header = f"# {Bzmin} {Bzmax} {nBz}"
     print(header)
     header = (
-        f"# {p.independent_variable_names[p.iBz]} "
-        f"{p.dependent_variable_names[p.ifBz]}"
+        f"# {p.independent_variable_names[p.iBz]}"
+        f" {p.dependent_variable_names[p.ifBz]}"
     )
     print(header)
 

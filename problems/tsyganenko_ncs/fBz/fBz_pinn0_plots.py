@@ -10,9 +10,7 @@ Eric Winter (eric.winter62@gmail.com)
 """
 
 # Import standard modules.
-from importlib import import_module
 import os
-import sys
 
 # Import supplemental modules.
 import matplotlib as mpl
@@ -21,7 +19,7 @@ import numpy as np
 import tensorflow as tf
 
 # Import project modules.
-from pinn import common
+import pinn.common
 
 
 # Program constants
@@ -32,9 +30,9 @@ DESCRIPTION = 'Create plots for pinn0 results for fBz problem.'
 # Name of directory to hold output plots
 OUTPUT_DIR = 'pinn0_plots'
 
-# Name of problem
+# Name and file of problem (in output directory)
 PROBLEM_NAME = 'fBz'
-
+PROBLEM_FILE = f"{PROBLEM_NAME}.py"
 
 def create_command_line_argument_parser():
     """Create the command-line argument parser.
@@ -50,14 +48,16 @@ def create_command_line_argument_parser():
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
     """
-    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
+    parser = pinn.common.create_minimal_command_line_argument_parser(
+        DESCRIPTION
+    )
     parser.add_argument(
-        'results_path',
+        'results_directory',
         help='Path to directory containing results to plot.'
     )
     parser.add_argument(
         'training_data_file',
-        help='Name of file in results_path which contains training data. The file must include a PINN grid definition header.'
+        help='Name of file in results_directory which contains training data.'
     )
     return parser
 
@@ -73,21 +73,21 @@ def main():
         print(f"args = {args}", flush=True)
     debug = args.debug
     verbose = args.verbose
-    results_path = args.results_path
+    results_directory = args.results_directory
     training_data_file = args.training_data_file
 
-    # Add the run results directory at the head of the module search path.
-    sys.path.insert(0, results_path)
+    # -------------------------------------------------------------------------
 
     # Import the problem definition from the run results directory.
-    p = import_module(PROBLEM_NAME)
+    path = os.path.join(results_directory, PROBLEM_FILE)
+    p = pinn.common.import_problem(path)
 
     # Compute the path to the output directory, then create it.
     output_path = OUTPUT_DIR
     os.mkdir(output_path)
 
     # Create the plots in a memory buffer.
-    mpl.use("Agg")
+    mpl.use('Agg')
 
     # -------------------------------------------------------------------------
 
@@ -96,35 +96,41 @@ def main():
         print(f"Plotting the loss history for {PROBLEM_NAME}.")
 
     # Load the loss data.
-    path = os.path.join(results_path, 'L.dat')
+    path = os.path.join(results_directory, 'L.dat')
     L = np.loadtxt(path)
 
     # Specify figure settings.
     figsize = (6.4, 4.8)  # This is the matplolib default.
     nrows, ncols = 1, 1
+    ivar = p.ifBz
+    varname = p.dependent_variable_names[ivar]
+    varlabel = p.dependent_variable_labels[ivar]
+    suptitle = f"Loss function evolution for {varlabel}"
+    xlabel = 'Epoch'
+    xlim = [0, L.size]
+    ylabel = '$L$'
+    ylim = [1e-3, 10.0]
+    plot_filename = 'L.png'
 
     # Create the figure.
     fig = plt.figure(figsize=figsize)
-    fig.suptitle(
-        f"Loss function evolution for {p.dependent_variable_labels[p.ifBz]}"
-    )
+    fig.suptitle(suptitle)
     gs = mpl.gridspec.GridSpec(nrows, ncols)
 
     # Create the plot.
     ax = fig.add_subplot(gs[0])
+    ax.set_xlabel(xlabel)
+    ax.set_xlim(xlim)
+    ax.set_ylabel(ylabel)
+    ax.set_ylim(ylim)
     ax.grid()
-    ax.set_xlabel('Epoch')
-    ax.set_xlim([0, L.size])
-    ax.set_ylabel("$L$")
-    ax.set_ylim([1e-3, 10.0])
-    ax.grid(visible=True)
 
     # Plot the data, then add the legend.
-    ax.semilogy(L, label="$L$")
+    ax.semilogy(L, label=ylabel)
     ax.legend()
 
     # Save the plot to a PNG file.
-    path = os.path.join(output_path, 'L.png')
+    path = os.path.join(output_path, plot_filename)
     fig.savefig(path)
     plt.close(fig)
     if verbose:
@@ -132,29 +138,22 @@ def main():
 
     # ------------------------------------------------------------------------
 
-    # Load the training points.
-    path = os.path.join(results_path, training_data_file)
-    training_data = np.loadtxt(path)
+    # Load the training points, and count them.
+    path = os.path.join(results_directory, training_data_file)
+    column_descriptions, training_data = pinn.common.read_grid_file(path)
+    ivname, ivmin, ivmax, ivn = 0, 1, 2, 3  # Description field indices
+    n_train = training_data.shape[0]
 
-    # Read the data description from the header.
-    with open(path, 'r', encoding='utf-8') as f:
-        line = f.readline()  # GRID
-        line = f.readline()  # Bz
-        line = f.readline()  # Bzmin Bzmax nBz
-        line = line[2:].rstrip()
-        fields = line.split(' ')
-        Bzmin = float(fields[0])
-        Bzmax = float(fields[1])
-        nBz = int(fields[2])
+    # Extract the training data needed for this plot.
 
     # Find the epoch of the last trained model.
-    last_model_epoch = common.find_last_epoch(results_path)
+    last_model_epoch = pinn.common.find_last_epoch(results_directory)
 
     # Load the trained model for each variable.
     models = []
-    for variable_name in p.dependent_variable_names:
-        path = os.path.join(results_path, 'models', f"{last_model_epoch}",
-                            f"model_{variable_name}")
+    for varname in p.dependent_variable_names:
+        path = os.path.join(results_directory, 'models', f"{last_model_epoch}",
+                            f"model_{varname}")
         model = tf.keras.models.load_model(path)
         models.append(model)
 
@@ -162,53 +161,67 @@ def main():
 
     # Plot the predicted and empirical solutions, and error, in a single
     # figure.
-    variable_name = p.dependent_variable_names[p.ifBz]
-    if verbose:
-        print(f"Creating predicted/empirical/error figure for {variable_name}.")
 
-    # Extract the training points, then compute the trained and empirical
-    # solutions, and error.
-    Bz_train = training_data[:, 0]
-    fBz_trained = model(Bz_train).numpy().reshape(Bz_train.shape)
-    fBz_empirical = p.fBz_empirical(Bz_train)
-    fBz_error = fBz_trained - fBz_empirical
+    # Get indices and function from the problem definition.
+    ix = p.iBz
+    iy = p.ifBz
+    empirical = p.fBz_empirical
 
-    # Compute the RMS error.
-    fBz_rmserr = np.sqrt(np.sum(fBz_error**2)/fBz_error.size)
+    # Extract training data needed for this plot.
+    x_train = training_data[:, ix]  # Shape (n_train,)
+    y_train = training_data[:, p.n_dim + iy]  # Shape (n_train,)
 
-    # Specify figure settings.
+    # Compute the trained and empirical solutions, error, and RMSE.
+    y_trained = models[iy](x_train).numpy().reshape((n_train,))
+    y_empirical = empirical(x_train)
+    y_error = y_trained - y_empirical
+    y_rmserr = np.sqrt(np.sum(y_error**2)/y_error.size)
+
+    # Compute plot settings.
+    varname = p.dependent_variable_names[iy]
+    varlabel = p.dependent_variable_labels[iy]
+    xlabel = p.independent_variable_labels[ix]
+    xlim = [column_descriptions[ix][ivmin], column_descriptions[ix][ivmax]]
+    ylabel = varlabel
+    ylim = [-2.0, 2.0]  # <HACK/>
+    training_point_color = 'black'
     figsize = (6.4, 4.8)  # This is the matplolib default.
     nrows, ncols = 1, 1
+    plot_filename = f"{varname}.png"
+
+    if verbose:
+        print(f"Creating predicted/empirical/error figure for {varname}.")
 
     # Create the figure.
     fig = plt.figure(figsize=figsize)
     fig.suptitle(
-        "Comparison of trained and empirical solutions for $f_{Bz}$"
+        f"Comparison of trained and empirical solutions for {varlabel}"
     )
     gs = mpl.gridspec.GridSpec(nrows, ncols)
 
     # Create the plot.
     ax = fig.add_subplot(gs[0])
+    ax.set_xlabel(xlabel)
+    ax.set_xlim(xlim)
+    ax.set_ylabel(ylabel)
+    ax.set_ylim(ylim)
     ax.grid()
-    ax.set_xlabel("$B_z$")
-    ax.set_xlim([Bzmin, Bzmax])
-    ax.set_ylabel("$f_{Bz}$")
-    fBzmin, fBzmax = -2.0, 2.0
-    ax.set_ylim([fBzmin, fBzmax])
-    ax.grid(visible=True)
 
     # Plot the data, then add the legend.
-    ax.plot(Bz_train, fBz_trained, label="$f_{Bz}$ (trained)")
-    ax.plot(Bz_train, fBz_empirical, label="$f_{Bz}$ (empirical)")
-    ax.plot(Bz_train, fBz_error, label="$f_{Bz}$ error")
+    # Use scatter() to show training point locations.
+    ax.scatter(x_train, y_train, c=training_point_color,
+               label=f"{varlabel} (training)")
+    ax.plot(x_train, y_trained, label=f"{varlabel} (trained)")
+    ax.plot(x_train, y_empirical, label=f"{varlabel} (empirical)")
+    ax.plot(x_train, y_error, label=f"{varlabel} error")
     ax.legend()
 
     # Add a plot title with the RMS error.
-    text = f"RMS error = {fBz_rmserr:.2E}"
+    text = f"RMS error = {y_rmserr:.2E}"
     ax.set_title(text)
 
     # Save the plot to a PNG file.
-    path = os.path.join(output_path, 'fBz.png')
+    path = os.path.join(output_path, plot_filename)
     fig.savefig(path)
     plt.close(fig)
     if verbose:
