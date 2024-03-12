@@ -489,6 +489,8 @@ def import_problem(problem_path):
 
     Import the Python file which defines the problem to solve.
 
+    Note that the absolute path is required by module_from_spec().
+
     Parameters
     ----------
     problem_path : str
@@ -498,9 +500,14 @@ def import_problem(problem_path):
     -------
     p : module
         Module object for problem definition.
+
+    Raises
+    ------
+    None
     """
-    problem_name = os.path.splitext(os.path.split(problem_path)[-1])[-2]
-    spec = importlib.util.spec_from_file_location(problem_name, problem_path)
+    abspath = os.path.abspath(problem_path)
+    problem_name = os.path.splitext(os.path.split(abspath)[-1])[-2]
+    spec = importlib.util.spec_from_file_location(problem_name, abspath)
     p = importlib.util.module_from_spec(spec)
     sys.modules[problem_name] = p
     spec.loader.exec_module(p)
@@ -551,6 +558,83 @@ def import_problem(problem_path):
 #         else:
 #             pass
 #     return xg, ng
+
+
+def read_grid_file(path):
+    """Read grid description and data from a file.
+
+    Read the grid description and data from a file. The file is assumed to
+    contain a grid header, followed list of nrows points. Each point
+    definines a grid location (x0, x1, ...) and zero or more values defined
+    at that location (y0, y1, ...).
+
+    Parameters
+    ----------
+    path : str
+        Path to grid file
+
+    Returns
+    -------
+    column_descriptions : list of ncols tuples, each (str, float, float, int)
+        List of (varname, min, max, n) for each grid dimension.
+    data : np.ndarray, shape (nrows, ncols)
+        Numpy array of data in file
+
+    Raises
+    ------
+    AssertionError
+        If this is not a grid file
+    """
+    # Read the grid description.
+    column_descriptions = []
+    COMMENT_PREFIX = '# '
+    COMMENT_PREFIX_LEN = len(COMMENT_PREFIX)
+    GRID_HEADER_LINE = f"{COMMENT_PREFIX}GRID"
+    with open(path, 'r', encoding='utf-8') as f:
+
+        # Make sure this is a grid file.
+        line = f.readline().rstrip()
+        assert line == GRID_HEADER_LINE
+
+        # Read the names of the independent variables (dimensions) which
+        # define the grid points.
+        line = f.readline().rstrip()
+        assert line.startswith(COMMENT_PREFIX)
+        dim_names_str = line[COMMENT_PREFIX_LEN:]
+        dim_names = dim_names_str.split(' ')
+        n_dim = len(dim_names)
+        assert n_dim > 0
+
+        # Read the grid description.
+        line = f.readline().rstrip()
+        assert line.startswith(COMMENT_PREFIX)
+        description_str = line[COMMENT_PREFIX_LEN:]
+        fields = description_str.split(' ')
+        xmin = [float(f) for f in fields[::3]]
+        xmax = [float(f) for f in fields[1::3]]
+        nx = [int(f) for f in fields[2::3]]
+
+        # Read the column names.
+        line = f.readline().rstrip()
+        assert line.startswith(COMMENT_PREFIX)
+        column_names_str = line[COMMENT_PREFIX_LEN:]
+        column_names = column_names_str.split(' ')
+        n_cols = len(column_names)
+        n_var = n_cols - n_dim
+        for i in range(n_dim):
+            assert dim_names[i] == column_names[i]
+        pad = [None]*n_var
+        column_descriptions = [
+            (s1, f1, f2, i1)
+            for (s1, f1, f2, i1) in
+            zip(column_names, xmin + pad, xmax + pad, nx + pad)
+        ]
+
+    # Now load the data table.
+    data = np.loadtxt(path)
+
+    # Return the grid description and data.
+    return column_descriptions, data
 
 
 if __name__ == '__main__':
