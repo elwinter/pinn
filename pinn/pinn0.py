@@ -215,7 +215,7 @@ def main():
             # There are p.n_var Tensors in the list (one per model).
             # Each Tensor has shape () (scalar).
             L_model = [
-                tf.math.sqrt(tf.reduce_sum(E**2)/E.shape[0]) for E in E_model
+                tf.math.sqrt(tf.reduce_sum(E**2)/n_train) for E in E_model
             ]
             if debug:
                 print(f"L_model = {L_model}")
