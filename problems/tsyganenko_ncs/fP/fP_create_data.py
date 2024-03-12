@@ -14,7 +14,7 @@ eric.winter62@gmail.com
 import numpy as np
 
 # Import project Python modules.
-from pinn import common
+import pinn.common
 import problems.tsyganenko_ncs.fP.fP as p
 
 
@@ -42,7 +42,9 @@ def create_command_line_argument_parser():
     ------
     None
     """
-    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
+    parser = pinn.common.create_minimal_command_line_argument_parser(
+        DESCRIPTION
+    )
     parser.add_argument(
         'Pmin', type=float,
         help='Minimum value for P (nPa)'

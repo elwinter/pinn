@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create data for T problem.
+"""Create data for the T problem.
 
 Author
 ------
@@ -14,14 +14,14 @@ eric.winter62@gmail.com
 import numpy as np
 
 # Import project Python modules.
-from pinn import common
+import pinn.common
 import problems.tsyganenko_ncs.T.T as p
 
 
 # Program constants
 
 # Program description
-DESCRIPTION = 'Create data for T problem.'
+DESCRIPTION = 'Create data for the T problem.'
 
 
 def create_command_line_argument_parser():
@@ -42,7 +42,7 @@ def create_command_line_argument_parser():
     ------
     None
     """
-    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
+    parser = pinn.common.create_minimal_command_line_argument_parser(DESCRIPTION)
     parser.add_argument(
         'fPmin', type=float,
         help='Minimum value for fP'
@@ -81,8 +81,8 @@ def main():
     header = f"# {fPmin} {fPmax} {nfP}"
     print(header)
     header = (
-        f"# {p.independent_variable_names[p.ifP]} "
-        f"{p.dependent_variable_names[p.iT]}"
+        f"# {p.independent_variable_names[p.ifP]}"
+        f" {p.dependent_variable_names[p.iT]}"
     )
     print(header)
 

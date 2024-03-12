@@ -69,7 +69,7 @@ if __name__ == '__main__':
     print(f"n_var = {n_var}")
 
     # Test the empirical equation.
-    fPmin, fPmax, nfP = -2.0, 2.0, 21
+    fPmin, fPmax, nfP = -2.0, 2.0, 11
     fP = np.linspace(fPmin, fPmax, nfP)
     T = T_empirical(fP)
     for i in range(nfP):
