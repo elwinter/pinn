@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create plots for pinn0 results for RH problem.
+"""Create plots for pinn0 results for alpha problem.
 
-Create plots for pinn0 results for the RH problem.
+Create plots for pinn0 results for the alpha problem.
 
 Author
 ------
@@ -25,13 +25,13 @@ import pinn.common
 # Program constants
 
 # Program description
-DESCRIPTION = 'Create plots for pinn0 results for the RH problem.'
+DESCRIPTION = 'Create plots for pinn0 results for the alpha problem.'
 
 # Name of directory to hold output plots
 OUTPUT_DIR = 'pinn0_plots'
 
 # Name of problem
-PROBLEM_NAME = 'RH'
+PROBLEM_NAME = 'alpha'
 PROBLEM_FILE = f"{PROBLEM_NAME}.py"
 
 
@@ -124,7 +124,7 @@ def main():
     # Specify figure settings.
     figsize = (6.4, 4.8)  # This is the matplolib default.
     nrows, ncols = 1, 1
-    ivar = p.iRH
+    ivar = p.ialpha
     varname = p.dependent_variable_names[ivar]
     varlabel = p.dependent_variable_labels[ivar]
     suptitle = f"Loss function evolution for {varlabel}"
@@ -166,8 +166,8 @@ def main():
     ix = p.ifP
     iy = p.ifBz
     iphi = p.iphi
-    iz = p.iRH
-    empirical = p.RH_empirical
+    iz = p.ialpha
+    empirical = p.alpha_empirical
 
     # Extract training data needed for this plot.
     x_train = training_data[:, ix]  # Shape (n_train,)
@@ -202,7 +202,7 @@ def main():
     ylabel = p.independent_variable_labels[iy]
     ylim = [column_descriptions[iy][ivmin], column_descriptions[iy][ivmax]]
     zlabel = varlabel
-    zlim = [-5.0, 20.0]  # <HACK/>
+    zlim = [11.0, 13.0]  # <HACK/>
     training_point_color = 'black'
     figsize = (19.2, 4.8)  # For row of 3 contour plots.
     nrows, ncols = 1, 3
