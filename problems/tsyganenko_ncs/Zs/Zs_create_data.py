@@ -44,6 +44,10 @@ def create_command_line_argument_parser():
     """
     parser = pinn.common.create_minimal_command_line_argument_parser(DESCRIPTION)
     parser.add_argument(
+        '--cartesian', action='store_true',
+        help='Use Cartesian instead of cylindrical coordinates'
+    )
+    parser.add_argument(
         'rhomin', type=float,
         help='Minimum value for rho'
     )
@@ -129,12 +133,21 @@ def main():
         print(f"args = {args}")
     debug = args.debug
     verbose = args.verbose
-    rhomin = args.rhomin
-    rhomax = args.rhomax
-    nrho = args.nrho
-    phimin = args.phimin
-    phimax = args.phimax
-    nphi = args.nphi
+    cartesian = args.cartesian
+    if cartesian:
+        xmin = args.rhomin
+        xmax = args.rhomax
+        nx = args.nrho
+        ymin = args.phimin
+        ymax = args.phimax
+        ny = args.nphi
+    else:
+        rhomin = args.rhomin
+        rhomax = args.rhomax
+        nrho = args.nrho
+        phimin = args.phimin
+        phimax = args.phimax
+        nphi = args.nphi
     Pmin = args.Pmin
     Pmax = args.Pmax
     nP = args.nP
@@ -151,55 +164,108 @@ def main():
     # Print the output header lines.
     header = '# GRID'
     print(header)
-    header = (
-        f"# {p.independent_variable_names[p.irho]}"
-        f" {p.independent_variable_names[p.iphi]}"
-        f" {p.independent_variable_names[p.iP]}"
-        f" {p.independent_variable_names[p.iBy]}"
-        f" {p.independent_variable_names[p.iBz]}"
-        f" {p.independent_variable_names[p.ipsi]}"
-    )
+    if cartesian:
+        header = (
+            f"# x"
+            f" y"
+            f" {p.independent_variable_names[p.iP]}"
+            f" {p.independent_variable_names[p.iBy]}"
+            f" {p.independent_variable_names[p.iBz]}"
+            f" {p.independent_variable_names[p.ipsi]}"
+        )
+    else:
+        header = (
+            f"# {p.independent_variable_names[p.irho]}"
+            f" {p.independent_variable_names[p.iphi]}"
+            f" {p.independent_variable_names[p.iP]}"
+            f" {p.independent_variable_names[p.iBy]}"
+            f" {p.independent_variable_names[p.iBz]}"
+            f" {p.independent_variable_names[p.ipsi]}"
+        )
     print(header)
-    header = (
-        f"# {rhomin} {rhomax} {nrho}"
-        f" {phimin} {phimax} {nphi}"
-        f" {Pmin} {Pmax} {nP}"
-        f" {Bymin} {Bymax} {nBy}"
-        f" {Bzmin} {Bzmax} {nBz}"
-        f" {psimin} {psimax} {npsi}"
-    )
+    if cartesian:
+        header = (
+            f"# {xmin} {xmax} {nx}"
+            f" {ymin} {ymax} {ny}"
+            f" {Pmin} {Pmax} {nP}"
+            f" {Bymin} {Bymax} {nBy}"
+            f" {Bzmin} {Bzmax} {nBz}"
+            f" {psimin} {psimax} {npsi}"
+        )
+    else:
+        header = (
+            f"# {rhomin} {rhomax} {nrho}"
+            f" {phimin} {phimax} {nphi}"
+            f" {Pmin} {Pmax} {nP}"
+            f" {Bymin} {Bymax} {nBy}"
+            f" {Bzmin} {Bzmax} {nBz}"
+            f" {psimin} {psimax} {npsi}"
+        )
     print(header)
-    header = (
-        f"# {p.independent_variable_names[p.irho]}"
-        f" {p.independent_variable_names[p.iphi]}"
-        f" {p.independent_variable_names[p.iP]}"
-        f" {p.independent_variable_names[p.iBy]}"
-        f" {p.independent_variable_names[p.iBz]}"
-        f" {p.independent_variable_names[p.ipsi]}"
-        f" {p.dependent_variable_names[p.iZs]}"
-    )
+    if cartesian:
+        header = (
+            f"# x"
+            f" y"
+            f" {p.independent_variable_names[p.iP]}"
+            f" {p.independent_variable_names[p.iBy]}"
+            f" {p.independent_variable_names[p.iBz]}"
+            f" {p.independent_variable_names[p.ipsi]}"
+            f" {p.dependent_variable_names[p.iZs]}"
+        )
+    else:
+        header = (
+            f"# {p.independent_variable_names[p.irho]}"
+            f" {p.independent_variable_names[p.iphi]}"
+            f" {p.independent_variable_names[p.iP]}"
+            f" {p.independent_variable_names[p.iBy]}"
+            f" {p.independent_variable_names[p.iBz]}"
+            f" {p.independent_variable_names[p.ipsi]}"
+            f" {p.dependent_variable_names[p.iZs]}"
+        )
     print(header)
 
     # Compute the data and send to stdout.
-    rho = np.linspace(rhomin, rhomax, nrho)
-    phi = np.linspace(phimin, phimax, nphi)
+    # rho = rho or x, phi = phi or y
+    if cartesian:
+        x = np.linspace(xmin, xmax, nx)
+        y = np.linspace(ymin, ymax, ny)
+    else:
+        rho = np.linspace(rhomin, rhomax, nrho)
+        phi = np.linspace(phimin, phimax, nphi)
     P = np.linspace(Pmin, Pmax, nP)
     By = np.linspace(Bymin, Bymax, nBy)
     Bz = np.linspace(Bzmin, Bzmax, nBz)
     psi = np.linspace(psimin, psimax, npsi)
-    for _rho in rho:
-        for _phi in phi:
-            for _P in P:
-                for _By in By:
-                    for _Bz in Bz:
-                        for _psi in psi:
-                            _Zs = p.Zs_empirical(
-                                _rho, _phi, _P, _By, _Bz, _psi
-                            )
-                            print(
-                                f"{_rho} {_phi} {_P} {_By} {_Bz} {_psi} {_Zs}"
-                            )
 
+    # Iterate across the Cartesian or cylindrical grid.
+    if cartesian:
+        for _x in x:
+            for _y in y:
+                _rho = np.sqrt(_x**2 + _y**2)
+                _phi = np.arctan2(_y, _x)
+                for _P in P:
+                    for _By in By:
+                        for _Bz in Bz:
+                            for _psi in psi:
+                                _Zs = p.Zs_empirical(
+                                    _rho, _phi, _P, _By, _Bz, _psi
+                                )
+                                print(
+                                    f"{_rho} {_phi} {_P} {_By} {_Bz} {_psi} {_Zs}"
+                                )
+    else:
+        for _rho in rho:
+            for _phi in phi:
+                for _P in P:
+                    for _By in By:
+                        for _Bz in Bz:
+                            for _psi in psi:
+                                _Zs = p.Zs_empirical(
+                                    _rho, _phi, _P, _By, _Bz, _psi
+                                )
+                                print(
+                                    f"{_rho} {_phi} {_P} {_By} {_Bz} {_psi} {_Zs}"
+                                )
 
 if __name__ == '__main__':
     """Begin main program."""
