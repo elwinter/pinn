@@ -144,7 +144,7 @@ def main():
     Bzmin = args.Bzmin
     Bzmax = args.Bzmax
     nBz = args.nBz
-    psimin = args.phimin
+    psimin = args.psimin
     psimax = args.psimax
     npsi = args.npsi
 
@@ -193,9 +193,12 @@ def main():
                 for _By in By:
                     for _Bz in Bz:
                         for _psi in psi:
-                            _Zs = p.Zs_empirical(_rho, _phi,
-                                                 _P, _By, _Bz, _psi)
-                print(f"{_rho} {_phi} {_P} {_By} {_Bz} {_psi} {_Zs}")
+                            _Zs = p.Zs_empirical(
+                                _rho, _phi, _P, _By, _Bz, _psi
+                            )
+                            print(
+                                f"{_rho} {_phi} {_P} {_By} {_Bz} {_psi} {_Zs}"
+                            )
 
 
 if __name__ == '__main__':

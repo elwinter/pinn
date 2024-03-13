@@ -76,19 +76,28 @@ if __name__ == '__main__':
     print(f"n_var = {n_var}")
 
     # Test the analytical solution.
+    # Values are for Figure 5.
     n = 11
+    # rhomin, rhomax, nrho = 1.0, 11.0, n
+    # phimin, phimax, nphi = 0.0, 2*np.pi, n
+    # Pmin, Pmax, nP = 2.0, 2.0, n
+    # Bymin, Bymax, nBy = 0.0, 0.0, n
+    # Bzmin, Bzmax, nBz = 0.0, 0.0, n
+    # psimin, psimax, npsi = np.radians(30.0), np.radians(30.0), n
     rhomin, rhomax, nrho = 1.0, 11.0, n
-    phimin, phimax, nphi = 0.0, 2*np.pi, n
+    phimin, phimax, nphi = np.pi, np.pi, n
     Pmin, Pmax, nP = 2.0, 2.0, n
     Bymin, Bymax, nBy = 0.0, 0.0, n
     Bzmin, Bzmax, nBz = 0.0, 0.0, n
     psimin, psimax, npsi = np.radians(30.0), np.radians(30.0), n
+
     rho = np.linspace(rhomin, rhomax, nrho)
     phi = np.linspace(phimin, phimax, nphi)
     P = np.linspace(Pmin, Pmax, nP)
     By = np.linspace(Bymin, Bymax, nBy)
     Bz = np.linspace(Bzmin, Bzmax, nBz)
     psi = np.linspace(psimin, psimax, npsi)
+
     Zs = Zs_empirical(rho, phi, P, By, Bz, psi)
 
     for i in range(n):
