@@ -43,7 +43,7 @@ alpha0, alpha0_rms = 7.13, 0.06
 alpha1, alpha1_rms = 4.87, 0.07
 alpha2, alpha2_rms = -0.22, 0.12
 alpha3, alpha3_rms = -0.14, 0.04
-chi, chi_rms = -0.29, 0.03  # 
+chi, chi_rms = -0.29, 0.03
 beta0, beta0_rms = 2.18, 0.09
 beta1, beta1_rms = 0.40, 0.11
 
@@ -83,7 +83,7 @@ def alpha_empirical(fP, fBz, phi):
     return alpha0 + alpha1*np.cos(phi) + alpha2*fP + alpha3*fBz
 
 
-def beta_empirical(fBz,):
+def beta_empirical(fBz):
     """Equation 9"""
     return beta0 + beta1*fBz
 
@@ -102,9 +102,9 @@ def Zs_empirical(rho, phi, P, By, Bz, psi):
     """Equation 3"""
     fP = fP_empirical(P)
     fBz = fBz_empirical(Bz)
+    RH = RH_empirical(fP, fBz, phi)
     a0 = a0_empirical(fP, fBz)
     a1 = a1_empirical(fP, fBz)
-    RH = RH_empirical(fP, fBz, phi)
     T = T_empirical(fP)
     alpha = alpha_empirical(fP, fBz, phi)
     beta = beta_empirical(fBz)
