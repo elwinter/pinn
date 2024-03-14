@@ -621,8 +621,6 @@ def read_grid_file(path):
         column_names = column_names_str.split(' ')
         n_cols = len(column_names)
         n_var = n_cols - n_dim
-        for i in range(n_dim):
-            assert dim_names[i] == column_names[i]
         pad = [None]*n_var
         column_descriptions = [
             (s1, f1, f2, i1)
