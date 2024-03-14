@@ -45,39 +45,42 @@ def create_command_line_argument_parser():
     parser = pinn.common.create_minimal_command_line_argument_parser(DESCRIPTION)
     parser.add_argument(
         '--cartesian', action='store_true',
-        help='Use Cartesian instead of cylindrical coordinates'
+        help='Use Cartesian instead of cylindrical coordinates (treat rho as'
+             ' x, treat phi as y, on the command line). This creates a a grid'
+             ' in the XY plane, but presents the points in that plane in'
+             ' (rho, phi) coordinates, as expected by the Zs() model.'
     )
     parser.add_argument(
-        'rhomin', type=float,
-        help='Minimum value for rho'
+        'rhoxmin', type=float,
+        help='Minimum value for rho (R_E) or x (R_E) (SM frame)'
     )
     parser.add_argument(
-        'rhomax', type=float,
-        help='Maximum value for rho'
+        'rhoxmax', type=float,
+        help='Maximum value for rho (R_E) or x (R_E) (SM frame)'
     )
     parser.add_argument(
-        'nrho', type=int,
-        help='Number of rho steps'
+        'nrhox', type=int,
+        help='Number of rho (or x) steps'
     )
     parser.add_argument(
-        'phimin', type=float,
-        help='Minimum value for phi'
+        'phiymin', type=float,
+        help='Minimum value for phi (degrees > 0) or y (R_E) (SM frame)'
     )
     parser.add_argument(
-        'phimax', type=float,
-        help='Maximum value for phi'
+        'phiymax', type=float,
+        help='Maximum value for phi (degrees > 0) or y (R_E) (SM frame)'
     )
     parser.add_argument(
-        'nphi', type=int,
-        help='Number of phi steps'
+        'nphiy', type=int,
+        help='Number of phi (or y) steps'
     )
     parser.add_argument(
         'Pmin', type=float,
-        help='Minimum value for P'
+        help='Minimum value for P (nPa)'
     )
     parser.add_argument(
         'Pmax', type=float,
-        help='Maximum value for P'
+        help='Maximum value for P (nPa)'
     )
     parser.add_argument(
         'nP', type=int,
@@ -85,11 +88,11 @@ def create_command_line_argument_parser():
     )
     parser.add_argument(
         'Bymin', type=float,
-        help='Minimum value for By'
+        help='Minimum value for By (nT, SM frame)'
     )
     parser.add_argument(
         'Bymax', type=float,
-        help='Maximum value for By'
+        help='Maximum value for By (nT, SM frame)'
     )
     parser.add_argument(
         'nBy', type=int,
@@ -97,11 +100,11 @@ def create_command_line_argument_parser():
     )
     parser.add_argument(
         'Bzmin', type=float,
-        help='Minimum value for Bz'
+        help='Minimum value for Bz (nT, SM frame)'
     )
     parser.add_argument(
         'Bzmax', type=float,
-        help='Maximum value for Bz'
+        help='Maximum value for Bz (nT, SM frame)'
     )
     parser.add_argument(
         'nBz', type=int,
@@ -109,11 +112,11 @@ def create_command_line_argument_parser():
     )
     parser.add_argument(
         'psimin', type=float,
-        help='Minimum value for psi'
+        help='Minimum value for psi (degrees, SM frame)'
     )
     parser.add_argument(
         'psimax', type=float,
-        help='Maximum value for psi'
+        help='Maximum value for psi (degrees, SM frame)'
     )
     parser.add_argument(
         'npsi', type=int,
@@ -134,20 +137,12 @@ def main():
     debug = args.debug
     verbose = args.verbose
     cartesian = args.cartesian
-    if cartesian:
-        xmin = args.rhomin
-        xmax = args.rhomax
-        nx = args.nrho
-        ymin = args.phimin
-        ymax = args.phimax
-        ny = args.nphi
-    else:
-        rhomin = args.rhomin
-        rhomax = args.rhomax
-        nrho = args.nrho
-        phimin = args.phimin
-        phimax = args.phimax
-        nphi = args.nphi
+    rhoxmin = args.rhoxmin
+    rhoxmax = args.rhoxmax
+    nrhox = args.nrhox
+    phiymin = args.phiymin
+    phiymax = args.phiymax
+    nphiy = args.nphiy
     Pmin = args.Pmin
     Pmax = args.Pmax
     nP = args.nP
@@ -161,111 +156,80 @@ def main():
     psimax = args.psimax
     npsi = args.npsi
 
+    # Convert angles to radians.
+    if not cartesian:
+        phiymin = np.radians(phiymin)
+        phiymax = np.radians(phiymax)
+    psimin = np.radians(psimin)
+    psimax = np.radians(psimax)
+
     # Print the output header lines.
     header = '# GRID'
     print(header)
     if cartesian:
-        header = (
-            f"# x"
-            f" y"
-            f" {p.independent_variable_names[p.iP]}"
-            f" {p.independent_variable_names[p.iBy]}"
-            f" {p.independent_variable_names[p.iBz]}"
-            f" {p.independent_variable_names[p.ipsi]}"
-        )
+        header = '# x y'
     else:
         header = (
             f"# {p.independent_variable_names[p.irho]}"
             f" {p.independent_variable_names[p.iphi]}"
-            f" {p.independent_variable_names[p.iP]}"
-            f" {p.independent_variable_names[p.iBy]}"
-            f" {p.independent_variable_names[p.iBz]}"
-            f" {p.independent_variable_names[p.ipsi]}"
         )
+    header += (
+        f" {p.independent_variable_names[p.iP]}"
+        f" {p.independent_variable_names[p.iBy]}"
+        f" {p.independent_variable_names[p.iBz]}"
+        f" {p.independent_variable_names[p.ipsi]}"
+    )
     print(header)
-    if cartesian:
-        header = (
-            f"# {xmin} {xmax} {nx}"
-            f" {ymin} {ymax} {ny}"
-            f" {Pmin} {Pmax} {nP}"
-            f" {Bymin} {Bymax} {nBy}"
-            f" {Bzmin} {Bzmax} {nBz}"
-            f" {psimin} {psimax} {npsi}"
-        )
-    else:
-        header = (
-            f"# {rhomin} {rhomax} {nrho}"
-            f" {phimin} {phimax} {nphi}"
-            f" {Pmin} {Pmax} {nP}"
-            f" {Bymin} {Bymax} {nBy}"
-            f" {Bzmin} {Bzmax} {nBz}"
-            f" {psimin} {psimax} {npsi}"
-        )
+    header = (
+        f"# {rhoxmin} {rhoxmax} {nrhox}"
+        f" {phiymin} {phiymax} {nphiy}"
+        f" {Pmin} {Pmax} {nP}"
+        f" {Bymin} {Bymax} {nBy}"
+        f" {Bzmin} {Bzmax} {nBz}"
+        f" {psimin} {psimax} {npsi}"
+    )
     print(header)
-    if cartesian:
-        header = (
-            f"# x"
-            f" y"
-            f" {p.independent_variable_names[p.iP]}"
-            f" {p.independent_variable_names[p.iBy]}"
-            f" {p.independent_variable_names[p.iBz]}"
-            f" {p.independent_variable_names[p.ipsi]}"
-            f" {p.dependent_variable_names[p.iZs]}"
-        )
-    else:
-        header = (
-            f"# {p.independent_variable_names[p.irho]}"
-            f" {p.independent_variable_names[p.iphi]}"
-            f" {p.independent_variable_names[p.iP]}"
-            f" {p.independent_variable_names[p.iBy]}"
-            f" {p.independent_variable_names[p.iBz]}"
-            f" {p.independent_variable_names[p.ipsi]}"
-            f" {p.dependent_variable_names[p.iZs]}"
-        )
+    header = (
+        f"# {p.independent_variable_names[p.irho]}"
+        f" {p.independent_variable_names[p.iphi]}"
+        f" {p.independent_variable_names[p.iP]}"
+        f" {p.independent_variable_names[p.iBy]}"
+        f" {p.independent_variable_names[p.iBz]}"
+        f" {p.independent_variable_names[p.ipsi]}"
+        f" {p.dependent_variable_names[p.iZs]}"
+    )
     print(header)
 
-    # Compute the data and send to stdout.
-    # rho = rho or x, phi = phi or y
-    if cartesian:
-        x = np.linspace(xmin, xmax, nx)
-        y = np.linspace(ymin, ymax, ny)
-    else:
-        rho = np.linspace(rhomin, rhomax, nrho)
-        phi = np.linspace(phimin, phimax, nphi)
+    # Create the grid in Cartesian or cylindrical coordinates.
+    rhox = np.linspace(rhoxmin, rhoxmax, nrhox)
+    phiy = np.linspace(phiymin, phiymax, nphiy)
     P = np.linspace(Pmin, Pmax, nP)
     By = np.linspace(Bymin, Bymax, nBy)
     Bz = np.linspace(Bzmin, Bzmax, nBz)
     psi = np.linspace(psimin, psimax, npsi)
 
+    # Compute the data and send to stdout.
     # Iterate across the Cartesian or cylindrical grid.
-    if cartesian:
-        for _x in x:
-            for _y in y:
-                _rho = np.sqrt(_x**2 + _y**2)
-                _phi = np.arctan2(_y, _x)
-                for _P in P:
-                    for _By in By:
-                        for _Bz in Bz:
-                            for _psi in psi:
-                                _Zs = p.Zs_empirical(
-                                    _rho, _phi, _P, _By, _Bz, _psi
-                                )
-                                print(
-                                    f"{_rho} {_phi} {_P} {_By} {_Bz} {_psi} {_Zs}"
-                                )
-    else:
-        for _rho in rho:
-            for _phi in phi:
-                for _P in P:
-                    for _By in By:
-                        for _Bz in Bz:
-                            for _psi in psi:
-                                _Zs = p.Zs_empirical(
-                                    _rho, _phi, _P, _By, _Bz, _psi
-                                )
-                                print(
-                                    f"{_rho} {_phi} {_P} {_By} {_Bz} {_psi} {_Zs}"
-                                )
+    for _rhox in rhox:
+        for _phiy in phiy:
+            if cartesian:
+                _rho = np.sqrt(_rhox**2 + _phiy**2)
+                _phi = np.arctan2(_phiy, _rhox)
+                if _phi < 0:
+                    _phi += 2*np.pi
+            else:
+                _rho = _rhox
+                _phi = _phiy
+            for _P in P:
+                for _By in By:
+                    for _Bz in Bz:
+                        for _psi in psi:
+                            _Zs = p.Zs_empirical(
+                                _rho, _phi, _P, _By, _Bz, _psi
+                            )
+                            print(
+                                f"{_rho} {_phi} {_P} {_By} {_Bz} {_psi} {_Zs}"
+                            )
 
 if __name__ == '__main__':
     """Begin main program."""

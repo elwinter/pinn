@@ -210,7 +210,6 @@ def main():
     ylabel = p.independent_variable_labels[iy]
     ylim = [column_descriptions[iy][ivmin], column_descriptions[iy][ivmax]]
     zlabel = varlabel
-    zlim = [-30.0, 30.0]  # <HACK/>
     training_point_color = 'black'
     figsize = (19.2, 4.8)  # For row of 3 contour plots.
     nrows, ncols = 1, 3
@@ -226,35 +225,57 @@ def main():
     )
     gs = mpl.gridspec.GridSpec(nrows, ncols)
 
+    # <HACK>
+    # Convert cylindrical to Cartesian.
+    RHO = X
+    PHI = Y
+    XX = RHO*np.cos(PHI)
+    YY = RHO*np.sin(PHI)
+    print(f"{XX.min()} <= XX <= {XX.max()}")
+    print(f"{YY.min()} <= YY <= {YY.max()}")
+    # </HACK>
+
     # Create the left plot (trained solution).
-    ax = fig.add_subplot(gs[0])
-    ax.set_xlabel(xlabel)
-    ax.set_xlim(xlim)
-    ax.set_ylabel(ylabel)
-    ax.set_ylim(ylim)
-    ax.grid()
-    cnt = ax.contour(X, Y, Z_trained)
-    ax.clabel(cnt, inline=True)
+    ax = fig.add_subplot(gs[0], projection='3d')
+    ax.scatter(XX, YY, Z_trained)
+    ax.set_xlabel("$X_{SM}$")
+    ax.set_ylabel("$Y_{SM}$")
+    # ax = fig.add_subplot(gs[0])
+    # ax.set_xlabel(xlabel)
+    # ax.set_xlim(xlim)
+    # ax.set_ylabel(ylabel)
+    # ax.set_ylim(ylim)
+    # ax.grid()
+    # cnt = ax.contour(X, Y, Z_trained)
+    # ax.clabel(cnt, inline=True)
 
     # Create the middle plot (empirical solution).
-    ax = fig.add_subplot(gs[1])
-    ax.set_xlabel(xlabel)
-    ax.set_xlim(xlim)
-    ax.set_ylabel(ylabel)
-    ax.set_ylim(ylim)
-    ax.grid()
-    cnt = ax.contour(X, Y, Z_empirical)
-    ax.clabel(cnt, inline=True)
+    ax = fig.add_subplot(gs[1], projection='3d')
+    ax.scatter(XX, YY, Z_empirical)
+    ax.set_xlabel("$X_{SM}$")
+    ax.set_ylabel("$Y_{SM}$")
+    # ax = fig.add_subplot(gs[1])
+    # ax.set_xlabel(xlabel)
+    # ax.set_xlim(xlim)
+    # ax.set_ylabel(ylabel)
+    # ax.set_ylim(ylim)
+    # ax.grid()
+    # cnt = ax.contour(X, Y, Z_empirical)
+    # ax.clabel(cnt, inline=True)
 
     # Create the right plot (error).
-    ax = fig.add_subplot(gs[2])
-    ax.set_xlabel(xlabel)
-    ax.set_xlim(xlim)
-    ax.set_ylabel(ylabel)
-    ax.set_ylim(ylim)
-    ax.grid()
-    cnt = ax.contour(X, Y, Z_error)
-    ax.clabel(cnt, inline=True)
+    ax = fig.add_subplot(gs[2], projection='3d')
+    ax.scatter(XX, YY, Z_error)
+    ax.set_xlabel("$X_{SM}$")
+    ax.set_ylabel("$Y_{SM}$")
+    # ax = fig.add_subplot(gs[2])
+    # ax.set_xlabel(xlabel)
+    # ax.set_xlim(xlim)
+    # ax.set_ylabel(ylabel)
+    # ax.set_ylim(ylim)
+    # ax.grid()
+    # cnt = ax.contour(X, Y, Z_error)
+    # ax.clabel(cnt, inline=True)
 
     # Add a plot title with the RMS error.
     text = f"RMS error = {z_rmserr:.2E}"
