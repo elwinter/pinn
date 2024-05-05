@@ -235,7 +235,7 @@ def main():
         print("Recording system information, model hyperparameters, and "
               "problem definition and data.", flush=True)
     common.save_system_information(output_dir)
-    common.save_hyperparameters(args, output_dir)
+    # common.save_hyperparameters(args, output_dir)
     shutil.copy(problem_path, output_dir)
     shutil.copy(data_path, output_dir)
     shutil.copy(training_path, output_dir)
