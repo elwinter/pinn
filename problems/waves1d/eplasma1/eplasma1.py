@@ -98,7 +98,7 @@ kb = 1.0    # Boltzmann constant
 # Plasma parameters
 n0 = 1.0  # Ambient equilibrium number density
 P0 = 1.0  # Ambient equilibrium pressure
-ɣ = 5/3   # Adiabatic index = (N + 2)/N, N = # DOF
+ɣ = 3.0   # Adiabatic index = (N + 2)/N, N = # DOF = 1
 T = 1.0   # Ambient temperature
 
 # Wavelength and wavenumber of initial n/vx/Ex perturbations
