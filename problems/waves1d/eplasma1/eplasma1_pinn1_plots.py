@@ -110,71 +110,76 @@ def main():
     # Create the plots in a memory buffer.
     mpl.use("Agg")
 
+    # Set global plot properties.
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = 12
+
     # -------------------------------------------------------------------------
 
     # Plot the total residual, data, and weighted loss histories.
 
     # Load the data.
-    path = os.path.join(results_path, "L_res.dat")
-    L_res = np.loadtxt(path)
-    path = os.path.join(results_path, "L_data.dat")
-    L_dat = np.loadtxt(path)
-    path = os.path.join(results_path, "L.dat")
-    L = np.loadtxt(path)
+    # path = os.path.join(results_path, "L_res.dat")
+    # L_res = np.loadtxt(path)
+    # path = os.path.join(results_path, "L_data.dat")
+    # L_dat = np.loadtxt(path)
+    # path = os.path.join(results_path, "L.dat")
+    # L = np.loadtxt(path)
 
     # Create the plot.
-    plt.clf()
-    plt.semilogy(L_res, label="$L_{res}$")
-    plt.semilogy(L_dat, label="$L_{dat}$")
-    plt.semilogy(L, label="$L$")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.ylim(ylim["L"])
-    plt.legend()
-    plt.title(f"Total residual, data, and weighted loss")
-    plt.grid()
+    # plt.clf()
+    # plt.semilogy(L_res, label="$L_{res}$")
+    # plt.semilogy(L_dat, label="$L_{dat}$")
+    # plt.semilogy(L, label="$L$")
+    # plt.xlabel("Epoch")
+    # plt.ylabel("Loss")
+    # plt.ylim(ylim["L"])
+    # plt.legend()
+    # plt.title(f"Total residual, data, and weighted loss")
+    # plt.grid()
 
     # Save the plot to a PNG file.
-    path = os.path.join(output_path, "L.png")
-    if verbose:
-        print(f"Saving {path}.")
-    plt.savefig(path)
-    plt.close()
+    # path = os.path.join(output_path, "L.png")
+    # if verbose:
+    #     print(f"Saving {path}.")
+    # plt.savefig(path)
+    # plt.close()
 
     # ------------------------------------------------------------------------
 
     # Plot the per-model residual, data, and weighted loss histories.
 
     # Plot for each model.
-    for iv in range(p.n_var):
+    # for iv in range(p.n_var):
 
         # Load the data.
-        variable_name = p.dependent_variable_names[iv]
-        variable_label = p.dependent_variable_labels[iv]
-        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
-        L_res = np.loadtxt(path)
-        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
-        L_dat = np.loadtxt(path)
-        path = os.path.join(results_path, f"L_{variable_name}.dat")
-        L = np.loadtxt(path)
+        # variable_name = p.dependent_variable_names[iv]
+        # variable_label = p.dependent_variable_labels[iv]
+        # path = os.path.join(results_path, f"L_res_{variable_name}.dat")
+        # L_res = np.loadtxt(path)
+        # path = os.path.join(results_path, f"L_data_{variable_name}.dat")
+        # L_dat = np.loadtxt(path)
+        # path = os.path.join(results_path, f"L_{variable_name}.dat")
+        # L = np.loadtxt(path)
 
         # Create the plot.
-        plt.semilogy(L_res, label="$L_{res}$")
-        plt.semilogy(L_dat, label="$L_{dat}$")
-        plt.semilogy(L, label="$L$")
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        plt.ylim(ylim["L"])
-        plt.legend()
-        plt.title(f"Residual, data, and weighted loss for {variable_label}")
-        plt.grid()
+        # plt.semilogy(L_res, label="$L_{res}$")
+        # plt.semilogy(L_dat, label="$L_{dat}$")
+        # plt.semilogy(L, label="$L$")
+        # plt.xlabel("Epoch")
+        # plt.ylabel("Loss")
+        # plt.ylim(ylim["L"])
+        # plt.legend()
+        # plt.title(f"Residual, data, and weighted loss for {variable_label}")
+        # plt.grid()
 
         # Save the plot.
-        path = os.path.join(output_path, f"L_{variable_name}.png")
-        if verbose:
-            print(f"Saving {path}.")
-        plt.savefig(path)
-        plt.close()
+        # path = os.path.join(output_path, f"L_{variable_name}.png")
+        # if verbose:
+        #     print(f"Saving {path}.")
+        # plt.savefig(path)
+        # plt.close()
 
     # ------------------------------------------------------------------------
 
@@ -220,25 +225,25 @@ def main():
     # ------------------------------------------------------------------------
 
     # Plot the initial values of the data.
-    for (iv, variable_name) in enumerate(p.dependent_variable_names):
-        xlabel = p.independent_variable_labels[p.ix]
-        ylabel = p.dependent_variable_labels[iv]
-        # <HACK>
-        # Assumes IC followed by BC.
-        X = XY_data[:nx, p.ix]
-        Y = XY_data[:nx, p.n_dim + iv]
-        # </HACK>
-        plt.plot(X, Y)
-        plt.ylim(ylim[variable_name])
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.grid()
-        plt.title(f"Initial {ylabel}")
-        path = os.path.join(output_path, f"{variable_name}0.png")
-        if verbose:
-            print(f"Saving {path}.")
-        plt.savefig(path)
-        plt.close()
+    # for (iv, variable_name) in enumerate(p.dependent_variable_names):
+    #     xlabel = p.independent_variable_labels[p.ix]
+    #     ylabel = p.dependent_variable_labels[iv]
+    #     # <HACK>
+    #     # Assumes IC followed by BC.
+    #     X = XY_data[:nx, p.ix]
+    #     Y = XY_data[:nx, p.n_dim + iv]
+    #     # </HACK>
+    #     plt.plot(X, Y)
+    #     plt.ylim(ylim[variable_name])
+    #     plt.xlabel(xlabel)
+    #     plt.ylabel(ylabel)
+    #     plt.grid()
+    #     plt.title(f"Initial {ylabel}")
+    #     path = os.path.join(output_path, f"{variable_name}0.png")
+    #     if verbose:
+    #         print(f"Saving {path}.")
+    #     plt.savefig(path)
+    #     plt.close()
 
     # ------------------------------------------------------------------------
 
@@ -266,25 +271,49 @@ def main():
             i0 = i*nx
             i1 = i0 + nx
             X = X_train[i0:i1, p.ix]
+
+            # Fetch the data to plot.
             Yt = Y_trained[i, :]
             Ya = Y_analytical[i, :]
             Ye = Y_error[i, :]
             rms_err = np.sqrt(np.sum(Ye**2)/nx)
-            plt.plot(X, Yt, label="trained")
-            plt.plot(X, Ya, label="analytical")
-            plt.plot(X, Ye, label="error")
-            plt.ylim(ylim[variable_name])
-            plt.xlabel(xlabel)
-            plt.ylabel(ylabel)
-            plt.legend(loc="upper right")
-            plt.grid()
+
+            # Create the figure.
+            fig = plt.figure()
+            ax = plt.gca()
+            ax.grid()
+
+            # Plot the trained and analytical solutions on the left axis.
+            line_trained = ax.plot(X, Yt, label="Trained")
+            line_analytical = ax.plot(X, Ya, label="Analytical")
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+
+            # Add the time.
             t_frame = X_train[i0, 0]
-            t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2e}"
-            t_label_x = 0.0
-            t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1] - ylim[variable_name][0])
-            plt.text(t_label_x, t_label_y, t_label)
-            title = f"{ylabel}, RMS error = {rms_err:.2e}"
-            plt.title(title)
+            t_label = f"{p.independent_variable_labels[p.it]} = {t_frame:.2f}"
+            # t_label_x = 0.0
+            # t_label_y = ylim[variable_name][0] + 0.95*(ylim[variable_name][1] - ylim[variable_name][0])
+            # ax.text(t_label_x, t_label_y, t_label)
+
+            # Set the title.
+            title = f"{ylabel}, {t_label}, RMSE = {rms_err:.2e}"
+            ax.set_title(title)
+
+            # Plot the error on the right axis.
+            secax = ax.twinx()
+            secax.set_ylim([-1e-2, 1e-2])
+            secax.set_ylabel('Error')
+            line_error = secax.plot(X, Ye, color='green', label='Error')
+
+            # Add a combined legend.
+            lines = line_trained + line_analytical + line_error
+            labels = [line.get_label() for line in lines]
+            ax.legend(lines, labels, loc="upper right")
+
+            # Save the frame to files.
+            path = os.path.join(frame_dir, f"{variable_name}-{i:06}.pdf")
+            plt.savefig(path)
             path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
             if verbose:
                 print(f"Saving {path}.")
