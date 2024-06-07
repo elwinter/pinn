@@ -418,8 +418,6 @@ def main():
         loss["aggregate"]["constraint"] = []
     loss["aggregate"]["data"] = []
     loss["aggregate"]["total"] = []
-    if debug:
-        print(f"loss = {loss}", flush=True)
 
     # -------------------------------------------------------------------------
 
