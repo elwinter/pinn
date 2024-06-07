@@ -111,6 +111,11 @@ def main():
     # Create the plots in a memory buffer.
     mpl.use('Agg')
 
+    # Set global plot properties.
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = 16
+
     # -------------------------------------------------------------------------
 
     # Plot the loss history.

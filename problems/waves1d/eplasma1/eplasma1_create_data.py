@@ -96,7 +96,7 @@ def main():
     print(header)
     header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x}"
     print(header)
-    header = "# t x n P ux"
+    header = "# t x n u1x E1x"
     print(header)
 
     # Compute the initial conditions at (t=0, x).
@@ -121,18 +121,6 @@ def main():
     u1x = p.u1x_analytical(tx)
     E1x = p.E1x_analytical(tx)
     for i in range(n_t):
-        print(tx[i, 0], tx[i, 1], n1[i], u1x[i], E1x[i])
-
-    # Compute the initial conditions at (t=end, x).
-    # Each line is:
-    # tg[-1] x n1 u1x E1x
-    tx = np.zeros((n_x, 2))
-    tx[:, 0] = tg[-1]
-    tx[:, 1] = xg
-    n1 = p.n1_analytical(tx)
-    u1x = p.u1x_analytical(tx)
-    E1x = p.E1x_analytical(tx)
-    for i in range(n_x):
         print(tx[i, 0], tx[i, 1], n1[i], u1x[i], E1x[i])
 
 
