@@ -250,6 +250,11 @@ def main():
     # Make a movie for each predicted variable. Include the analytical solution
     # and the error.
 
+    # Set global plot properties.
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams['font.size'] = 16
+
     # Create and save each frame.
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
         if verbose:
@@ -283,9 +288,11 @@ def main():
             ax = plt.gca()
             ax.grid()
 
+            fig.subplots_adjust(left=0.15, right=0.8)
+
             # Plot the trained and analytical solutions on the left axis.
-            line_trained = ax.plot(X, Yt, label="Trained")
-            line_analytical = ax.plot(X, Ya, label="Analytical")
+            line_trained = ax.plot(X, Yt, label="Trained", linewidth=5)
+            line_analytical = ax.plot(X, Ya, label="Analytical", linestyle='--')
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
 
@@ -297,7 +304,8 @@ def main():
             # ax.text(t_label_x, t_label_y, t_label)
 
             # Set the title.
-            title = f"{ylabel}, {t_label}, RMSE = {rms_err:.2e}"
+            # title = f"{ylabel}, {t_label}, RMSE = {rms_err:.2e}"
+            title = f"{t_label}"
             ax.set_title(title)
 
             # Plot the error on the right axis.
@@ -317,7 +325,7 @@ def main():
             path = os.path.join(frame_dir, f"{variable_name}-{i:06}.png")
             if verbose:
                 print(f"Saving {path}.")
-            plt.savefig(path)
+            plt.savefig(path, bbox_inches='tight')
             frames.append(path)
             plt.close()
 

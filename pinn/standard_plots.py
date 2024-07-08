@@ -469,7 +469,7 @@ def plot_actual_predicted_error(
     """
     # Compute the figure size for side-by-side-by-side actual, predicted,
     # and error plots for the values.
-    figsize = (SUBPLOT_WIDTH*3, SUBPLOT_HEIGHT)
+    figsize = (SUBPLOT_WIDTH*4, SUBPLOT_HEIGHT)
 
     # Create the figure.
     fig = plt.figure(figsize=figsize)
