@@ -341,7 +341,7 @@ U0_RANGE = [-0.1, 0.1]  # Hidden layer biases
 V0_RANGE = [-0.1, 0.1]  # Output layer weights
 
 
-def build_model(n_layers, n_hidden, activation):
+def build_model(n_layers, n_hidden, activation, name):
     """Build a multi-layer neural network model.
 
     Build a fully-connected, multi-layer neural network with single output.
@@ -362,6 +362,8 @@ def build_model(n_layers, n_hidden, activation):
         Number of nodes to use in each hidden layer.
     activation : str
         Name of activation function (from TensorFlow) to use.
+    name : str
+        Name for model
 
     Returns
     -------
@@ -388,7 +390,7 @@ def build_model(n_layers, n_hidden, activation):
         use_bias=False,
     )
     layers.append(output_layer)
-    model = tf.keras.Sequential(layers)
+    model = tf.keras.Sequential(layers, name=name)
     return model
 
 
