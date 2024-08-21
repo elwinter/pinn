@@ -153,7 +153,7 @@ def create_command_line_argument_parser():
     )
     parser.add_argument(
         "data_path",
-        help="Path to problem data (IC, BC, etc.) file (default: %(default)s)"
+        help="Path to problem data (IC, BC, etc.) file"
     )
     parser.add_argument(
         "training_path",
