@@ -346,9 +346,9 @@ def main():
         if load_model:
             if verbose:
                 print("Loading trained multi-output model.")
-    #         raise TypeError(
-    #             "Loading trained multi-output model not implemented!"
-    #         )
+            raise TypeError(
+                "Loading trained multi-output model not implemented!"
+            )
         else:
             if verbose:
                 print("Creating untrained multi-output model.")
@@ -481,7 +481,7 @@ def main():
         # _data : computed using data points
         # _model : computed using model
 
-        # Part 1: Process each batch of training points.
+        # Part 1: Process each batch of training points for this epoch.
         for i_batch in range(n_batches):
             if debug:
                 print(f"i_batch = {i_batch}")
@@ -546,7 +546,7 @@ def main():
                 # There are p.n_var Tensors in the list (one per equation).
                 # Each Tensor has shape () (scalar).
                 wL_res_per_model = [
-                    tf.math.sqrt(tf.reduce_sum(G**2)/n_train)*w_res
+                    tf.math.sqrt(tf.reduce_sum(G**2)/len(G))*w_res
                     for G in G_train_model
                 ]
                 if debug:
