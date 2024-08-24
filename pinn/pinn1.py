@@ -13,6 +13,7 @@ Eric Winter (eric.winter62@gmail.com)
 
 # Import standard Python modules.
 import argparse
+import copy
 import datetime
 import os
 import shutil
@@ -481,6 +482,10 @@ def main():
         # _data : computed using data points
         # _model : computed using model
 
+        # Create the list to hold the per-model weighted residual losses for
+        # each batch.
+        wL_res_per_model = [None]*n_batches
+
         # Part 1: Process each batch of training points for this epoch.
         for i_batch in range(n_batches):
             if debug:
@@ -538,22 +543,29 @@ def main():
                 if debug:
                     print(f"G_train_model = {G_train_model}")
 
-                # Compute the loss function for the equation residuals at the
-                # training points in this batch for each model. The loss
+                # Compute the weighted loss function for the equation residuals
+                # at the training points in this batch for each model. The loss
                 # function is then multiplied by the weight for the equation
                 # residuals.
                 # wL_res_per_model is a list of Tensor objects.
                 # There are p.n_var Tensors in the list (one per equation).
                 # Each Tensor has shape () (scalar).
-                wL_res_per_model = [
+                wL_res_per_model_batch = [
                     tf.math.sqrt(tf.reduce_sum(G**2)/len(G))*w_res
                     for G in G_train_model
                 ]
                 if debug:
+                    print(f"wL_res_per_model_batch = {wL_res_per_model_batch}")
+
+                # Save a copy of the weighted residual losses for each model
+                # for this batch.
+                wL_res_per_model[i_batch] = copy.deepcopy(
+                    wL_res_per_model_batch)
+                if debug:
                     print(f"wL_res_per_model = {wL_res_per_model}")
 
                 # Compute the aggregated weighted residual loss function.
-                wL_res = tf.math.reduce_sum(wL_res_per_model)
+                wL_res = tf.math.reduce_sum(wL_res_per_model_batch)
                 if debug:
                     print(f"wL_res = {wL_res}")
 
@@ -580,7 +592,7 @@ def main():
             for (g, m) in zip(pgrad, models):
                 optimizer.apply_gradients(zip(g, m.trainable_variables))
 
-            if verbose:
+            if debug:
                 print(f"epoch = {epoch}, batch {i_batch}: wL_res = {wL_res}")
 
             # End of all training point batches for this epoch.
@@ -662,13 +674,42 @@ def main():
         for (g, m) in zip(pgrad, models):
             optimizer.apply_gradients(zip(g, m.trainable_variables))
 
-        if verbose:
-            print(f"epoch = {epoch}: wL_data = {wL_data}")
-
         # --------------------------------------------------------------------
 
         # At this point, all of the training points, as well as the data
         # points, have been used to train the network for this epoch.
+
+        # --------------------------------------------------------------------
+
+        # Compute the overall loss function for the epoch.
+
+        # Convert the individual per-batch weighted residual lossed back to
+        # sum of squared residuals. Then total them, and compute the RMS
+        # residual over the entire training set.
+        sum_G2 = 0.0
+        for i_batch in range(n_batches):
+            this_batch_size = training_batches[i_batch].shape[0]
+            sum_G2_batch = (wL_res_per_model[i_batch][0]/w_res)**2*this_batch_size
+            sum_G2 += sum_G2_batch
+        if debug:
+            print(f"sum_G2 = {sum_G2}")
+        L_res = tf.math.sqrt(sum_G2/n_train)
+        if debug:
+            print(f"L_res = {L_res}")
+
+        # Convert the weighted data loss to unweighted.
+        L_data = wL_data/w_data
+        if debug:
+            print(f"L_data = {L_data}")
+
+        # Compute the final weighted loss.
+        L = w_res*L_res + w_data*L_data
+        if debug:
+            print(f"L = {L}")
+
+        if verbose:
+            print(f"Epoch = {epoch}: (L_res, L_data, L) = "
+                  f"({L_res:.4e}, {L_data:.4e} {L:.4e})")
 
         # --------------------------------------------------------------------
 
