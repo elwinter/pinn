@@ -707,26 +707,31 @@ def main():
         if debug:
             print(f"L = {L}")
 
+        # Save the aggregate losses.
+        loss["aggregate"]["residual"].append(L_res)
+        loss["aggregate"]["data"].append(L_data)
+        loss["aggregate"]["total"].append(L)
+
         if verbose:
             print(f"Epoch = {epoch}: (L_res, L_data, L) = "
                   f"({L_res:.4e}, {L_data:.4e} {L:.4e})")
 
         # --------------------------------------------------------------------
 
-    #     # Save the trained models.
-    #     if save_model > 0 and epoch % save_model == 0:
-    #         if multi:
-    #             path = os.path.join(
-    #                 output_dir, "models", f"{epoch:06d}", "model_multi"
-    #             )
-    #             model.save(path)
-    #         else:
-    #             for (i, model) in enumerate(models):
-    #                 path = os.path.join(
-    #                     output_dir, "models", f"{epoch:06d}",
-    #                     f"model_{p.dependent_variable_names[i]}"
-    #                 )
-    #                 model.save(path)
+        # Save the trained models.
+        if save_model > 0 and epoch % save_model == 0:
+            if multi:
+                path = os.path.join(
+                    output_dir, "models", f"{epoch:06d}", "model_multi"
+                )
+                model.save(path)
+            else:
+                for (i, model) in enumerate(models):
+                    path = os.path.join(
+                        output_dir, "models", f"{epoch:06d}",
+                        f"model_{p.dependent_variable_names[i]}"
+                    )
+                    model.save(path)
 
         if debug:
             print(f"Ending epoch {epoch}.")
@@ -773,7 +778,7 @@ def main():
                     model.summary()
                 sys.stdout = old_stdout
 
-    # # Save the loss histories.
+    # Save the loss histories.
     # for (i, v) in enumerate(p.dependent_variable_names):
     #     np.savetxt(
     #         os.path.join(output_dir, f"L_res_{v}.dat"), loss[v]["residual"]
@@ -784,15 +789,15 @@ def main():
     #     np.savetxt(
     #         os.path.join(output_dir, f"L_{v}.dat"), loss[v]["total"]
     #     )
-    # np.savetxt(
-    #     os.path.join(output_dir, "L_res.dat"), loss["aggregate"]["residual"]
-    # )
-    # np.savetxt(
-    #     os.path.join(output_dir, "L_data.dat"), loss["aggregate"]["data"]
-    # )
-    # np.savetxt(
-    #     os.path.join(output_dir, "L.dat"), loss["aggregate"]["total"]
-    # )
+    np.savetxt(
+        os.path.join(output_dir, "L_res.dat"), loss["aggregate"]["residual"]
+    )
+    np.savetxt(
+        os.path.join(output_dir, "L_data.dat"), loss["aggregate"]["data"]
+    )
+    np.savetxt(
+        os.path.join(output_dir, "L.dat"), loss["aggregate"]["total"]
+    )
 
 
 if __name__ == "__main__":
