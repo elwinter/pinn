@@ -353,11 +353,11 @@ def main():
         else:
             if verbose:
                 print("Creating untrained multi-output model.")
-    #         model = common.build_multi_output_model(n_layers, H, activation,
-    #                                                 p.n_var)
-    #         if debug:
-    #             print(f"model = {model}")
-    #         models.append(model)
+            model = common.build_multi_output_model(n_layers, H, activation,
+                                                    p.n_var)
+            if debug:
+                print(f"model = {model}")
+            models.append(model)
     else:
         if load_model:
             if verbose:
