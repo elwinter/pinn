@@ -340,13 +340,11 @@ def main():
 
     # -------------------------------------------------------------------------
 
-    # Create a model for each differential equation, unless "multi" was
-    # requested. If "multi", create a single multi-output network.
+    # Create a model for each variable, unless "multi" was requested. If
+    # "multi", create a single multi-output network.
     models = []
     if multi:
         if load_model:
-            if verbose:
-                print("Loading trained multi-output model.")
             raise TypeError(
                 "Loading trained multi-output model not implemented!"
             )
@@ -405,8 +403,8 @@ def main():
     if batch_size == -1:
         if verbose:
             print("Using single batch for training points.")
-        X_train_tf = tf.Variable(X_train)
-        training_batches.append(X_train_tf)
+        X_train_batch_tf = tf.Variable(X_train)
+        training_batches.append(X_train_batch_tf)
         n_batches = 1
     else:
         n_batches = int(np.ceil(n_train/batch_size))
@@ -423,8 +421,8 @@ def main():
             X_train_np = X_train[i_start:i_end]
             if debug:
                 print(f"X_train_np = {X_train_np}")
-            X_train_tf = tf.Variable(X_train_np)
-            training_batches.append(X_train_tf)
+            X_train_batch_tf = tf.Variable(X_train_np)
+            training_batches.append(X_train_batch_tf)
     if debug:
         print(f"training_batches = {training_batches}")
 
@@ -444,7 +442,8 @@ def main():
 
     # -------------------------------------------------------------------------
 
-    # Create loss histories as Python lists, so they can be easily updated.
+    # Create loss histories by epoch and model as Python lists, so they can be
+    # easily updated.
     loss = {}
     for v in p.dependent_variable_names:
         loss[v] = {}
@@ -462,8 +461,8 @@ def main():
 
     # Training involves presenting the training points and data points
     # together, a total of max_epochs times. Each epoch is composed of all
-    # of the batches in the training data. The model parameters are adjusted
-    # after each batch is processed.
+    # of the batches in the training data, and the single batch of additional
+    # data. The model parameters are adjusted after each batch is processed.
 
     # Record the training start time.
     t_start = datetime.datetime.now()
@@ -483,10 +482,15 @@ def main():
         # _model : computed using model
         # _batch : computed for the current batch
         # _epoch : computed for the current batch
+        # _tf : A TensorFlow Variable
 
-        # Create the list to hold the lists of per-model weighted residual
-        # losses for each batch.
-        wL_res_per_model = [None]*n_batches
+        # Create the list to hold the lists of per-model unweighted and
+        # weighted residual losses for each batch. Each list will contain
+        # n_batches elements, each of which is a list of p.n_var elements.
+        # The elements of the lowest-level list contain TensorFlow Variables
+        # of shape (1,).
+        L_res_per_batch_per_model = [None]*n_batches
+        wL_res_per_batch_per_model = [None]*n_batches
 
         # Part 1: Process each batch of training points for this epoch.
         for i_batch in range(n_batches):
@@ -503,21 +507,27 @@ def main():
                     # Compute the network outputs for this batch. These
                     # are the values of the dependent variables Y to use in the
                     # differential equations G.
-                    # Y_train_model is a list of tf.Tensor objects.
+                    # X_train_batch_tf is a tf.Tensor containing the training
+                    # points for this batch.
+                    # Y_train_batch_per_model is a list of tf.Tensor objects.
                     # There are p.n_var Tensors in the list (one per model).
                     # Each Tensor has shape (n, 1).
-                    X_train_tf = training_batches[i_batch]
-                    Y_train_model = []
+                    X_train_batch_tf = training_batches[i_batch]
+                    Y_train_batch_per_model = []
                     if multi:
                         # For a multi-output network, repackage the results
                         # into a list of Tensor for the individual variables.
-                        Y_multi = models[0](X_train_tf)
-                        Y_train_model = [tf.reshape(Y_multi[:, i], (n_train, 1))
-                                         for i in range(p.n_var)]
+                        Y_multi_batch_tf = models[0](X_train_batch_tf)
+                        Y_train_batch_per_model = [
+                            tf.reshape(Y_multi_batch_tf[:, i], (n_train, 1))
+                            for i in range(p.n_var)
+                        ]
                     else:
-                        Y_train_model = [model(X_train_tf) for model in models]
+                        Y_train_batch_per_model = [
+                            model(X_train_batch_tf) for model in models
+                        ]
                     if debug:
-                        print(f"Y_train_model = {Y_train_model}")
+                        print(f"Y_train_batch_per_model = {Y_train_batch_per_model}")
 
                     # End of tape1 context.
 
@@ -525,49 +535,68 @@ def main():
                 # the training points in this batch. These are the values of
                 # the partial derivatives dY/dX to use in the differential
                 # equations G.
-                # dY_dX_train_model is a list of tf.Tensor objects.
+                # dY_dX_train_batch_per_model is a list of tf.Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_train, p.n_dim).
-                dY_dX_train_model = [tape1.gradient(Y, X_train_tf)
-                                     for Y in Y_train_model]
+                dY_dX_train_batch_per_model = [tape1.gradient(Y, X_train_batch_tf)
+                                     for Y in Y_train_batch_per_model]
                 if debug:
-                    print(f"dY_dX_train_model = {dY_dX_train_model}")
+                    print(f"dY_dX_train_batch_per_model = {dY_dX_train_batch_per_model}")
 
                 # Compute the values of the differential equations at all
                 # training points.
-                # G_train_model_batch is a list of Tensor objects.
+                # G_train_batch_per_model is a list of Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_train, 1).
-                G_train_model_batch = [
-                    f(X_train_tf, Y_train_model, dY_dX_train_model)
+                G_train_batch_per_model = [
+                    f(X_train_batch_tf, Y_train_batch_per_model, dY_dX_train_batch_per_model)
                     for f in p.de
                 ]
                 if debug:
-                    print(f"G_train_model_batch = {G_train_model_batch}")
+                    print(f"G_train_batch_per_model = {G_train_batch_per_model}")
+
+                # Compute the unweighted loss function for the equation
+                # residuals at the training points in this batch for each
+                # model.
+                # L_res_batch_per_model is a list of Tensor objects.
+                # There are p.n_var Tensors in the list (one per equation).
+                # Each Tensor has shape () (scalar).
+                L_res_batch_per_model = [
+                    tf.math.sqrt(tf.reduce_sum(G**2)/len(G))
+                    for G in G_train_batch_per_model
+                ]
+                if debug:
+                    print(f"L_res_batch_per_model = {L_res_batch_per_model}")
 
                 # Compute the weighted loss function for the equation residuals
                 # at the training points in this batch for each model. The loss
                 # function is then multiplied by the weight for the equation
                 # residuals.
-                # wL_res_per_model is a list of Tensor objects.
+                # wL_res_per_batch_per_model is a list of Tensor objects.
                 # There are p.n_var Tensors in the list (one per equation).
                 # Each Tensor has shape () (scalar).
-                wL_res_per_model_batch = [
-                    tf.math.sqrt(tf.reduce_sum(G**2)/len(G))*w_res
-                    for G in G_train_model_batch
+                wL_res_batch_per_model = [
+                    L*w_res for L in L_res_batch_per_model
                 ]
                 if debug:
-                    print(f"wL_res_per_model_batch = {wL_res_per_model_batch}")
+                    print(f"wL_res_batch_per_model = {wL_res_batch_per_model}")
+
+                # Save a copy of the unweighted residual losses for each model
+                # for this batch.
+                L_res_per_batch_per_model[i_batch] = copy.deepcopy(
+                    L_res_batch_per_model)
+                if debug:
+                    print(f"L_res_per_batch_per_model = {L_res_per_batch_per_model}")
 
                 # Save a copy of the weighted residual losses for each model
                 # for this batch.
-                wL_res_per_model[i_batch] = copy.deepcopy(
-                    wL_res_per_model_batch)
+                wL_res_per_batch_per_model[i_batch] = copy.deepcopy(
+                    wL_res_batch_per_model)
                 if debug:
-                    print(f"wL_res_per_model = {wL_res_per_model}")
+                    print(f"wL_res_per_batch_per_model = {wL_res_per_batch_per_model}")
 
                 # Compute the aggregated weighted residual loss function.
-                wL_res = tf.math.reduce_sum(wL_res_per_model_batch)
+                wL_res = tf.math.reduce_sum(wL_res_batch_per_model)
                 if debug:
                     print(f"wL_res = {wL_res}")
 
@@ -685,13 +714,13 @@ def main():
 
         # Compute the overall loss function for the epoch.
 
-        # Convert the individual per-batch weighted residual lossed back to
+        # Convert the individual per-batch weighted residual losses back to
         # sum of squared residuals. Then total them, and compute the RMS
         # residual over the entire training set.
         sum_G2 = 0.0
         for i_batch in range(n_batches):
             this_batch_size = training_batches[i_batch].shape[0]
-            sum_G2_batch = (wL_res_per_model[i_batch][0]/w_res)**2*this_batch_size
+            sum_G2_batch = (wL_res_per_batch_per_model[i_batch][0]/w_res)**2*this_batch_size
             sum_G2 += sum_G2_batch
         if debug:
             print(f"sum_G2 = {sum_G2}")
