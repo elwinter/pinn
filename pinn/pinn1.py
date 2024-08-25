@@ -362,16 +362,16 @@ def main():
         if load_model:
             if verbose:
                 print(f"Loading trained models from {load_model}.")
-    #         for (i, v) in enumerate(p.dependent_variable_names):
-    #             if verbose:
-    #                 print(f"Loading model for {v}.")
-    #             path = os.path.join(load_model, f"model_{v}")
-    #             if debug:
-    #                 print(f"path = {path}")
-    #             model = tf.keras.models.load_model(path)
-    #             if debug:
-    #                 print(f"model = {model}")
-    #             models.append(model)
+            for (i, v) in enumerate(p.dependent_variable_names):
+                if verbose:
+                    print(f"Loading model for {v}.")
+                path = os.path.join(load_model, f"model_{v}")
+                if debug:
+                    print(f"path = {path}")
+                model = tf.keras.models.load_model(path)
+                if debug:
+                    print(f"model = {model}")
+                models.append(model)
         else:
             if verbose:
                 print("Creating untrained models.")
@@ -481,9 +481,11 @@ def main():
         # _train : computed using training points
         # _data : computed using data points
         # _model : computed using model
+        # _batch : computed for the current batch
+        # _epoch : computed for the current batch
 
-        # Create the list to hold the per-model weighted residual losses for
-        # each batch.
+        # Create the list to hold the lists of per-model weighted residual
+        # losses for each batch.
         wL_res_per_model = [None]*n_batches
 
         # Part 1: Process each batch of training points for this epoch.
@@ -533,15 +535,15 @@ def main():
 
                 # Compute the values of the differential equations at all
                 # training points.
-                # G_train_model is a list of Tensor objects.
+                # G_train_model_batch is a list of Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_train, 1).
-                G_train_model = [
+                G_train_model_batch = [
                     f(X_train_tf, Y_train_model, dY_dX_train_model)
                     for f in p.de
                 ]
                 if debug:
-                    print(f"G_train_model = {G_train_model}")
+                    print(f"G_train_model_batch = {G_train_model_batch}")
 
                 # Compute the weighted loss function for the equation residuals
                 # at the training points in this batch for each model. The loss
@@ -552,7 +554,7 @@ def main():
                 # Each Tensor has shape () (scalar).
                 wL_res_per_model_batch = [
                     tf.math.sqrt(tf.reduce_sum(G**2)/len(G))*w_res
-                    for G in G_train_model
+                    for G in G_train_model_batch
                 ]
                 if debug:
                     print(f"wL_res_per_model_batch = {wL_res_per_model_batch}")
@@ -748,7 +750,7 @@ def main():
         print(f"Training stopped at {t_stop}.")
         print(f"Total training time: {t_elapsed.total_seconds()} seconds")
         print(f"Epochs: {n_epochs}")
-    #     print(f"Final value of loss function: {L}")
+        print(f"Final value of loss function: {L}")
 
     # Save the final trained models and descriptions.
     if save_model != 0:
