@@ -159,7 +159,7 @@ SYSTEM_INFORMATION_FILE = 'system_information.txt'
 ARGUMENTS_FILE = 'arguments.py'
 
 
-def save_arguments(args_ns, output_dir):
+def save_arguments(args: dict, output_dir: str):
     """Save the program arguments.
 
     Save a record of the program arguments in the specified directory, as an
@@ -168,8 +168,8 @@ def save_arguments(args_ns, output_dir):
 
     Parameters
     ----------
-    args_ns : Namespace
-        Namespace of command-line arguments
+    args : dict
+        dict of command-line arguments
     output_dir : str
         Path to directory to contain the report
 
@@ -182,12 +182,9 @@ def save_arguments(args_ns, output_dir):
     ------
     None
     """
-    # Convert argument Namespace to a dict.
-    args = vars(args_ns)
     path = os.path.join(output_dir, ARGUMENTS_FILE)
     with open(path, 'w', encoding='utf-8') as f:
-        for arg in sorted(args):
-            f.write(f"{arg} = {repr(args[arg])}\n")
+        f.write(repr(args))
     return path
 
 
@@ -248,7 +245,7 @@ def get_git_branch():
     Returns
     -------
     git_branch : str
-        Name of current gir branch
+        Name of current git branch
 
     Raises
     ------
