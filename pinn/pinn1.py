@@ -938,7 +938,8 @@ def pinn1(args: dict):
                 optimizer.apply_gradients(zip(g, m.trainable_variables))
 
             if debug:
-                print(f"epoch = {epoch}, batch {i_batch}: wL_res_batch = {wL_res_batch}")
+                print(f"epoch = {epoch}, batch {i_batch}: "
+                      f"wL_res_batch = {wL_res_batch}")
 
             # End of all training point batches for this epoch.
 
@@ -1062,10 +1063,11 @@ def pinn1(args: dict):
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
             if multi:
-                path = os.path.join(
-                    output_dir, "models", f"{epoch:06d}", "model_multi"
-                )
-                model.save(path)
+                raise TypeError("No --multi yet!")
+                # path = os.path.join(
+                #     output_dir, "models", f"{epoch:06d}", "model_multi"
+                # )
+                # models[0].save(path)
             else:
                 for (i, model) in enumerate(models):
                     path = os.path.join(
@@ -1094,16 +1096,17 @@ def pinn1(args: dict):
     # Save the final trained models and descriptions.
     if save_model != 0:
         if multi:
-            path = os.path.join(
-                output_dir, "models", f"{epoch:06d}", "model_multi"
-            )
-            model.save(path)
-            path = os.path.join(output_dir, "models", "model_multi.txt")
-            old_stdout = sys.stdout
-            with open(path, "w", encoding="utf-8") as f:
-                sys.stdout = f
-                model.summary()
-            sys.stdout = old_stdout
+            raise TypeError("No --multi yet!")
+            # path = os.path.join(
+            #     output_dir, "models", f"{epoch:06d}", "model_multi"
+            # )
+            # model.save(path)
+            # path = os.path.join(output_dir, "models", "model_multi.txt")
+            # old_stdout = sys.stdout
+            # with open(path, "w", encoding="utf-8") as f:
+            #     sys.stdout = f
+            #     model.summary()
+            # sys.stdout = old_stdout
         else:
             for (i, model) in enumerate(models):
                 path = os.path.join(
