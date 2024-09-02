@@ -677,6 +677,10 @@ def pinn1(args: dict):
     if debug:
         print(f"Y_data = {Y_data}")
 
+    # Save a copy of the data points under a standard name.
+    path = os.path.join(output_dir, "XY_data.dat")
+    np.savetxt(path, XY_data)
+
     # ------------------------------------------------------------------------
 
     # Read the training points.
@@ -693,6 +697,10 @@ def pinn1(args: dict):
     if batch_size > n_train:
         raise TypeError(f"Batch size ({batch_size}) must be <= number of "
                         f"training points ({n_train})!")
+
+    # Save a copy of the training points under a standard name.
+    path = os.path.join(output_dir, "X_train.dat")
+    np.savetxt(path, X_train)
 
     # ------------------------------------------------------------------------
 
@@ -1113,16 +1121,16 @@ def pinn1(args: dict):
                 sys.stdout = old_stdout
 
     # Save the loss histories.
-    # for (i, v) in enumerate(p.dependent_variable_names):
-    #     np.savetxt(
-    #         os.path.join(output_dir, f"L_res_{v}.dat"), loss[v]["residual"]
-    #     )
-    #     np.savetxt(
-    #         os.path.join(output_dir, f"L_data_{v}.dat"), loss[v]["data"]
-    #     )
-    #     np.savetxt(
-    #         os.path.join(output_dir, f"L_{v}.dat"), loss[v]["total"]
-    #     )
+    for (i, v) in enumerate(p.dependent_variable_names):
+        np.savetxt(
+            os.path.join(output_dir, f"L_res_{v}.dat"), loss[v]["residual"]
+        )
+        np.savetxt(
+            os.path.join(output_dir, f"L_data_{v}.dat"), loss[v]["data"]
+        )
+        np.savetxt(
+            os.path.join(output_dir, f"L_{v}.dat"), loss[v]["total"]
+        )
     np.savetxt(
         os.path.join(output_dir, "L_res.dat"), loss["aggregate"]["residual"]
     )
