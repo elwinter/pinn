@@ -1006,10 +1006,7 @@ def pinn1(args: dict):
             print(f"L_res = {L_res}")
 
         # Convert the weighted data loss to unweighted.
-        if w_data > 0.0:
-            L_data = wL_data/w_data
-        else:
-            L_data = 0.0
+        L_data = sum([Ldpm.numpy() for Ldpm in L_data_per_model])
         if debug:
             print(f"L_data = {L_data}")
 
