@@ -32,42 +32,6 @@ from pinn import common
 # Program description
 DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
 
-# Program defaults
-
-# Default activation function to use in hidden nodes
-DEFAULT_ACTIVATION = "sigmoid"
-
-# Default batch size. -1 = use single batch.
-DEFAULT_BATCH_SIZE = -1
-
-# Default learning rate
-DEFAULT_LEARNING_RATE = 0.01
-
-# Default maximum number of training epochs
-DEFAULT_MAX_EPOCHS = 100
-
-# Default number of hidden nodes per layer
-DEFAULT_N_HID = 10
-
-# Default number of layers in the fully-connected network, each with n_hid
-# nodes
-DEFAULT_N_LAYERS = 1
-
-# Default TensorFlow precision for computations
-DEFAULT_PRECISION = "float32"
-
-# Default interval (in epochs) for saving the model
-# 0 = do not save model
-# -1 = only save at end
-# n > 0: Save after every n epochs
-DEFAULT_SAVE_MODEL = -1
-
-# Default random number generator seed
-DEFAULT_SEED = 0
-
-# Default normalized weight to apply to the data loss function
-DEFAULT_W_DATA = 0.5
-
 
 def create_command_line_argument_parser():
     """Create the command-line argument parser.
@@ -89,11 +53,11 @@ def create_command_line_argument_parser():
     """
     parser = argparse.ArgumentParser(DESCRIPTION)
     parser.add_argument(
-        "--activation", "-a", default=DEFAULT_ACTIVATION,
+        "--activation", "-a", default="sigmoid",
         help="Specify activation function (default: %(default)s)"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=DEFAULT_BATCH_SIZE,
+        "--batch_size", type=int, default=-1,
         help="Batch size (-1 for single batch) (default: %(default)s)"
     )
     parser.add_argument(
@@ -105,7 +69,7 @@ def create_command_line_argument_parser():
         help="Print debugging output (default: %(default)s)"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=DEFAULT_LEARNING_RATE,
+        "--learning_rate", type=float, default=0.01,
         help="Initial learning rate for training (default: %(default)s)"
     )
     parser.add_argument(
@@ -114,7 +78,7 @@ def create_command_line_argument_parser():
              " %(default)s)"
     )
     parser.add_argument(
-        "--max_epochs", type=int, default=DEFAULT_MAX_EPOCHS,
+        "--max_epochs", type=int, default=100,
         help="Maximum number of training epochs (default: %(default)s)"
     )
     parser.add_argument(
@@ -122,11 +86,11 @@ def create_command_line_argument_parser():
         help="Use a single multi-output network (default: %(default)s)"
     )
     parser.add_argument(
-        "--n_hid", type=int, default=DEFAULT_N_HID,
+        "--n_hid", type=int, default=10,
         help="Number of hidden nodes per layer (default: %(default)s)"
     )
     parser.add_argument(
-        "--n_layers", type=int, default=DEFAULT_N_LAYERS,
+        "--n_layers", type=int, default=1,
         help="Number of hidden layers (default: %(default)s)"
     )
     parser.add_argument(
@@ -134,16 +98,16 @@ def create_command_line_argument_parser():
         help="Disable TensorFlow use of GPU(s) (default: %(default)s)"
     )
     parser.add_argument(
-        "--precision", type=str, default=DEFAULT_PRECISION,
+        "--precision", type=str, default="float32",
         help="Precision to use in TensorFlow solution (default: %(default)s)"
     )
     parser.add_argument(
-        "--save_model", type=int, default=DEFAULT_SAVE_MODEL,
+        "--save_model", type=int, default=-1,
         help="Save interval (epochs) for trained model (0 = do not save, "
         "-1 = save at end, n > 0 = save every n epochs) (default: %(default)s)"
     )
     parser.add_argument(
-        "--seed", type=int, default=DEFAULT_SEED,
+        "--seed", type=int, default=0,
         help="Seed for random number generator (default: %(default)s)"
     )
     parser.add_argument(
@@ -151,7 +115,7 @@ def create_command_line_argument_parser():
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument(
-        "--w_data", "-w", type=float, default=DEFAULT_W_DATA,
+        "--w_data", "-w", type=float, default=0.5,
         help="Normalized weight for data loss function "
              "(default: %(default)s)."
     )
@@ -209,19 +173,19 @@ def configure_tensorflow(args: dict):
     tf.random.set_seed(args['seed'])
 
 
-def create_output_directory(args: dict, p):
+def create_output_directory(p, args: dict):
     """Create the output directory for this problem.
 
     Create the output directory for this problem. The name of the output
-    directory is the name of the problem python module, with "-pinn1" appended
-    to the end of the name.
+    directory is the name of the problem python module, with "-pinn1"
+    appended to the end of the name.
 
     Parameters
     ----------
-    args : dict
-        Dictionary of command-line options.
     p : Python module object
         Imported module for the problem definition.
+    args : dict
+        Dictionary of command-line options.
 
     Returns
     -------
@@ -251,8 +215,10 @@ def load_problem_data(args: dict):
     Load the problem data, which includes initial conditions, boundary
     conditions, and any other data to be used in the solution.
 
-    Each line contains a coordinate tuple, followed by a dependent variables
-    tuple, containing the value of each independent variable at that location.
+    Each line contains a tuple of coordinates (the independent variable values
+    for a location), followed by a tuple of dependent variable values,
+    containing the values of each dependent variable at that location.
+
     Note that this scheme currently only supports Dirichlet boundary
     conditions.
 
@@ -316,8 +282,8 @@ def load_training_points(args: dict):
     if args["debug"]:
         print(f"X_train = {X_train}")
 
-    # If the training point shape is 1-D (only one dimension), reshape to 2-D,
-    # (n_train, 1) to make compatible with later TensorFlow calls, which
+    # If the training point shape is 1-D (only one dimension), reshape to
+    # 2-D, (n_train, 1) to make compatible with later TensorFlow calls, which
     # expect a 2D Tensor.
     if len(X_train.shape) == 1:
         if args["verbose"]:
@@ -330,17 +296,17 @@ def load_training_points(args: dict):
     return X_train
 
 
-def load_or_create_models(args: dict, p):
+def load_or_create_models(p, args: dict):
     """Load or create the PINN models.
 
     Load or create the PINN models.
 
     Parameters
     ----------
-    args : dict
-        Dictionary of command-line options.
     p : Python module object
         Imported module for the problem definition.
+    args : dict
+        Dictionary of command-line options.
 
     Returns
     -------
@@ -355,7 +321,7 @@ def load_or_create_models(args: dict, p):
     """
     models = []
     if args["multi"]:
-        raise TypeError("Multi-output PINNs not supported yet!")
+        raise TypeError("No --multi yet!")
 #         if load_model:
 #             raise TypeError(
 #                 "Loading trained multi-output model not implemented!"
@@ -370,7 +336,7 @@ def load_or_create_models(args: dict, p):
 #             models.append(model)
     else:
         if args["load_model"]:
-            raise TypeError("Loading models not supported yet!")
+            raise TypeError("No --load_model yet!")
             # if args["verbose"]:
             #     print(f"Loading trained models from {args['load_model']}.")
             # for (i, v) in enumerate(p.dependent_variable_names):
@@ -388,9 +354,10 @@ def load_or_create_models(args: dict, p):
                 print("Creating untrained models.")
             for v in p.dependent_variable_names:
                 if args["verbose"]:
-                    print(f"Creating model for {v}.")
-                model = common.build_model(args["n_layers"], args["n_hid"],
-                                           args["activation"])
+                    print(f"Creating untrained model for {v}.")
+                model = common.build_model(
+                    args["n_layers"], args["n_hid"], args["activation"]
+                )
                 if args["debug"]:
                     print(f"model = {model}")
                 models.append(model)
@@ -432,17 +399,17 @@ def create_optimizer(args: dict):
     return optimizer
 
 
-def create_tf_batches(args: dict, X_train: np.ndarray):
+def create_batches(X_train: np.ndarray, args: dict):
     """Split the data into batches of tf.Variable.
 
     Split the data into batches of tf.Variable.
 
     Parameters
     ----------
-    args : dict
-        Dictionary of command-line arguments.
     X_train : np.ndarray, shape (n_train, p.n_dim)
         Array of training points.
+    args : dict
+        Dictionary of command-line arguments.
 
     Returns
     -------
@@ -463,7 +430,6 @@ def create_tf_batches(args: dict, X_train: np.ndarray):
             print("Using single batch for training points.")
         X_train_batch_tf = tf.Variable(X_train)
         training_batches.append(X_train_batch_tf)
-        n_batches = 1
     else:
         n_batches = int(np.ceil(n_train/batch_size))
         if args["debug"]:
@@ -488,7 +454,7 @@ def create_tf_batches(args: dict, X_train: np.ndarray):
     return training_batches
 
 
-def forward_pass_1(args: dict, models: list, X_train_batch_tf: tf.Variable):
+def forward_pass_1(models: list, X_train_batch_tf: tf.Variable, args: dict):
     """Perform forward pass 1 using a batch of training points.
 
     Perform forward pass 1 using a batch of training points.
@@ -498,12 +464,12 @@ def forward_pass_1(args: dict, models: list, X_train_batch_tf: tf.Variable):
 
     Parameters
     ----------
-    args : dict
-        Dictionary of command-line arguments.
     models : list of keras.src.engine.sequential.Sequential
         Models to evaluate.
     X_train_batch_tf : tf.Variable, shape (batch_size, p.n_dim)
         tf.Variable of training points for this batch.
+    args : dict
+        Dictionary of command-line arguments.
 
     Returns
     -------
@@ -529,10 +495,12 @@ def forward_pass_1(args: dict, models: list, X_train_batch_tf: tf.Variable):
                                    for model in models]
     if args["debug"]:
         print(f"Y_train_batch_per_model = {Y_train_batch_per_model}")
+
+    # Return the model values at each batch point.
     return Y_train_batch_per_model
 
 
-def forward_pass_2(args: dict, models: list, X_data_tf: tf.Variable):
+def forward_pass_2(models: list, X_data_tf: tf.Variable, args: dict):
     """Perform forward pass 2 using th training data.
 
     Perform forward pass 2 using a batch of training data.
@@ -542,12 +510,12 @@ def forward_pass_2(args: dict, models: list, X_data_tf: tf.Variable):
 
     Parameters
     ----------
-    args : dict
-        Dictionary of command-line arguments.
     models : list of keras.src.engine.sequential.Sequential
         Models to evaluate.
     X_data_tf : tf.Variable, shape (n_data, p.n_dim)
         tf.Variable of data points for this batch.
+    args : dict
+        Dictionary of command-line arguments.
 
     Returns
     -------
@@ -568,6 +536,8 @@ def forward_pass_2(args: dict, models: list, X_data_tf: tf.Variable):
         #                 for i in range(p.n_var)]
     else:
         Y_data_per_model = [model(X_data_tf) for model in models]
+
+    # Return the model values at the data locations.
     return Y_data_per_model
 
 
@@ -600,20 +570,11 @@ def pinn1(args: dict):
     # Extract the command-line arguments.
     if args["debug"]:
         print(f"args = {args}")
-    # activation = args["activation"]
     batch_size = args["batch_size"]
-    # clobber = args["clobber"]
     debug = args["debug"]
-    # learning_rate = args["learning_rate"]
-    # load_model = args["load_model"]
     max_epochs = args["max_epochs"]
     multi = args["multi"]
-    # H = args["n_hid"]
-    # n_layers = args["n_layers"]
-    # nogpu = args["nogpu"]
-    # precision = args["precision"]
     save_model = args["save_model"]
-    # seed = args["seed"]
     verbose = args["verbose"]
     w_data = args["w_data"]
     problem_path = args["problem_path"]
@@ -622,10 +583,10 @@ def pinn1(args: dict):
 
     # ------------------------------------------------------------------------
 
-    # Set up to train the models.
-
     # Configure TensorFlow.
     configure_tensorflow(args)
+
+    # ------------------------------------------------------------------------
 
     # Import the problem to solve.
     if verbose:
@@ -635,13 +596,13 @@ def pinn1(args: dict):
         print(f"p = {p}")
 
     # Create the output directory under the current directory.
-    output_dir = create_output_directory(args, p)
+    output_dir = create_output_directory(p, args)
     if debug:
         print(f"output_dir = {output_dir}")
 
-    # Record system information, and program parameters.
+    # Record system information and program arguments.
     if verbose:
-        print("Saving system information and program options.")
+        print("Saving system information and program arguments.")
     common.save_system_information(output_dir)
     common.save_arguments(args, output_dir)
 
@@ -652,34 +613,36 @@ def pinn1(args: dict):
     shutil.copy(data_path, output_dir)
     shutil.copy(training_path, output_dir)
 
+    # Save copies of the data and training points under standard names.
+    path = os.path.join(output_dir, "XY_data.dat")
+    shutil.copy(data_path, path)
+    path = os.path.join(output_dir, "X_train.dat")
+    shutil.copy(training_path, path)
+
     # ------------------------------------------------------------------------
 
-    # Read the data points, which includes initial conditions, boundary
+    # Load the data points, which includes initial conditions, boundary
     # conditions, and any other data to be used in the solution.
     XY_data = load_problem_data(args)
     if debug:
         print(f"XY_data = {XY_data}")
 
-    # Get the count of problem data points.
+    # Get the count of data points.
     n_data = XY_data.shape[0]
     if debug:
         print(f"n_data = {n_data}")
 
-    # Extract the *locations* of the problem data points.
+    # Extract the *locations* of the data points.
     # Shape is (n_data, p.n_dim)
     X_data = XY_data[:, :p.n_dim]
     if debug:
         print(f"X_data = {X_data}")
 
-    # Extract the *values* of the problem data points.
+    # Extract the *values* of the data points.
     # Shape is (n_data, p.n_var)
     Y_data = XY_data[:, p.n_dim:]
     if debug:
         print(f"Y_data = {Y_data}")
-
-    # Save a copy of the data points under a standard name.
-    path = os.path.join(output_dir, "XY_data.dat")
-    np.savetxt(path, XY_data)
 
     # ------------------------------------------------------------------------
 
@@ -698,10 +661,6 @@ def pinn1(args: dict):
         raise TypeError(f"Batch size ({batch_size}) must be <= number of "
                         f"training points ({n_train})!")
 
-    # Save a copy of the training points under a standard name.
-    path = os.path.join(output_dir, "X_train.dat")
-    np.savetxt(path, X_train)
-
     # ------------------------------------------------------------------------
 
     # Compute weights for residual and data loss functions.
@@ -713,7 +672,7 @@ def pinn1(args: dict):
     # ------------------------------------------------------------------------
 
     # Load or create PINN models for the variables.
-    models = load_or_create_models(args, p)
+    models = load_or_create_models(p, args)
     if debug:
         print(f"models = {models}")
 
@@ -729,7 +688,7 @@ def pinn1(args: dict):
     # Prepare inputs for TensorFlow.
 
     # Batch the training points as tf.Variable.
-    training_batches = create_tf_batches(args, X_train)
+    training_batches = create_batches(X_train, args)
     n_batches = len(training_batches)
     if debug:
         print(f"training_batches = {training_batches}")
@@ -770,9 +729,24 @@ def pinn1(args: dict):
     # Train the models.
 
     # Training involves presenting the training points and data points
-    # together, a total of max_epochs times. Each epoch is composed of all
-    # of the batches in the training data, and the single batch of additional
-    # data. The model parameters are adjusted after each batch is processed.
+    # to each model, a total of max_epochs times. Each epoch is composed of
+    # all of the batches of the training points, and the single batch of
+    # additional data. The model parameters are adjusted after each batch is
+    # processed.
+
+    # Variables are labelled according to source:
+    # _train : computed using training points
+    # _data : computed using data points
+    # _model : computed using model
+    # _batch : computed for the current batch
+    # _epoch : computed for the current batch
+    # _tf : A TensorFlow Variable
+
+    # NOTE: In the current version of the code, the number of equations being
+    # solved must be equal to the number of dependent variables in the set of
+    # equations being solved. Both of these values are the same as the number
+    # of models being trained. In other words:
+    # len(p.de) = p.n_var = len(models)
 
     # Record the training start time.
     t_start = datetime.datetime.now()
@@ -786,18 +760,10 @@ def pinn1(args: dict):
 
         # --------------------------------------------------------------------
 
-        # Variables are labelled according to source:
-        # _train : computed using training points
-        # _data : computed using data points
-        # _model : computed using model
-        # _batch : computed for the current batch
-        # _epoch : computed for the current batch
-        # _tf : A TensorFlow Variable
-
         # Create the list to hold the lists of unweighted and weighted
-        # residual losses for each batch.
+        # residual losses for each batch of training points.
         # Each list will contain n_batches elements, each of which is a list of
-        # p.n_var elements.
+        # p.n_var elements (one element per equation)
         # The elements of the lowest-level list contain TensorFlow Variables
         # of shape (1,).
         L_res_per_batch_per_eqn = [None]*n_batches
@@ -811,7 +777,9 @@ def pinn1(args: dict):
                 print(f"i_batch = {i_batch}")
 
             # X_train_batch_tf is a tf.Variable containing the training points
-            # for this batch.
+            # for this batch. It has shape (batch_size, p.n_dim). The value of
+            # batch_size may be less than the specified batch size for the last
+            # batch, if n_train is not an integer multiple of batch_size.
             X_train_batch_tf = training_batches[i_batch]
             if debug:
                 print(f"X_train_batch_tf = {X_train_batch_tf}")
@@ -829,9 +797,9 @@ def pinn1(args: dict):
                     # Y_train_batch_per_model is a list of tf.Tensor objects
                     # containing the model outputs at each point in the batch.
                     # There are p.n_var Tensors in the list (one per model).
-                    # Each Rensor has shape (n, 1).
+                    # Each Tensor has shape (n, 1).
                     Y_train_batch_per_model = forward_pass_1(
-                        args, models, X_train_batch_tf
+                        models, X_train_batch_tf, args
                     )
                     if debug:
                         print("Y_train_batch_per_model = "
@@ -839,7 +807,7 @@ def pinn1(args: dict):
 
                     # End of tape1 context.
 
-                # Compute the gradients of the network outputs wrt inputs for
+                # Compute the gradients of the model outputs wrt inputs for
                 # the training points in this batch. These are the values of
                 # the partial derivatives dY/dX to use in the differential
                 # equations G.
@@ -855,12 +823,10 @@ def pinn1(args: dict):
                           f"{dY_dX_train_batch_per_model}")
 
                 # Compute the values of the differential equations at all
-                # training points.
+                # training points in the batch.
                 # G_train_batch_per_eqn is a list of Tensor objects.
                 # There are p.n_var Tensors in the list (one per equation).
                 # Each Tensor has shape (batch_size, 1).
-                # NOTE: The number of equations is the same as the number of
-                # models.
                 G_train_batch_per_eqn = [
                     f(X_train_batch_tf, Y_train_batch_per_model,
                       dY_dX_train_batch_per_model) for f in p.de
@@ -881,17 +847,6 @@ def pinn1(args: dict):
                 if debug:
                     print(f"L_res_batch_per_eqn = {L_res_batch_per_eqn}")
 
-                # Compute the weighted loss function for the equation residuals
-                # at the training points in this batch for each model. The loss
-                # function is then multiplied by the weight for the equation
-                # residuals.
-                # wL_res_batch_per_eqn is a list of Tensor objects.
-                # There are p.n_var Tensors in the list (one per equation).
-                # Each Tensor has shape () (scalar).
-                wL_res_batch_per_eqn = [L*w_res for L in L_res_batch_per_eqn]
-                if debug:
-                    print(f"wL_res_batch_per_eqn = {wL_res_batch_per_eqn}")
-
                 # Save a copy of the unweighted residual losses for each
                 # equation for this batch.
                 L_res_per_batch_per_eqn[i_batch] = copy.deepcopy(
@@ -899,6 +854,15 @@ def pinn1(args: dict):
                 if debug:
                     print("L_res_per_batch_per_eqn = "
                           f"{L_res_per_batch_per_eqn}")
+
+                # Compute the weighted loss function for the equation residuals
+                # at the training points in this batch for each model.
+                # wL_res_batch_per_eqn is a list of Tensor objects.
+                # There are p.n_var Tensors in the list (one per equation).
+                # Each Tensor has shape () (scalar).
+                wL_res_batch_per_eqn = [L*w_res for L in L_res_batch_per_eqn]
+                if debug:
+                    print(f"wL_res_batch_per_eqn = {wL_res_batch_per_eqn}")
 
                 # Save a copy of the weighted residual losses for each model
                 # for this batch.
@@ -909,7 +873,7 @@ def pinn1(args: dict):
                           f"{wL_res_per_batch_per_eqn}")
 
                 # Compute the aggregated weighted residual loss function for
-                # this batch.
+                # all equations for this batch.
                 wL_res_batch = tf.math.reduce_sum(wL_res_batch_per_eqn)
                 if debug:
                     print(f"wL_res_batch = {wL_res_batch}")
@@ -919,12 +883,8 @@ def pinn1(args: dict):
             # Compute the gradient of the aggregated weighted residual loss
             # wrt the network parameters.
             # pgrad is a list of lists of Tensor objects.
-            # There are p.n_var sub-lists in the top-level list (one per
-            # dependent variable).
-            # There are 3 Tensors in each sub-list, with shapes:
-            # Input weights: (p.n_dim, H)
-            # Input biases: (H,)
-            # Output weights: (H, 1)
+            # There are p.n_var lists in the top-level list (one per model).
+            # There are 3 Tensors in each sub-list.
             # Each Tensor is shaped based on model.trainable_variables.
             pgrad = [
                 tape0.gradient(wL_res_batch, model.trainable_variables)
@@ -950,13 +910,14 @@ def pinn1(args: dict):
         # Run the forward pass for the data points for this epoch.
         # tape0 is for computing gradients wrt network parameters.
         with tf.GradientTape(persistent=True) as tape0:
-            Y_data_per_model = forward_pass_2(args, models, X_data_tf)
+            Y_data_per_model = forward_pass_2(models, X_data_tf, args)
             if debug:
                 print(f"Y_data_per_model = {Y_data_per_model}")
 
             # Compute the errors in the predicted values at the data points.
             # E_data_per_model is a list of tf.Tensor objects.
-            # There are p.n_var Tensors in the list.
+            # There are p.n_var Tensors in the list (one per dependent
+            # variable).
             # Each Tensor has shape (n_data, 1).
             E_data_per_model = [
                 Y_data_per_model[i] - tf.reshape(Y_data_tf[:, i], (n_data, 1))
@@ -1023,31 +984,53 @@ def pinn1(args: dict):
 
         # Compute the overall loss function for the epoch.
 
-        # Convert the individual per-batch weighted residual losses back to
-        # sum of squared residuals. Then total them, and compute the RMS
-        # residual over the entire training set.
-        sum_G2 = 0.0
+        # Convert the individual per-batch per-model unweighted residual
+        # losses back to sum of squared residuals. Then total them, and
+        # compute the RMS residual over the entire training set for each
+        # model.
+        sum_G2_per_eq = [0.0]*len(models)
         for i_batch in range(n_batches):
             this_batch_size = training_batches[i_batch].shape[0]
-            sum_G2_batch = (
-                L_res_per_batch_per_eqn[i_batch][0]**2*this_batch_size
-            )
-            sum_G2 += sum_G2_batch
+            for i_model in range(len(models)):
+                sum_G2_per_eq[i_model] += (
+                    L_res_per_batch_per_eqn[i_batch][i_model]**2
+                    * this_batch_size
+                )
         if debug:
-            print(f"sum_G2 = {sum_G2}")
-        L_res = tf.math.sqrt(sum_G2/n_train)
+            print(f"sum_G2_per_eq = {sum_G2_per_eq}")
+        L_res_per_model = [
+            tf.math.sqrt(sum_G2/n_train) for sum_G2 in sum_G2_per_eq
+        ]
+        L_res = tf.reduce_sum(L_res_per_model)
         if debug:
             print(f"L_res = {L_res}")
 
         # Convert the weighted data loss to unweighted.
-        L_data = wL_data/w_data
+        if w_data > 0.0:
+            L_data = wL_data/w_data
+        else:
+            L_data = 0.0
         if debug:
             print(f"L_data = {L_data}")
+
+        # Compute the per-model weighted loss.
+        L_per_model = [
+            w_res*Lr + w_data*Ld
+            for (Lr, Ld) in zip(L_res_per_model, L_data_per_model)
+        ]
+        if debug:
+            print(f"L_per_model = {L_per_model}")
 
         # Compute the final weighted loss.
         L = w_res*L_res + w_data*L_data
         if debug:
             print(f"L = {L}")
+
+        # Save the per-model losses.
+        for (i, v) in enumerate(p.dependent_variable_names):
+            loss[v]["residual"].append(L_res_per_model[i])
+            loss[v]["data"].append(L_data_per_model[i])
+            loss[v]["total"].append(L_per_model[i])
 
         # Save the aggregate losses.
         loss["aggregate"]["residual"].append(L_res)
