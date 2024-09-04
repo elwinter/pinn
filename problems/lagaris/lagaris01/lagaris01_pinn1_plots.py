@@ -211,7 +211,7 @@ def pinn1_plots(args: dict):
 
     # Compute the path to the output directory, then create it.
     output_path = OUTPUT_DIR
-    # os.mkdir(output_path)
+    os.mkdir(output_path)
 
     # Create the plots in a memory buffer.
     mpl.use("Agg")
