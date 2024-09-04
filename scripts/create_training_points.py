@@ -175,7 +175,7 @@ def main():
         for (xmin, xmax, nx) in zip(X_min, X_max, X_n):
             header += f" {xmin} {xmax} {nx}"
         print(header)
-    np.savetxt(sys.stdout, points, fmt="%g")
+    np.savetxt(sys.stdout, points)
 
 
 if __name__ == "__main__":
