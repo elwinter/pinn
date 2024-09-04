@@ -209,10 +209,10 @@ def main():
         ylabel = p.dependent_variable_labels[iv]
         X = X_train
         model = models[iv]
-        Ym = model(X_train).numpy().reshape(nx)
+        Ym = model(X_train).numpy().reshape(len(X_train))
         Ya = p.Ψ_analytical(X_train)
         Ye = Ym - Ya
-        rms_err = np.sqrt(np.sum(Ye**2)/nx)
+        rms_err = np.sqrt(np.sum(Ye**2)/len(X_train))
         plt.plot(X, Ym, label="trained")
         plt.plot(X, Ya, label="analytical")
         plt.plot(X, Ye, label="error")
