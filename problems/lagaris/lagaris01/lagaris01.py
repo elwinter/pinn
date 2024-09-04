@@ -160,6 +160,11 @@ def Ψ_analytical(x):
     return Ψ
 
 
+# List all analytical solutions.
+Y_analytical = [
+    Ψ_analytical,
+ ]
+
 def dΨ_dx_analytical(x):
     """Analytical 1st derivative to lagaris01.
 
