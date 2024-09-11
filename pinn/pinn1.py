@@ -316,24 +316,21 @@ def load_or_create_models(p, args: dict):
     Raises
     ------
     TypeError
-        If --multi is specified.
         If --load_model is specified.
     """
     models = []
     if args["multi"]:
-        raise TypeError("No --multi yet!")
-#         if load_model:
-#             raise TypeError(
-#                 "Loading trained multi-output model not implemented!"
-#             )
-#         else:
-#             if verbose:
-#                 print("Creating untrained multi-output model.")
-#             model = common.build_multi_output_model(n_layers, H, activation,
-#                                                     p.n_var)
-#             if debug:
-#                 print(f"model = {model}")
-#             models.append(model)
+        if args["load_model"]:
+            raise TypeError("No --load_model yet!")
+        else:
+            if args["verbose"]:
+                print("Creating untrained multi-output model.")
+            model = common.build_multi_output_model(
+                args["n_layers"], args["n_hid"], args["activation"], p.n_var
+            )
+            if args["debug"]:
+                print(f"model = {model}")
+            models.append(model)
     else:
         if args["load_model"]:
             raise TypeError("No --load_model yet!")
@@ -454,7 +451,8 @@ def create_batches(X_train: np.ndarray, args: dict):
     return training_batches
 
 
-def forward_pass_1(models: list, X_train_batch_tf: tf.Variable, args: dict):
+def forward_pass_1(models: list, X_train_batch_tf: tf.Variable, p,
+                   args: dict):
     """Perform forward pass 1 using a batch of training points.
 
     Perform forward pass 1 using a batch of training points.
@@ -468,6 +466,8 @@ def forward_pass_1(models: list, X_train_batch_tf: tf.Variable, args: dict):
         Models to evaluate.
     X_train_batch_tf : tf.Variable, shape (batch_size, p.n_dim)
         tf.Variable of training points for this batch.
+    p : module
+        module object for the problem to solve.
     args : dict
         Dictionary of command-line arguments.
 
@@ -480,16 +480,16 @@ def forward_pass_1(models: list, X_train_batch_tf: tf.Variable, args: dict):
     ------
     None
     """
+    n_train = X_train_batch_tf.shape[0]
     Y_train_batch_per_model = []
     if args["multi"]:
-        raise TypeError("No --multi yet!")
         # For a multi-output network, repackage the results
         # into a list of Tensor for the individual variables.
-        # Y_multi_batch_tf = models[0](X_train_batch_tf)
-        # Y_train_batch_per_model = [
-        #     tf.reshape(Y_multi_batch_tf[:, i], (n_train, 1))
-        #     for i in range(p.n_var)
-        # ]
+        Y_train_multi_batch_tf = models[0](X_train_batch_tf)
+        Y_train_batch_per_model = [
+            tf.reshape(Y_train_multi_batch_tf[:, i], (n_train, 1))
+            for i in range(p.n_var)
+        ]
     else:
         Y_train_batch_per_model = [model(X_train_batch_tf)
                                    for model in models]
@@ -500,7 +500,7 @@ def forward_pass_1(models: list, X_train_batch_tf: tf.Variable, args: dict):
     return Y_train_batch_per_model
 
 
-def forward_pass_2(models: list, X_data_tf: tf.Variable, args: dict):
+def forward_pass_2(models: list, X_data_tf: tf.Variable, p, args: dict):
     """Perform forward pass 2 using th training data.
 
     Perform forward pass 2 using a batch of training data.
@@ -514,6 +514,8 @@ def forward_pass_2(models: list, X_data_tf: tf.Variable, args: dict):
         Models to evaluate.
     X_data_tf : tf.Variable, shape (n_data, p.n_dim)
         tf.Variable of data points for this batch.
+    p : module
+        module object for problem to solve.
     args : dict
         Dictionary of command-line arguments.
 
@@ -526,14 +528,14 @@ def forward_pass_2(models: list, X_data_tf: tf.Variable, args: dict):
     ------
     None
     """
+    n_data = X_data_tf.shape[0]
     Y_data_per_model = []
     if args["multi"]:
-        raise TypeError("No --multi yet!")
         # For a multi-output network, repackage the results
         # into a list of Tensor for the individual variables.
-        # Y_multi_data = models[0](X_data_tf)
-        # Y_data_per_model = [tf.reshape(Y_multi_data[:, i], (n_data, 1))
-        #                 for i in range(p.n_var)]
+        Y_data_multi = models[0](X_data_tf)
+        Y_data_per_model = [tf.reshape(Y_data_multi[:, i], (n_data, 1))
+                            for i in range(p.n_var)]
     else:
         Y_data_per_model = [model(X_data_tf) for model in models]
 
@@ -563,9 +565,7 @@ def pinn1(args: dict):
 
     Raises
     ------
-    TypeError
-        If batch size is greater than training set size.
-        If --multi is specified.
+    None
     """
     # Extract the command-line arguments.
     if args["debug"]:
@@ -799,7 +799,7 @@ def pinn1(args: dict):
                     # There are p.n_var Tensors in the list (one per model).
                     # Each Tensor has shape (n, 1).
                     Y_train_batch_per_model = forward_pass_1(
-                        models, X_train_batch_tf, args
+                        models, X_train_batch_tf, p, args
                     )
                     if debug:
                         print("Y_train_batch_per_model = "
@@ -910,7 +910,7 @@ def pinn1(args: dict):
         # Run the forward pass for the data points for this epoch.
         # tape0 is for computing gradients wrt network parameters.
         with tf.GradientTape(persistent=True) as tape0:
-            Y_data_per_model = forward_pass_2(models, X_data_tf, args)
+            Y_data_per_model = forward_pass_2(models, X_data_tf, p, args)
             if debug:
                 print(f"Y_data_per_model = {Y_data_per_model}")
 
@@ -1024,15 +1024,15 @@ def pinn1(args: dict):
             print(f"L = {L}")
 
         # Save the per-model losses.
-        for (i, v) in enumerate(p.dependent_variable_names):
-            loss[v]["residual"].append(L_res_per_model[i])
-            loss[v]["data"].append(L_data_per_model[i])
-            loss[v]["total"].append(L_per_model[i])
+        # for (i, v) in enumerate(p.dependent_variable_names):
+        #     loss[v]["residual"].append(L_res_per_model[i])
+        #     loss[v]["data"].append(L_data_per_model[i])
+        #     loss[v]["total"].append(L_per_model[i])
 
         # Save the aggregate losses.
-        loss["aggregate"]["residual"].append(L_res)
-        loss["aggregate"]["data"].append(L_data)
-        loss["aggregate"]["total"].append(L)
+        # loss["aggregate"]["residual"].append(L_res)
+        # loss["aggregate"]["data"].append(L_data)
+        # loss["aggregate"]["total"].append(L)
 
         if verbose:
             print(f"Epoch = {epoch}: (L_res, L_data, L) = "
@@ -1043,11 +1043,10 @@ def pinn1(args: dict):
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
             if multi:
-                raise TypeError("No --multi yet!")
-                # path = os.path.join(
-                #     output_dir, "models", f"{epoch:06d}", "model_multi"
-                # )
-                # models[0].save(path)
+                path = os.path.join(
+                    output_dir, "models", f"{epoch:06d}", "model_multi"
+                )
+                models[0].save(path)
             else:
                 for (i, model) in enumerate(models):
                     path = os.path.join(
@@ -1076,17 +1075,17 @@ def pinn1(args: dict):
     # Save the final trained models and descriptions.
     if save_model != 0:
         if multi:
-            raise TypeError("No --multi yet!")
-            # path = os.path.join(
-            #     output_dir, "models", f"{epoch:06d}", "model_multi"
-            # )
-            # model.save(path)
-            # path = os.path.join(output_dir, "models", "model_multi.txt")
-            # old_stdout = sys.stdout
-            # with open(path, "w", encoding="utf-8") as f:
-            #     sys.stdout = f
-            #     model.summary()
-            # sys.stdout = old_stdout
+            path = os.path.join(
+                output_dir, "models", f"{epoch:06d}", "model_multi"
+            )
+            model = models[0]
+            model.save(path)
+            path = os.path.join(output_dir, "models", "model_multi.txt")
+            old_stdout = sys.stdout
+            with open(path, "w", encoding="utf-8") as f:
+                sys.stdout = f
+                model.summary()
+            sys.stdout = old_stdout
         else:
             for (i, model) in enumerate(models):
                 path = os.path.join(
