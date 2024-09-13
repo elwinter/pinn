@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Compute data for lagaris01.
+"""Create data for lagaris01 problem.
 
 This is for problem 1 from Lagaris (1998).
 
@@ -23,14 +23,7 @@ import problems.lagaris.lagaris01.lagaris01 as p
 # Program constants
 
 # Program description.
-description = "Compute data for lagaris01 problem."
-
-# # Define the problem domain.
-# x0 = 0.0
-# x1 = 1.0
-
-# # Define the initial condition at x = 0.
-# Ψ0 = 1.0
+description = "Create data for lagaris01 problem."
 
 
 def create_command_line_argument_parser():
@@ -46,10 +39,14 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = argparse.ArgumentParser(description)
     parser.add_argument(
-        "-d", "--debug", action="store_true",
+        "--debug", "-d", action="store_true",
         help="Print debugging output (default: %(default)s)."
     )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
@@ -63,10 +60,10 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
     debug = args.debug
     rest = args.rest
-    if debug:
-        print("args = %s" % args)
 
     # Fetch the remaining command-line arguments.
     # They should be in a set of 3:
@@ -78,17 +75,22 @@ def main():
     if debug:
         print(f"{x_min} <= x <= {x_max}, n_x = {n_x}")
 
-    # Compute the data.
+    # Print the output header lines.
+    header = "# GRID"
+    print(header)
+    header = "# x"
+    print(header)
+    header = f"# {x_min} {x_max} {n_x}"
+    print(header)
+    header = "# x Ψ"
+    print(header)
+
+    # Compute the data for the boundary condition at x = 0.
     # Each line is:
     # x Ψ
-    x_data = np.linspace(x_min, x_max, n_x)
-    if debug:
-        print(f"x_data = {x_data}")
-    Ψ_data = p.Ψ_analytical(x_data).numpy()
-    if debug:
-        print(f"Ψ_data = {Ψ_data}")
-    for (x, Ψ) in zip(x_data, Ψ_data):
-        print(x, Ψ)
+    x = 0.0
+    Ψ = p.Ψ_analytical(x)
+    print(x, Ψ)
 
 
 if __name__ == "__main__":

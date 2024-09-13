@@ -10,7 +10,7 @@ This case deals with a line current in the +z direction (out of the
 screen), with a return current toward -z at r = 0.3. +x is to the right,
 +y is up.
 
-NOTE: This version of the code solves *only* the equations for n, P, ux, uy,
+NOTE: This version of the code solves the equations for n, P, ux, uy,
 uz, Bx, By, and Bz.
 
 NOTE: The functions in this module are defined using a combination of Numpy and
@@ -35,6 +35,22 @@ dependent variables:
     5: Bx (x-component of magnetic field)
     6: By (y-component of magnetic field)
     7: Bz (z-component of magnetic field)
+
+NOTE: These equations were last verified on 2023-04-29.
+
+NOTE: For all methods:
+
+X represents an a set of arbitrary evaluation points. It is a tf.Tensor with
+shape (n, n_dim), where n is the number of evaluation points, and n_dim is
+the number of dimensions (independent variables) in the problem.
+
+Y represents a set of dependent variables at each point in X. This variable is
+a list of n_var tf.Tensor, each shape (n, 1), where n_var is the number of
+dependent variables.
+
+del_Y contains the first derivatives of each dependent variable with respect
+to each independent variable, at each point in X. It is a list of n_var
+tf.Tensor, each shape (n, n_dim).
 
 Author
 ------
@@ -86,31 +102,39 @@ iBz = dependent_variable_index["Bz"]
 
 # Labels for dependent variables (may use LaTex) - use for plots.
 dependent_variable_labels = [
-    "$n$", "$P$",
-    "$u_x$", "$u_y$", "$u_z$",
-    "$B_x$", "$B_y$", "$B_z$"
+    "$n$", "$P$", "$u_x$", "$u_y$", "$u_z$", "$B_x$", "$B_y$", "$B_z$"
 ]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
 
 
-# Plasma parameters
+# Normalized physical constants.
+μ0 = 1.0  # Permeability of free space
+m = 1.0   # Particle mass
+
+# Current parameters
 A = 1e-3   # Magnitude of magnetic vector potential.
 R0 = 0.3   # Radius of current cylinder.
+
+# Plasma parameters
+m = 1.0    # Plasma article mass
+ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
 n0 = 1.0   # Number density
 P0 = 1.0   # Pressure
-u0z = 0.0  # z-component of velocity
+u0z = 0.0  # x-component of velocity
+B0x = 0.0  # y-component of magnetic field
+B0y = 0.0  # z-component of magnetic field
 B0z = 0.0  # z-component of magnetic field
-ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
-μ0 = 1.0  # Normalized vacuum permeability
-m = 1.0    # Plasma article mass
+I = 1e-3   # Normalized current
+C1 = μ0*I/(2*np.pi)  # Leading constant in analytical solutions for Bx, By.
 
 # Define the constant fluid flow field.
-θ = 60.0
-u0 = 1.0
-u0x = u0*np.sin(np.radians(θ))
-u0y = u0*np.cos(np.radians(θ))
+θ = 60.0  # Angle in degrees clockwise from +y axis
+u0 = 1.0  # Flow speed
+u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
+u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
+
 
 
 # NOTE: In the functions defined below for the differential equations, the
@@ -441,8 +465,7 @@ def pde_uz(X, Y, del_Y):
 
     # G is a Tensor of shape (n, 1).
     G = (
-        n*(duz_dt + ux*duz_dx + uy*duz_dy) +
-        (-Bx*dBz_dx - By*dBz_dy)/(m*μ0)
+        n*(duz_dt + ux*duz_dx + uy*duz_dy) - (Bx*dBz_dx + By*dBz_dy)/(m*μ0)
     )
     return G
 
