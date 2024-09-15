@@ -1,7 +1,6 @@
 """Problem definition file for simple ODE (Lagaris problem 1).
 
-This is a first-order, nonlinear ODE, defined on the domain [0, 1], with the
-initial condition Ψ(0) = 1.
+This is a first-order, nonlinear ODE, with the initial condition Ψ(0) = 1.
 
 This ordinary differential equation is taken from the paper:
 
@@ -50,9 +49,9 @@ Eric Winter (eric.winter62@gmail.com)
 
 # Import supplemental modules.
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
 
-# Import project modules.
+# # Import project modules.
 
 
 # Names of independent variables.
@@ -86,55 +85,55 @@ dependent_variable_labels = [r"$\psi$"]
 n_var = len(dependent_variable_names)
 
 
-# @tf.function
-def ode_Ψ(X, Y, delY):
-    """Differential equation for Ψ.
+# # @tf.function
+# def ode_Ψ(X, Y, delY):
+#     """Differential equation for Ψ.
 
-    Evaluate the ordinary differential equation for Ψ(x).
+#     Evaluate the ordinary differential equation for Ψ(x).
 
-    Parameters
-    ----------
-    X : tf.Variable, shape (n, n_dim)
-        Values of independent variables at each evaluation point.
-    Y : list of n_var tf.Tensor, each shape (n, 1)
-        Values of dependent variables at each evaluation point.
-    delY : list of n_var tf.Tensor, each shape (n, n_dim)
-        Values of gradients of dependent variables wrt independent variables at
-        each evaluation point.
+#     Parameters
+#     ----------
+#     X : tf.Variable, shape (n, n_dim)
+#         Values of independent variables at each evaluation point.
+#     Y : list of n_var tf.Tensor, each shape (n, 1)
+#         Values of dependent variables at each evaluation point.
+#     delY : list of n_var tf.Tensor, each shape (n, n_dim)
+#         Values of gradients of dependent variables wrt independent variables at
+#         each evaluation point.
 
-    Returns
-    -------
-    G : tf.Tensor, shape (n, 1)
-        Value of differential equation at each evaluation point.
+#     Returns
+#     -------
+#     G : tf.Tensor, shape (n, 1)
+#         Value of differential equation at each evaluation point.
 
-    Raises
-    ------
-    None
-    """
-    nX = X.shape[0]
-    # x is a Tensor of shape (nX, 1).
-    x = tf.reshape(X[:, ix], (nX, 1))
-    # Ψ is a Tensor of shape (nX, 1).
-    (Ψ,) = Y
-    # delΨ is a Tensor of shape (nX, 1).
-    (delΨ,) = delY
-    # dΨ_dx is a Tensor of shape (nX, 1).
-    dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
+#     Raises
+#     ------
+#     None
+#     """
+#     nX = X.shape[0]
+#     # x is a Tensor of shape (nX, 1).
+#     x = tf.reshape(X[:, ix], (nX, 1))
+#     # Ψ is a Tensor of shape (nX, 1).
+#     (Ψ,) = Y
+#     # delΨ is a Tensor of shape (nX, 1).
+#     (delΨ,) = delY
+#     # dΨ_dx is a Tensor of shape (nX, 1).
+#     dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
 
-    # G is a Tensor of shape (n, 1).
-    G = (
-        dΨ_dx + (x + (1 + 3*x**2)/(1 + x + x**3))*Ψ - x**3
-        - 2*x - x**2*(1 + 3*x**2)/(1 + x + x**3)
-    )
-    return G
-
-
-# Gather the differential equations into a list.
-de = [ode_Ψ]
+#     # G is a Tensor of shape (n, 1).
+#     G = (
+#         dΨ_dx + (x + (1 + 3*x**2)/(1 + x + x**3))*Ψ - x**3
+#         - 2*x - x**2*(1 + 3*x**2)/(1 + x + x**3)
+#     )
+#     return G
 
 
-# Initial condition for the analytical solution
-Ψ0 = 1.0
+# # Gather the differential equations into a list.
+# de = [ode_Ψ]
+
+
+# # Initial condition for the analytical solution
+# Ψ0 = 1.0
 
 
 def Ψ_analytical(x):
@@ -160,43 +159,48 @@ def Ψ_analytical(x):
     return Ψ
 
 
-def dΨ_dx_analytical(x):
-    """Analytical 1st derivative to lagaris01.
+# Gather analytical solutions into a list.
+Y_analytical = [
+    Ψ_analytical
+]
 
-    Analytical 1st derivative of lagaris01 analytical solution.
+# def dΨ_dx_analytical(x):
+#     """Analytical 1st derivative to lagaris01.
 
-    Parameters
-    ----------
-    x : np.array of float, shape (n,)
-        Value of x for each evaluation point.
+#     Analytical 1st derivative of lagaris01 analytical solution.
 
-    Returns
-    -------
-    dΨ_dx : np.array of float, shape (n,)
-        Value of dΨ/dx for each evaluation point.
+#     Parameters
+#     ----------
+#     x : np.array of float, shape (n,)
+#         Value of x for each evaluation point.
 
-    Raises
-    ------
-    None
-    """
-    dΨ_dx = (
-        2*x - np.exp(-x**2/2)*(1 + x + 4*x**2 + x**4)/(1 + x + x**3)**2
-    )
-    return dΨ_dx
+#     Returns
+#     -------
+#     dΨ_dx : np.array of float, shape (n,)
+#         Value of dΨ/dx for each evaluation point.
+
+#     Raises
+#     ------
+#     None
+#     """
+#     dΨ_dx = (
+#         2*x - np.exp(-x**2/2)*(1 + x + 4*x**2 + x**4)/(1 + x + x**3)**2
+#     )
+#     return dΨ_dx
 
 
 if __name__ == "__main__":
     print(f"independent_variable_names = {independent_variable_names}")
-    print(f"independent_variable_labels = {independent_variable_labels}")
-    print(f"n_dim = {n_dim}")
+#     print(f"independent_variable_labels = {independent_variable_labels}")
+#     print(f"n_dim = {n_dim}")
     print(f"dependent_variable_names = {dependent_variable_names}")
-    print(f"dependent_variable_labels = {dependent_variable_labels}")
-    print(f"n_var = {n_var}")
+#     print(f"dependent_variable_labels = {dependent_variable_labels}")
+#     print(f"n_var = {n_var}")
 
-    # Test the analytical solution and derivative.
-    xmin, xmax, nx = 0.0, 1.0, 11
-    x = np.linspace(xmin, xmax, nx)
-    Ψ = Ψ_analytical(x)
-    dΨ_dx = dΨ_dx_analytical(x)
-    for i in range(nx):
-        print(f"{i} {x[i]} {Ψ[i]} {dΨ_dx[i]}")
+#     # Test the analytical solution and derivative.
+#     xmin, xmax, nx = 0.0, 1.0, 11
+#     x = np.linspace(xmin, xmax, nx)
+#     Ψ = Ψ_analytical(x)
+#     dΨ_dx = dΨ_dx_analytical(x)
+#     for i in range(nx):
+#         print(f"{i} {x[i]} {Ψ[i]} {dΨ_dx[i]}")
