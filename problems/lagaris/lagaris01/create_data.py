@@ -89,13 +89,11 @@ def create_data(args: dict):
         if len(rest) > 0:
             raise TypeError("Must not specify --file and point limits!")
         X = np.loadtxt(_file)
-        if debug:
-            print(f"X = {X}")
     else:
-        # They should be in a set of 3 for each independent variable:
-        # min max n
 
         # Extract grid parameters.
+        # They should be in a set of 3 for each independent variable:
+        # min max n
         xmin = float(rest[0])
         xmax = float(rest[1])
         nx = int(rest[2])
@@ -108,36 +106,24 @@ def create_data(args: dict):
     if debug:
         print(f"X = {X}")
 
-    # Count the evaluation points.
-    # ne = len(X)
-    # if debug:
-    #     print(f"ne = {ne}")
+    # Compute each dependent variable at each point.
+    Y = p.Y_analytical[0](X)
+    if debug:
+        print(f"Y = {Y}")
 
-    # Make sure 1-D data is in a 2-D array.
-    # X = np.reshape(x, (p))
-    # if debug:
-    #     print(f"X = {X}")
+    # Print the output header lines.
+    header = "# GRID"
+    print(header)
+    header = "# x"
+    print(header)
+    header = "# x Ψ"
+    print(header)
 
-    # # Compute each dependent variable at each point.
-    # Y = np.zeros((nx, p.n_var))
-    # for i in range(p.n_var):
-    #     Y[:, i] = p.Y_analytical[i](X)
-    # if debug:
-    #     print(f"Y = {Y}")
-
-    # # Print the output header lines.
-    # header = "# GRID"
-    # print(header)
-    # header = "# x"
-    # print(header)
-    # header = "# x Ψ"
-    # print(header)
-
-    # # Print each data point.
-    # # Each line is:
-    # # x Ψ
-    # for (x, y) in zip(X, Y):
-    #     print(x, y)
+    # Print each data point.
+    # Each line is:
+    # x Ψ
+    for (x, y) in zip(X, Y):
+        print(x, y)
 
 
 def main():
