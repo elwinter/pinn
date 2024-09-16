@@ -202,9 +202,9 @@ def pinn0_plots(args: dict):
 
     # Compute the path to the output directory. Then create it if needed.
     output_path = OUTPUT_DIR
-    # if os.path.isdir(output_path) and clobber:
-    #     shutil.rmtree(output_path)
-    # os.mkdir(output_path)
+    if os.path.isdir(output_path) and clobber:
+        shutil.rmtree(output_path)
+    os.mkdir(output_path)
 
     # Create the plots in a memory buffer.
     mpl.use("Agg")
