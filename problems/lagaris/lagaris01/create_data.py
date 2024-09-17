@@ -116,6 +116,8 @@ def create_data(args: dict):
     print(header)
     header = "# x"
     print(header)
+    header = f"# {xmin} {xmax} {nx}"
+    print(header)
     header = "# x Ψ"
     print(header)
 
