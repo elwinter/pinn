@@ -211,13 +211,19 @@ def pinn0(args: dict):
 
     # ------------------------------------------------------------------------
 
+    # Create loss histories by epoch and model as Python lists, so they can be
+    # easily updated. Shape is (max_epochs, n_batches, p.n_var + 1), where
+    # there is one plane per epoch, one row per batch, and one column per
+    # dependent variable, with an extra column for the aggregate loss.
+    loss = np.zeros((max_epochs, len(batches), p.n_var + 1))
+
     # Create loss history arrays.
-    loss = {}
-    for v in p.dependent_variable_names:
-        loss[v] = {}
-        loss[v]['total'] = np.zeros(max_epochs)
-    loss['aggregate'] = {}
-    loss['aggregate']['total'] = np.zeros(max_epochs)
+    # loss = {}
+    # for v in p.dependent_variable_names:
+    #     loss[v] = {}
+    #     loss[v]['total'] = np.zeros(max_epochs)
+    # loss['aggregate'] = {}
+    # loss['aggregate']['total'] = np.zeros(max_epochs)
 
     # ------------------------------------------------------------------------
 
@@ -267,15 +273,17 @@ def pinn0(args: dict):
             if debug:
                 print(f"L_model = {L_model}")
             for i in range(p.n_var):
-                varname = p.dependent_variable_names[i]
-                loss[varname]['total'][epoch] = L_model[i].numpy()
+            #     varname = p.dependent_variable_names[i]
+            #     loss[varname]['total'][epoch] = L_model[i].numpy()
+                loss[epoch][0][i] = L_model[i].numpy()
 
             # Compute and save the aggregate loss function.
             # Tensor has shape () (scalar).
             L = tf.reduce_sum(L_model)
             if verbose:
                 print(f"epoch = {epoch}, L = {L:.6E}")
-            loss['aggregate']['total'][epoch] = L.numpy()
+            # loss['aggregate']['total'][epoch] = L.numpy()
+            loss[epoch][0][-1] = L.numpy()
 
         # Compute the gradient of the loss wrt the network parameters.
         # pgrad is a list of lists of Tensor objects.
@@ -333,11 +341,18 @@ def pinn0(args: dict):
             model.save(path)
 
     # Save the loss histories.
-    for v in p.dependent_variable_names:
+    for (iv, v) in enumerate(p.dependent_variable_names):
         path = os.path.join(output_dir, f"L_{v}.dat")
-        np.savetxt(path, loss[v]['total'])
+        _L = loss[:, 0, iv]
+        # np.savetxt(path, loss[v]['total'])
+        np.savetxt(path, _L)
     path = os.path.join(output_dir, 'L.dat')
-    np.savetxt(path, loss['aggregate']['total'])
+    _L = loss[:, 0, -1]
+    np.savetxt(path, _L)
+
+    # Save the loss histories as a binary NumPy file.
+    # path = os.path.join(output_dir, "loss")
+    # np.save(path, loss)
 
 
 def main():
