@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Use neural networks to approximate multivariable scalar functions.
+"""Use neural networks to approximate mathematical functions.
 
-Use neural networks to approximate multivariable scalar functions.
+Use neural networks to approximate mathematical functions.
 
 Author
 ------
@@ -217,17 +217,9 @@ def pinn0(args: dict):
     # dependent variable, with an extra column for the aggregate loss.
     loss = np.zeros((max_epochs, len(batches), p.n_var + 1))
 
-    # Create loss history arrays.
-    # loss = {}
-    # for v in p.dependent_variable_names:
-    #     loss[v] = {}
-    #     loss[v]['total'] = np.zeros(max_epochs)
-    # loss['aggregate'] = {}
-    # loss['aggregate']['total'] = np.zeros(max_epochs)
-
     # ------------------------------------------------------------------------
 
-    # Train the network models.
+    # Train the models.
 
     # Record the training start time.
     t_start = datetime.datetime.now()
@@ -239,74 +231,87 @@ def pinn0(args: dict):
         if debug:
             print(f"Starting epoch {epoch}.")
 
-        # Run the forward pass for the training points in a single batch.
-        # tape0 is for computing gradients wrt network parameters.
-        with tf.GradientTape(persistent=True) as tape0:
-
-            # Compute the network outputs at the training points.
-            # Y_model is a list of tf.Tensor objects.
-            # There are p.n_var Tensors in the list (one per model).
-            # Each Tensor has shape (n_train, 1).
-            Y_model = [model(X_data) for model in models]
+        # Train using each batch for this epoch.
+        for (ib, XYb) in enumerate(batches):
             if debug:
-                print(f"Y_model = {Y_model}")
+                print(f"Starting batch {ib}.")
 
-            # Compute the errors in the models at each training point.
-            # E_model is a list of tf.Tensor objects.
-            # There are p.n_var Tensors in the list.
-            # Each Tensor has shape (n_train, 1).
-            E_model = [
-                Y_model[i] - tf.reshape(Y_data[:, i], (Y_data.shape[0], 1))
-                for i in range(p.n_var)
+            # Run the forward pass for this batch.
+            with tf.GradientTape(persistent=True) as tape0:
+
+                # Compute the model outputs at the training points.
+                # Ybm is a list of tf.Tensor objects.
+                # There are p.n_var Tensors in the list (one per model).
+                # Each Tensor has shape (batch_size, 1).
+                shape = (XYb.shape[0], p.n_dim)
+                Xb = tf.reshape(XYb[:, :p.n_dim], shape=shape)
+                Ybm = [model(Xb) for model in models]
+                if debug:
+                    print(f"Ybm = {Ybm}")
+
+                # Compute the errors in the models at each training point.
+                # Eb is a list of tf.Tensor objects.
+                # There are p.n_var Tensors in the list.
+                # Each Tensor has shape (batch_size, 1).
+                Eb = [0.0]*p.n_var
+                for iv in range(p.n_var):
+                    Ybt = tf.reshape(XYb[:, p.n_dim + iv], (XYb.shape[0], 1))
+                    Eb[iv] = Ybm[iv] - Ybt
+                if debug:
+                    print(f"Eb = {Eb}")
+
+                # Compute the loss function for each model.
+                # The loss function is the RMS error.
+                # Lbm is a list of Tensor objects.
+                # There are p.n_var Tensors in the list (one per model).
+                # Each Tensor has shape () (scalar).
+                Lbm = [
+                    tf.math.sqrt(tf.reduce_sum(E**2)/E.shape[0]) for E in Eb
+                ]
+                if debug:
+                    print(f"Lbm = {Lbm}")
+
+                # Compute the total loss function for the batch.
+                # Tensor has shape () (scalar).
+                Lb = tf.reduce_sum(Lbm)
+                if debug:
+                    print(f"Lb = {Lb}")
+                if verbose:
+                    print(f"Epoch = {epoch}, batch = {ib}, loss = {Lb}")
+
+                # Save the loss history.
+                for im in range(len(models)):
+                    loss[epoch][ib][im] = Lbm[im].numpy()
+                loss[epoch][ib][-1] = Lb
+
+                # End of tape0 context.
+
+            # Compute the gradient of the loss wrt network parameters.
+            # pgrad is a list of lists of Tensor objects.
+            # There are p.n_var sub-lists in the top-level list (one per
+            # model).
+            # There are 3 Tensors in each sub-list, with shapes based on
+            # model.trainable_variables.
+            pgrad = [
+                tape0.gradient(Lb, model.trainable_variables)
+                for model in models
             ]
             if debug:
-                print(f"E_model = {E_model}")
+                print(f"pgrad = {pgrad}")
 
-            # Compute and save the individual loss functions for each model.
-            # The loss function is the RMS error.
-            # L_model is a list of Tensor objects.
-            # There are p.n_var Tensors in the list (one per model).
-            # Each Tensor has shape () (scalar).
-            L_model = [
-                tf.math.sqrt(tf.reduce_sum(E**2)/E.shape[0]) for E in E_model
-            ]
+            # Update the parameters for this epoch and batch.
+            for (g, m) in zip(pgrad, models):
+                optimizer.apply_gradients(zip(g, m.trainable_variables))
+
             if debug:
-                print(f"L_model = {L_model}")
-            for i in range(p.n_var):
-            #     varname = p.dependent_variable_names[i]
-            #     loss[varname]['total'][epoch] = L_model[i].numpy()
-                loss[epoch][0][i] = L_model[i].numpy()
-
-            # Compute and save the aggregate loss function.
-            # Tensor has shape () (scalar).
-            L = tf.reduce_sum(L_model)
-            if verbose:
-                print(f"epoch = {epoch}, L = {L:.6E}")
-            # loss['aggregate']['total'][epoch] = L.numpy()
-            loss[epoch][0][-1] = L.numpy()
-
-        # Compute the gradient of the loss wrt the network parameters.
-        # pgrad is a list of lists of Tensor objects.
-        # There are p.n_var sub-lists in the top-level list (one per
-        # model).
-        # There are 3 Tensors in each sub-list, with shapes based on
-        # model.trainable_variables.
-        pgrad = [
-            tape0.gradient(L, model.trainable_variables) for model in models
-        ]
-        if debug:
-            print(f"pgrad = {pgrad}")
-
-        # Update the parameters for this epoch.
-        for (g, m) in zip(pgrad, models):
-            optimizer.apply_gradients(zip(g, m.trainable_variables))
+                print(f"Ending batch {ib}.")
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
-            for (i, model) in enumerate(models):
+            for (im, model) in enumerate(models):
                 path = os.path.join(
-                    output_dir, 'models', f"{epoch}",
-                    f"model_{p.dependent_variable_names[i]}"
+                    output_dir, "models", f"{epoch:06d}",
+                    p.dependent_variable_names[im]
                 )
                 model.save(path)
 
@@ -320,39 +325,42 @@ def pinn0(args: dict):
     if verbose:
         print(f"Training stopped at {t_stop}.")
 
-    # Determine actual number of epochs used in case training loop ended
-    # early.
+    # Count the last epoch.
     n_epochs = epoch + 1
+    if debug:
+        print(f"n_epochs = {n_epochs}")
 
     # Print short training summary.
     t_elapsed = t_stop - t_start
     if verbose:
         print(f"Total training time: {t_elapsed.total_seconds()} seconds")
         print(f"Epochs: {n_epochs}")
-        print(f"Final value of loss function: {L}")
+        print(f"Final value of loss function: {loss[-1][-1][-1]}")
 
-    # Save the final trained models.
+    # Save the final trained models and descriptions.
     if save_model != 0:
-        for (i, model) in enumerate(models):
+        for (im, model) in enumerate(models):
+
+            # Save the trained model.
             path = os.path.join(
-                output_dir, 'models', f"{epoch}",
-                f"model_{p.dependent_variable_names[i]}"
+                output_dir, "models", f"{epoch:06d}",
+                p.dependent_variable_names[im]
             )
             model.save(path)
 
-    # Save the loss histories.
-    for (iv, v) in enumerate(p.dependent_variable_names):
-        path = os.path.join(output_dir, f"L_{v}.dat")
-        _L = loss[:, 0, iv]
-        # np.savetxt(path, loss[v]['total'])
-        np.savetxt(path, _L)
-    path = os.path.join(output_dir, 'L.dat')
-    _L = loss[:, 0, -1]
-    np.savetxt(path, _L)
+            # Save a text description of the model.
+            variable_name = p.dependent_variable_names[im]
+            path = os.path.join(output_dir, "models",
+                                f"model_{variable_name}.txt")
+            old_stdout = sys.stdout
+            with open(path, "w", encoding="utf-8") as f:
+                sys.stdout = f
+                model.summary()
+            sys.stdout = old_stdout
 
     # Save the loss histories as a binary NumPy file.
-    # path = os.path.join(output_dir, "loss")
-    # np.save(path, loss)
+    path = os.path.join(output_dir, "loss")
+    np.save(path, loss)
 
 
 def main():

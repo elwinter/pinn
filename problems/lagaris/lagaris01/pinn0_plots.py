@@ -214,11 +214,11 @@ def pinn0_plots(args: dict):
     # Plot the loss history.
 
     # Load the data.
-    path = os.path.join(results_path, "L.dat")
-    L = np.loadtxt(path)
+    path = os.path.join(results_path, "loss.npy")
+    L = np.load(path)
 
     # Create the plot.
-    fig = make_loss_plot(L)
+    fig = make_loss_plot(L[:, 0, -1])
 
     # Save the plot to a PNG file.
     path = os.path.join(output_path, "L.png")
@@ -240,8 +240,8 @@ def pinn0_plots(args: dict):
 
     # Load the trained model.
     variable_name = p.dependent_variable_names[p.iΨ]
-    path = os.path.join(results_path, "models", f"{last_epoch}",
-                        f"model_{variable_name}")
+    path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                        variable_name)
     model = tf.keras.models.load_model(path)
 
     # Compute predicted, analytical, and error values.
