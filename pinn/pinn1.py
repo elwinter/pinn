@@ -462,9 +462,13 @@ def pinn1(args: dict):
             loss["aggregate"]["residual"].append(L_res.numpy())
             _Le[epoch][0] = L_res.numpy()
             loss["aggregate"]["data"].append(L_data.numpy())
+            _Le[epoch][1] = L_data.numpy()
             loss["aggregate"]["total"].append(L.numpy())
+            _Le[epoch][2] = L.numpy()
             if debug:
                 print(f"loss = {loss}")
+            if debug:
+                print(f"_Le = {_Le}")
 
         # Compute the gradient of the weighted aggregate loss function wrt
         # the network parameters.
@@ -556,6 +560,12 @@ def pinn1(args: dict):
     np.savetxt(
         os.path.join(output_dir, "L.dat"), loss["aggregate"]["total"]
     )
+
+    # Save the loss histories as a binary NumPy file.
+    path = os.path.join(output_dir, "_loss")
+    np.save(path, _loss)
+    path = os.path.join(output_dir, "_Le.dat")
+    np.savetxt(path, _Le)
 
 
 def main():
