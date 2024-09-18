@@ -216,6 +216,7 @@ def pinn0(args: dict):
     # there is one plane per epoch, one row per batch, and one column per
     # dependent variable, with an extra column for the aggregate loss.
     loss = np.zeros((max_epochs, len(batches), p.n_var + 1))
+    Le = np.zeros((max_epochs,))
 
     # ------------------------------------------------------------------------
 
@@ -276,8 +277,6 @@ def pinn0(args: dict):
                 Lb = tf.reduce_sum(Lbm)
                 if debug:
                     print(f"Lb = {Lb}")
-                if verbose:
-                    print(f"Epoch = {epoch}, batch = {ib}, loss = {Lb}")
 
                 # Save the loss history.
                 for im in range(len(models)):
@@ -305,6 +304,32 @@ def pinn0(args: dict):
 
             if debug:
                 print(f"Ending batch {ib}.")
+
+        # Compute the predicted values at the end of the epoch.
+        Yem = [model(X_data) for model in models]
+        if debug:
+            print(f"Yem = {Yem}")
+
+        # Compute the errors at the end of the epoch.
+        Ee = [0.0]*p.n_var
+        for iv in range(p.n_var):
+            Yet = tf.reshape(XY_data[:, p.n_dim + iv], (XY_data.shape[0], 1))
+            Ee[iv] = Yem[iv] - Yet
+        if debug:
+            print(f"Ee = {Ee}")
+
+        # Compute the losses at the end of the epoch.
+        Lem = [
+            tf.math.sqrt(tf.reduce_sum(E**2)/E.shape[0]) for E in Ee
+        ]
+        if debug:
+            print(f"Lem = {Lem}")
+        Le[epoch] = tf.reduce_sum(Lem)
+        if debug:
+            print(f"Le = {Le}")
+
+        if verbose:
+            print(f"Epoch = {epoch:6d}, Le = {Le[epoch]:.6E}")
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
@@ -361,6 +386,8 @@ def pinn0(args: dict):
     # Save the loss histories as a binary NumPy file.
     path = os.path.join(output_dir, "loss")
     np.save(path, loss)
+    path = os.path.join(output_dir, "Le.dat")
+    np.savetxt(path, Le)
 
 
 def main():
