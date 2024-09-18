@@ -149,7 +149,10 @@ def pinn0(args: dict):
     shutil.copy(data_path, output_dir)
 
     # Save a copy of the data points under a standard name.
-    path = os.path.join(output_dir, "XY_data.dat")
+    if data_path.endswith(".gz"):
+        path = os.path.join(output_dir, "XY_data.dat.gz")
+    else:
+        path = os.path.join(output_dir, "XY_data.dat")
     shutil.copy(data_path, path)
 
     # ------------------------------------------------------------------------

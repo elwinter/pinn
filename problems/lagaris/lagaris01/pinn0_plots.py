@@ -232,7 +232,9 @@ def pinn0_plots(args: dict):
     # Plot the predicted and analytical solutions, and error.
 
     # Load the training points.
-    path = os.path.join(results_path, "XY_data.dat")
+    path = os.path.join(results_path, "XY_data.dat.gz")
+    if not os.path.isfile(path):
+        path = os.path.join(results_path, "XY_data.dat")
     XY_data = np.loadtxt(path)
 
     # Find the epoch of the last trained model.
