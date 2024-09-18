@@ -616,6 +616,43 @@ def load_problem_data(path: str, precision: str = "float32"):
     return XY_data
 
 
+def load_training_data(path: str, precision: str = "float32"):
+    """Load the training data.
+
+    Load the training data, which specifies the locations for training.
+
+    Each line contains a tuple of coordinates (the independent variable values
+    for a location).
+
+    Parameters
+    ----------
+    path : str
+        Path to problem data file to read.
+    precision : str, default "float32"
+        TensorFlow precision to use for data
+
+    Returns
+    -------
+    X_train : np.ndarray, shape(n_data, p.n_dim)
+        Array of training points.
+
+    Raises
+    ------
+    None
+    """
+    # Load the data.
+    X_train = np.loadtxt(path, dtype=precision)
+
+    # If the data shape is 1-D (only one dimension), reshape to 2-D,
+    # (n_train, 1) to make compatible with later TensorFlow calls, which
+    # expect a 2D Tensor.
+    if len(X_train.shape) == 1:
+        X_train = X_train.reshape(X_train.shape[0], 1)
+
+    # Return the training data.
+    return X_train
+
+
 def load_trained_models(model_directory: str, model_names: list):
     """Load trained PINN models.
 
