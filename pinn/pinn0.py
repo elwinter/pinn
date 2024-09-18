@@ -98,7 +98,7 @@ def pinn0(args: dict):
     clobber = args.get("clobber", False)
     debug = args.get("debug", False)
     learning_rate = args.get("learning_rate", 0.01)
-    load_models = args.get("load_models", None)
+    load_model = args.get("load_model", None)
     max_epochs = args.get("max_epochs", 0)
     precision = args.get("precision", "float32")
     randomize = args.get("randomize", False)
@@ -186,11 +186,11 @@ def pinn0(args: dict):
     # ------------------------------------------------------------------------
 
     # Load or create PINN models for the variables.
-    if load_models:
+    if load_model:
         if verbose:
-            print(f"Loading trainied models from {load_models}.")
+            print(f"Loading trainied models from {load_model}.")
         models = common.load_trained_models(
-            load_models, p.dependent_variable_names
+            load_model, p.dependent_variable_names
         )
     else:
         if verbose:
