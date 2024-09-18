@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create plots for pinn1 results for lagaris01 problem.
+"""Create plots for pinn0 results for lagaris01 problem.
 
-Create plots for pinn1 results for lagaris01 problem.
+Create plots for pinn0 results for lagaris01 problem.
 
 Author
 ------
