@@ -146,7 +146,6 @@ def pinn1(args: dict):
     learning_rate = args.get("learning_rate", 0.01)
     load_model = args.get("load_model", None)
     max_epochs = args.get("max_epochs", 0)
-    multi = args.get("multi", False)
     H = args.get("n_hid", 10)
     n_layers = args.get("n_layers", 1)
     precision = args.get("precision", "float32")
@@ -384,12 +383,7 @@ def pinn1(args: dict):
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_train, 1).
                 Y_train_model = []
-                if multi:
-                    Y_multi = models[0](X_train_tf)
-                    Y_train_model = [tf.reshape(Y_multi[:, i], (n_train, 1))
-                                     for i in range(p.n_var)]
-                else:
-                    Y_train_model = [model(X_train_tf) for model in models]
+                Y_train_model = [model(X_train_tf) for model in models]
                 if debug:
                     print(f"Y_train_model = {Y_train_model}")
 
@@ -400,12 +394,7 @@ def pinn1(args: dict):
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (n_data, 1).
                 Y_data_model = []
-                if multi:
-                    Y_multi_data = models[0](X_data_tf)
-                    Y_data_model = [tf.reshape(Y_multi_data[:, i], (n_data, 1))
-                                     for i in range(p.n_var)]
-                else:
-                    Y_data_model = [model(X_data_tf) for model in models]
+                Y_data_model = [model(X_data_tf) for model in models]
                 if debug:
                     print(f"Y_data_model = {Y_data_model}")
 
@@ -572,18 +561,12 @@ def pinn1(args: dict):
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
-            if multi:
+            for (i, model) in enumerate(models):
                 path = os.path.join(
-                    output_dir, "models", f"{epoch:06d}", "model_multi"
+                    output_dir, "models", f"{epoch:06d}",
+                    f"model_{p.dependent_variable_names[i]}"
                 )
                 model.save(path)
-            else:
-                for (i, model) in enumerate(models):
-                    path = os.path.join(
-                        output_dir, "models", f"{epoch:06d}",
-                        f"model_{p.dependent_variable_names[i]}"
-                    )
-                    model.save(path)
 
         if debug:
             print(f"Ending epoch {epoch}.")
@@ -605,31 +588,19 @@ def pinn1(args: dict):
 
     # Save the final trained models and descriptions.
     if save_model != 0:
-        if multi:
+        for (i, model) in enumerate(models):
             path = os.path.join(
-                output_dir, "models", f"{epoch:06d}", "model_multi"
+                output_dir, "models", f"{epoch:06d}",
+                f"model_{p.dependent_variable_names[i]}"
             )
             model.save(path)
-            path = os.path.join(output_dir, "models", "model_multi.txt")
+            variable_name = p.dependent_variable_names[i]
+            path = os.path.join(output_dir, "models", f"model_{variable_name}.txt")
             old_stdout = sys.stdout
             with open(path, "w") as f:
                 sys.stdout = f
                 model.summary()
             sys.stdout = old_stdout
-        else:
-            for (i, model) in enumerate(models):
-                path = os.path.join(
-                    output_dir, "models", f"{epoch:06d}",
-                    f"model_{p.dependent_variable_names[i]}"
-                )
-                model.save(path)
-                variable_name = p.dependent_variable_names[i]
-                path = os.path.join(output_dir, "models", f"model_{variable_name}.txt")
-                old_stdout = sys.stdout
-                with open(path, "w") as f:
-                    sys.stdout = f
-                    model.summary()
-                sys.stdout = old_stdout
 
     # Save the loss histories.
     for (i, v) in enumerate(p.dependent_variable_names):
