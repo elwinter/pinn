@@ -12,7 +12,6 @@ Eric Winter (eric.winter62@gmail.com)
 
 
 # Import standard Python modules.
-import argparse
 import datetime
 import os
 import shutil
@@ -83,64 +82,15 @@ def create_command_line_argument_parser():
     ------
     None
     """
-    parser = argparse.ArgumentParser(DESCRIPTION)
-    parser.add_argument(
-        "--activation", "-a", default=DEFAULT_ACTIVATION,
-        help="Specify activation function (default: %(default)s)"
+    # Create the standard argument parser for neural network code.
+    parser = common.create_neural_network_command_line_argument_parser(
+        DESCRIPTION
     )
+
+    # Add arguments specific to this script.
     parser.add_argument(
-        "--debug", "-d", action="store_true",
-        help="Print debugging output (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--learning_rate", type=float, default=DEFAULT_LEARNING_RATE,
-        help="Initial learning rate for training (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--load_model", default=None,
-        help="Path to directory containing models to load (default:"
-             " %(default)s)"
-    )
-    parser.add_argument(
-        "--max_epochs", type=int, default=DEFAULT_MAX_EPOCHS,
-        help="Maximum number of training epochs (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--multi", action="store_true",
-        help="Use a single multi-output network (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--n_hid", type=int, default=DEFAULT_N_HID,
-        help="Number of hidden nodes per layer (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--n_layers", type=int, default=DEFAULT_N_LAYERS,
-        help="Number of hidden layers (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--nogpu", action="store_true",
-        help="Disable TensorFlow use of GPU(s) (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--precision", type=str, default=DEFAULT_PRECISION,
-        help="Precision to use in TensorFlow solution (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--save_model", type=int, default=DEFAULT_SAVE_MODEL,
-        help="Save interval (epochs) for trained model (0 = do not save, "
-        "-1 = save at end, n > 0 = save every n epochs) (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--seed", type=int, default=DEFAULT_SEED,
-        help="Seed for random number generator (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--use_constraints", action="store_true",
-        help="Use constraint equations (if any) (default: %(default)s)."
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Print verbose output (default: %(default)s)."
+        "--randomize", action="store_true",
+        help="Randomize order of training data (default: %(default)s)"
     )
     parser.add_argument(
         "--w_data", "-w", type=float, default=DEFAULT_W_DATA,
@@ -162,221 +112,199 @@ def create_command_line_argument_parser():
     return parser
 
 
-def main():
-    """Begin main program."""
-    # Set up the command-line parser.
-    parser = create_command_line_argument_parser()
+def pinn1(args: dict):
+    """Primary entry point for PINN 1st-order solution code.
 
+    Use a PINN to solve a set of 1st-order differential equations.
+
+    Regarding variable names:
+
+    X*: Contains values of independent variables.
+    Y*: Contains values of dependent variables.
+    XY*: Contains values of independent and dependent variables.
+    *b*: Quantity is for a batch.
+    *m*: Quantity of for a model.
+
+    Parameters
+    ----------
+    args: dict
+        Dictionary of command-line options.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    None
+    """
     # Parse the command-line arguments.
-    args = parser.parse_args()
-    if args.debug:
-        print(f"args = {args}", flush=True)
-    activation = args.activation
-    debug = args.debug
-    learning_rate = args.learning_rate
-    load_model = args.load_model
-    max_epochs = args.max_epochs
-    multi = args.multi
-    H = args.n_hid
-    n_layers = args.n_layers
-    nogpu = args.nogpu
-    precision = args.precision
-    save_model = args.save_model
-    seed = args.seed
-    verbose = args.verbose
-    use_constraints = args.use_constraints
-    w_data = args.w_data
-    problem_path = args.problem_path
-    data_path = args.data_path
-    training_path = args.training_path
+    activation = args.get("activation", "sigmoid")
+    batch_size = args.get("batch_size", -1)
+    clobber = args.get("clobber", False)
+    debug = args.get("debug", False)
+    learning_rate = args.get("learning_rate", 0.01)
+    load_model = args.get("load_model", None)
+    max_epochs = args.get("max_epochs", 0)
+    multi = args.get("multi", False)
+    H = args.get("n_hid", 10)
+    n_layers = args.get("n_layers", 1)
+    precision = args.get("precision", "float32")
+    randomize = args.get("randomize", False)
+    save_model = args.get("save_model", -1)
+    verbose = args.get("verbose", False)
+    use_constraints = args.get("use_constraints", False)
+    w_data = args.get("w_data", 0.0)
+    problem_path = args.get("problem_path", None)
+    data_path = args.get("data_path", None)
+    training_path = args.get("training_path", None)
 
-    # -------------------------------------------------------------------------
+    # Basic sanity checks.
+    assert batch_size == -1 or batch_size > 0
+    assert max_epochs > 0
+    assert problem_path is not None
+    assert data_path is not None
+
+    # ------------------------------------------------------------------------
 
     # Configure TensorFlow.
-
-    # If requested, disable TensorFlow use of GPU.
-    if nogpu:
-        if verbose:
-            print("Disabling TensorFlow use of GPU.", flush=True)
-        common.disable_gpus()
-
-    # Set the backend TensorFlow precision.
     if verbose:
-        print(f"Setting TensorFlow precision to {precision}.", flush=True)
-    tf.keras.backend.set_floatx(precision)
+        print("Configuring TensorFlow.")
+    common.configure_tensorflow(args)
 
-    # Set the random number seed for reproducibility.
-    if verbose:
-        print(f"Seeding random number generator with {seed}.", flush=True)
-    tf.random.set_seed(seed)
-
-    # -------------------------------------------------------------------------
-
-    # Read the problem description.
+    # ------------------------------------------------------------------------
 
     # Import the problem to solve.
     if verbose:
-        print(f"Importing python module for problem {problem_path}.", flush=True)
+        print(f"Importing problem {problem_path}.")
     p = common.import_problem(problem_path)
     if debug:
-        print(f"p = {p}", flush=True)
+        print(f"p = {p}")
 
-    # Set up the output directory under the current directory.
-    # The name of the output directory is the name of the problem python
-    # module, with "-pinn1" appended to the end of the name.
-    output_dir = os.path.join(".", f"{p.__name__}-pinn1")
-    # if debug:
-    #     print(f"output_dir = {output_dir}", flush=True)
-    # os.mkdir(output_dir)
-
-    # Record system information, model parameters, and problem definition,
-    # data, and training grid.
+    # Create the output directory under the current directory.
     if verbose:
-        print("Recording system information, model hyperparameters, and "
-              "problem definition and data.", flush=True)
+        print("Creating output directory.")
+    output_dir = common.create_output_directory(p, "-pinn1", clobber=clobber)
+    if debug:
+        print(f"output_dir = {output_dir}")
+
+    # Record system information and program arguments.
+    if verbose:
+        print("Saving system information and program arguments.")
     common.save_system_information(output_dir)
-    # common.save_arguments(args, output_dir)
+    common.save_arguments(args, output_dir)
+
+    # Copy the problem definition, data, and training points.
+    if verbose:
+        print("Copying problem definition, data, and training points.")
     shutil.copy(problem_path, output_dir)
     shutil.copy(data_path, output_dir)
     shutil.copy(training_path, output_dir)
 
-    # -------------------------------------------------------------------------
+    # Save a copy of the data and training points under standard names.
+    if data_path.endswith(".gz"):
+        path = os.path.join(output_dir, "XY_data.dat.gz")
+    else:
+        path = os.path.join(output_dir, "XY_data.dat")
+    shutil.copy(data_path, path)
+    if training_path.endswith(".gz"):
+        path = os.path.join(output_dir, "X_train.dat.gz")
+    else:
+        path = os.path.join(output_dir, "X_train.dat")
+    shutil.copy(training_path, path)
 
-    # Read the training points.
+    # ------------------------------------------------------------------------
 
-    # These are just coordinate tuples, one per line, space-delimited.
+    # Load the training points. These are just coordinate tuples, one per
+    # line, space-delimited.
     if verbose:
-        print(f"Reading training points from {training_path}.", flush=True)
+        print(f"Reading training points from {training_path}.")
+    X_train = common.load_training_data(training_path, precision=precision)
     # X_train is np.ndarray of shape (n_train, p.n_dim) OR (n_train,) for 1D.
-    X_train = np.loadtxt(training_path, dtype=precision)
+    # X_train = np.loadtxt(training_path, dtype=precision)
     if debug:
-        print(f"X_train = {X_train}", flush=True)
-
-    # If the data shape is 1-D (only one dimension), reshape to 2-D,
-    # (n_train, 1) to make compatible with later TensorFlow calls, which
-    # expect a 2D Tensor.
-    if len(X_train.shape) == 1:
-        if verbose:
-            print("Training points are 1-D, reshaping to 2-D.")
-        X_train = X_train.reshape(X_train.shape[0], 1)
-        if debug:
-            print(f"Reshaped X_train = {X_train}", flush=True)
-
-    # Save a copy of the training data in the output directory.
-    shutil.copy(training_path, os.path.join(output_dir, "X_train.dat"))
+        print(f"X_train = {X_train}")
 
     # Count the training points.
     n_train = X_train.shape[0]
     if debug:
-        print(f"n_train = {n_train}", flush=True)
+        print(f"n_train = {n_train}")
 
     # -------------------------------------------------------------------------
 
-    # Read the data points, which includes initial conditions, boundary
-    # conditions, and any other data to be assimilated.
-
-    # Each line contains a coordinate tuple, followed by a variables tuple,
-    # containing the value of each variable at that location.
+    # Load the data points, which specify the function values at each point.
+    # The data is always returned as a 2-D numpy array of shape
+    # (n_data, p.n_dim + p.n_var).
     if verbose:
-        print(f"Reading training data from {data_path}.", flush=True)
-    # Shape is (n_data, p.n_dim + p.n_var)
-    XY_data = np.loadtxt(data_path, dtype=precision)
+        print(f"Reading problem data from {data_path}.")
+    XY_data = common.load_problem_data(data_path, precision=precision)
     if debug:
-        print(f"XY_data = {XY_data}", flush=True)
+        print(f"XY_data = {XY_data}")
 
-    # If the data shape is 1-D (only one dimension), reshape to 2-D,
-    # (n_train, 1) to make compatible with later TensorFlow calls, which
-    # expect a 2D Tensor.
-    if len(XY_data.shape) == 1:
-        if verbose:
-            print("Additional data is 1-D, reshaping to 2-D.", flush=True)
-        XY_data = XY_data.reshape(1, XY_data.shape[0])
-        if debug:
-            print(f"Reshaped XY_data = {XY_data}", flush=True)
-
-    # Save a copy of the additional data in the output directory.
-    shutil.copy(data_path, os.path.join(output_dir, "XY_data.dat"))
-
-    # Get the count of training data points.
+    # Get the count of data points.
     n_data = XY_data.shape[0]
     if debug:
-        print(f"n_data = {n_data}", flush=True)
+        print(f"n_data = {n_data}")
 
     # Extract the *locations* of the supplied data points.
     # Shape is (n_data, p.n_dim)
     X_data = XY_data[:, :p.n_dim]
     if debug:
-        print(f"X_data = {X_data}", flush=True)
+        print(f"X_data = {X_data}")
 
     # Extract the *values* of the supplied data points.
     # Shape is (n_data, p.n_var)
     Y_data = XY_data[:, p.n_dim:]
     if debug:
-        print(f"Y_data = {Y_data}", flush=True)
+        print(f"Y_data = {Y_data}")
+
+    # ------------------------------------------------------------------------
+
+    # Load or create PINN models for the variables.
+    if load_model:
+        if verbose:
+            print(f"Loading trainied models from {load_model}.")
+        models = common.load_trained_models(
+            load_model, p.dependent_variable_names
+        )
+    else:
+        if verbose:
+            print("Creating untrained models.")
+        models = common.create_models(p, args)
+    if debug:
+        print(f"models = {models}")
+
+    # -------------------------------------------------------------------------
+
+    # Create the optimizer to use for training.
+    if verbose:
+        print("Creating optimizer for training.")
+    optimizer = common.create_optimizer(learning_rate)
+    if debug:
+        print(f"optimizer = {optimizer}")
+
+    # -------------------------------------------------------------------------
+
+    # Randomize the data if needed.
+    if randomize:
+        if verbose:
+            print("Randomizing order of training data.")
+        np.random.shuffle(XY_data)
+
+    # Split the training points into batches of TensorFlow Variables.
+    if verbose:
+        print("Batching training points.")
+    batches = common.create_batches(X_train, batch_size)
+    if debug:
+        print(f"batches = {batches}")
 
     # -------------------------------------------------------------------------
 
     # Compute weights for residual and data loss functions.
     w_res = 1.0 - w_data
     if debug:
-        print(f"w_res = {w_res}", flush=True)
-        print(f"w_data = {w_data}", flush=True)
-
-    # -------------------------------------------------------------------------
-
-    # Create a model for each differential equation, unless "multi" was
-    # requested. If "multi", create a single multi-output network.
-    models = []
-    if multi:
-        if load_model:
-            if verbose:
-                print("Loading trained multi-output model.", flush=True)
-            raise TypeError(
-                "Loading trained multi-output model not implemented!"
-            )
-        else:
-            if verbose:
-                print("Creating untrained multi-output model.", flush=True)
-            model = common.build_multi_output_model(n_layers, H, activation,
-                                                    p.n_var)
-            if debug:
-                print(f"model = {model}", flush=True)
-            models.append(model)
-    else:
-        if load_model:
-            if verbose:
-                print(f"Loading trained models from {load_model}.", flush=True)
-            for (i, v) in enumerate(p.dependent_variable_names):
-                if verbose:
-                    print(f"Loading model for {v}.", flush=True)
-                path = os.path.join(load_model, f"model_{v}")
-                if debug:
-                    print(f"path = {path}", flush=True)
-                model = tf.keras.models.load_model(path)
-                if debug:
-                    print(f"model = {model}", flush=True)
-                models.append(model)
-        else:
-            if verbose:
-                print("Creating untrained models.", flush=True)
-            for (i, v) in enumerate(p.dependent_variable_names):
-                if verbose:
-                    print(f"Creating model for {v}.", flush=True)
-                model = common.build_model(n_layers, H, activation)
-                if debug:
-                    print(f"model = {model}", flush=True)
-                models.append(model)
-        if debug:
-            print(f"models = {models}", flush=True)
-
-    # -------------------------------------------------------------------------
-
-    # Create the optimizer to use for training.
-    if verbose:
-        print("Creating Adam optimizer.", flush=True)
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=learning_rate)
-    if debug:
-        print(f"optimizer = {optimizer}", flush=True)
+        print(f"w_res = {w_res}")
+        print(f"w_data = {w_data}")
 
     # -------------------------------------------------------------------------
 
@@ -384,24 +312,24 @@ def main():
 
     # Convert training points to tf.Variable.
     if verbose:
-        print("Converting training points to TensorFlow Variable", flush=True)
+        print("Converting training points to TensorFlow Variable")
     X_train_tf = tf.Variable(X_train)
     if debug:
-        print(f"X_train_tf = {X_train_tf}", flush=True)
+        print(f"X_train_tf = {X_train_tf}")
 
     # Convert data locations to tf.Variable.
     if verbose:
-        print("Converting data locations to TensorFlow Variable", flush=True)
+        print("Converting data locations to TensorFlow Variable")
     X_data_tf = tf.Variable(X_data)
     if debug:
-        print(f"X_data_tf = {X_data_tf}", flush=True)
+        print(f"X_data_tf = {X_data_tf}")
 
     # Convert data values to tf.Variable.
     if verbose:
-        print("Converting data values to TensorFlow Variable", flush=True)
+        print("Converting data values to TensorFlow Variable")
     Y_data_tf = tf.Variable(Y_data)
     if debug:
-        print(f"Y_data_tf = {Y_data_tf}", flush=True)
+        print(f"Y_data_tf = {Y_data_tf}")
 
     # -------------------------------------------------------------------------
 
@@ -429,12 +357,12 @@ def main():
     # Record the training start time.
     t_start = datetime.datetime.now()
     if verbose:
-        print(f"Training started at {t_start}.", flush=True)
+        print(f"Training started at {t_start}.")
 
     # Main training loop
     for epoch in range(max_epochs):
         if debug:
-            print(f"Starting epoch {epoch}.", flush=True)
+            print(f"Starting epoch {epoch}.")
 
         # --------------------------------------------------------------------
 
@@ -463,7 +391,7 @@ def main():
                 else:
                     Y_train_model = [model(X_train_tf) for model in models]
                 if debug:
-                    print(f"Y_train_model = {Y_train_model}", flush=True)
+                    print(f"Y_train_model = {Y_train_model}")
 
                 # Compute the network outputs at all data points. These
                 # are the values of the dependent variables Y to use when
@@ -479,7 +407,7 @@ def main():
                 else:
                     Y_data_model = [model(X_data_tf) for model in models]
                 if debug:
-                    print(f"Y_data_model = {Y_data_model}", flush=True)
+                    print(f"Y_data_model = {Y_data_model}")
 
             # Compute the gradients of the network outputs wrt inputs for
             # the training points. These are the values of the partial
@@ -490,7 +418,7 @@ def main():
             dY_dX_train_model = [tape1.gradient(Y, X_train_tf)
                                  for Y in Y_train_model]
             if debug:
-                print(f"dY_dX_train_model = {dY_dX_train_model}", flush=True)
+                print(f"dY_dX_train_model = {dY_dX_train_model}")
 
             # Compute the values of the differential equations at all
             # training points.
@@ -500,7 +428,7 @@ def main():
             G_train_model = [f(X_train_tf, Y_train_model, dY_dX_train_model)
                              for f in p.de]
             if debug:
-                print(f"G_train_model = {G_train_model}", flush=True)
+                print(f"G_train_model = {G_train_model}")
 
             # Compute the values of the constraint equations (if any) at all
             # training points.
@@ -513,7 +441,7 @@ def main():
                 C_train = [f(X_train_tf, Y_train_model, dY_dX_train_model)
                            for f in p.constraints]
                 if debug:
-                    print(f"C_train = {C_train}", flush=True)
+                    print(f"C_train = {C_train}")
 
             # -----------------------------------------------------------------
 
@@ -527,7 +455,7 @@ def main():
                 for G in G_train_model
             ]
             if debug:
-                print(f"L_res_per_model = {L_res_per_model}", flush=True)
+                print(f"L_res_per_model = {L_res_per_model}")
 
             # Compute the loss function for the constraints (if any) at the
             # training points.
@@ -553,7 +481,7 @@ def main():
                 for i in range(p.n_var)
             ]
             if debug:
-                print(f"E_data_per_model = {E_data_per_model}", flush=True)
+                print(f"E_data_per_model = {E_data_per_model}")
 
             # Compute the loss functions for the data points for each
             # model.
@@ -564,7 +492,7 @@ def main():
                 tf.math.sqrt(tf.reduce_sum(E**2)/n_data) for E in E_data_per_model
             ]
             if debug:
-                print(f"L_data_per_model = {L_data_per_model}", flush=True)
+                print(f"L_data_per_model = {L_data_per_model}")
 
             # Compute the weighted aggregate loss function per model.
             L_per_model = [
@@ -572,23 +500,23 @@ def main():
                 in zip(L_res_per_model, L_data_per_model)
             ]
             if debug:
-                print(f"L_per_model = {L_per_model}", flush=True)
+                print(f"L_per_model = {L_per_model}")
 
             # Compute the aggregated residual loss function.
             L_res = tf.math.reduce_sum(L_res_per_model)
             if debug:
-                print(f"L_res = {L_res}", flush=True)
+                print(f"L_res = {L_res}")
 
             # Compute the aggregated constraint loss function.
             if use_constraints:
                 L_constraint = tf.math.reduce_sum(L_constraint_per_constraint)
                 if debug:
-                    print(f"L_constraint = {L_constraint}", flush=True)
+                    print(f"L_constraint = {L_constraint}")
 
             # Compute the aggregated data loss function.
             L_data = tf.math.reduce_sum(L_data_per_model)
             if debug:
-                print(f"L_data = {L_data}", flush=True)
+                print(f"L_data = {L_data}")
 
             # Compute the weighted aggregate loss function.
             if use_constraints:
@@ -596,7 +524,7 @@ def main():
             else:
                 L = w_res*L_res + w_data*L_data
             if debug:
-                print(f"L = {L}", flush=True)
+                print(f"L = {L}")
 
             # Save the losses for this epoch.
             for (i, v) in enumerate(p.dependent_variable_names):
@@ -609,7 +537,7 @@ def main():
             loss["aggregate"]["data"].append(L_data.numpy())
             loss["aggregate"]["total"].append(L.numpy())
             if debug:
-                print(f"loss = {loss}", flush=True)
+                print(f"loss = {loss}")
 
         # Compute the gradient of the weighted aggregate loss function wrt
         # the network parameters.
@@ -626,7 +554,7 @@ def main():
             for model in models
         ]
         if debug:
-            print(f"pgrad = {pgrad}", flush=True)
+            print(f"pgrad = {pgrad}")
 
         # Update the parameters for this epoch.
         for (g, m) in zip(pgrad, models):
@@ -637,10 +565,10 @@ def main():
         if verbose:
             if use_constraints:
                 print(f"epoch = {epoch}, (L_res, L_constraint, L_data, L) = "
-                    f"({L_res:6e}, {L_constraint:6e}, {L_data:6e}, {L:6e})", flush=True)
+                    f"({L_res:6e}, {L_constraint:6e}, {L_data:6e}, {L:6e})")
             else:
                 print(f"epoch = {epoch}, (L_res, L_data, L) = "
-                    f"({L_res:6e}, {L_data:6e}, {L:6e})", flush=True)
+                    f"({L_res:6e}, {L_data:6e}, {L:6e})")
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
@@ -658,22 +586,22 @@ def main():
                     model.save(path)
 
         if debug:
-            print(f"Ending epoch {epoch}.", flush=True)
+            print(f"Ending epoch {epoch}.")
 
     # Count the last epoch.
     n_epochs = epoch + 1
     if debug:
-        print(f"n_epochs = {n_epochs}", flush=True)
+        print(f"n_epochs = {n_epochs}")
 
     # Record the training end time.
     t_stop = datetime.datetime.now()
     t_elapsed = t_stop - t_start
     if verbose:
-        print(f"Training stopped at {t_stop}.", flush=True)
+        print(f"Training stopped at {t_stop}.")
         print(f"Total training time: {t_elapsed.total_seconds()} seconds",
               flush=True)
-        print(f"Epochs: {n_epochs}", flush=True)
-        print(f"Final value of loss function: {L}", flush=True)
+        print(f"Epochs: {n_epochs}")
+        print(f"Final value of loss function: {L}")
 
     # Save the final trained models and descriptions.
     if save_model != 0:
@@ -729,6 +657,20 @@ def main():
     )
 
 
+def main():
+    """Driver for command-line version of code."""
+    # Set up the command-line parser.
+    parser = create_command_line_argument_parser()
+
+    # Parse the command-line arguments.
+    args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
+
+    # Pass the command-line arguments to the main function as a dict.
+    args = vars(args)
+    pinn1(args)
+
+
 if __name__ == "__main__":
-    """Begin main program."""
     main()
