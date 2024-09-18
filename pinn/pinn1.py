@@ -225,9 +225,9 @@ def main():
     # The name of the output directory is the name of the problem python
     # module, with "-pinn1" appended to the end of the name.
     output_dir = os.path.join(".", f"{p.__name__}-pinn1")
-    if debug:
-        print(f"output_dir = {output_dir}", flush=True)
-    os.mkdir(output_dir)
+    # if debug:
+    #     print(f"output_dir = {output_dir}", flush=True)
+    # os.mkdir(output_dir)
 
     # Record system information, model parameters, and problem definition,
     # data, and training grid.
@@ -235,7 +235,7 @@ def main():
         print("Recording system information, model hyperparameters, and "
               "problem definition and data.", flush=True)
     common.save_system_information(output_dir)
-    common.save_arguments(args, output_dir)
+    # common.save_arguments(args, output_dir)
     shutil.copy(problem_path, output_dir)
     shutil.copy(data_path, output_dir)
     shutil.copy(training_path, output_dir)

@@ -49,9 +49,9 @@ Eric Winter (eric.winter62@gmail.com)
 
 # Import supplemental modules.
 import numpy as np
-# import tensorflow as tf
+import tensorflow as tf
 
-# # Import project modules.
+# Import project modules.
 
 
 # Names of independent variables.
@@ -85,55 +85,55 @@ dependent_variable_labels = [r"$\psi$"]
 n_var = len(dependent_variable_names)
 
 
-# # @tf.function
-# def ode_Ψ(X, Y, delY):
-#     """Differential equation for Ψ.
+# @tf.function
+def ode_Ψ(X, Y, delY):
+    """Differential equation for Ψ.
 
-#     Evaluate the ordinary differential equation for Ψ(x).
+    Evaluate the ordinary differential equation for Ψ(x).
 
-#     Parameters
-#     ----------
-#     X : tf.Variable, shape (n, n_dim)
-#         Values of independent variables at each evaluation point.
-#     Y : list of n_var tf.Tensor, each shape (n, 1)
-#         Values of dependent variables at each evaluation point.
-#     delY : list of n_var tf.Tensor, each shape (n, n_dim)
-#         Values of gradients of dependent variables wrt independent variables at
-#         each evaluation point.
+    Parameters
+    ----------
+    X : tf.Variable, shape (n, n_dim)
+        Values of independent variables at each evaluation point.
+    Y : list of n_var tf.Tensor, each shape (n, 1)
+        Values of dependent variables at each evaluation point.
+    delY : list of n_var tf.Tensor, each shape (n, n_dim)
+        Values of gradients of dependent variables wrt independent variables at
+        each evaluation point.
 
-#     Returns
-#     -------
-#     G : tf.Tensor, shape (n, 1)
-#         Value of differential equation at each evaluation point.
+    Returns
+    -------
+    G : tf.Tensor, shape (n, 1)
+        Value of differential equation at each evaluation point.
 
-#     Raises
-#     ------
-#     None
-#     """
-#     nX = X.shape[0]
-#     # x is a Tensor of shape (nX, 1).
-#     x = tf.reshape(X[:, ix], (nX, 1))
-#     # Ψ is a Tensor of shape (nX, 1).
-#     (Ψ,) = Y
-#     # delΨ is a Tensor of shape (nX, 1).
-#     (delΨ,) = delY
-#     # dΨ_dx is a Tensor of shape (nX, 1).
-#     dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
+    Raises
+    ------
+    None
+    """
+    nX = X.shape[0]
+    # x is a Tensor of shape (nX, 1).
+    x = tf.reshape(X[:, ix], (nX, 1))
+    # Ψ is a Tensor of shape (nX, 1).
+    (Ψ,) = Y
+    # delΨ is a Tensor of shape (nX, 1).
+    (delΨ,) = delY
+    # dΨ_dx is a Tensor of shape (nX, 1).
+    dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
 
-#     # G is a Tensor of shape (n, 1).
-#     G = (
-#         dΨ_dx + (x + (1 + 3*x**2)/(1 + x + x**3))*Ψ - x**3
-#         - 2*x - x**2*(1 + 3*x**2)/(1 + x + x**3)
-#     )
-#     return G
-
-
-# # Gather the differential equations into a list.
-# de = [ode_Ψ]
+    # G is a Tensor of shape (n, 1).
+    G = (
+        dΨ_dx + (x + (1 + 3*x**2)/(1 + x + x**3))*Ψ - x**3
+        - 2*x - x**2*(1 + 3*x**2)/(1 + x + x**3)
+    )
+    return G
 
 
-# # Initial condition for the analytical solution
-# Ψ0 = 1.0
+# Gather the differential equations into a list.
+de = [ode_Ψ]
+
+
+# Initial condition for the analytical solution
+Ψ0 = 1.0
 
 
 def Ψ_analytical(x):

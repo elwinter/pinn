@@ -10,7 +10,6 @@ Eric Winter (eric.winter62@gmail.com)
 """
 
 # Import standard modules.
-# import argparse
 from importlib import import_module
 import os
 import shutil
@@ -209,7 +208,7 @@ def pinn0_plots(args: dict):
     # Create the plots in a memory buffer.
     mpl.use("Agg")
 
-    # -------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
 
     # Plot the per-epoch loss history.
 
