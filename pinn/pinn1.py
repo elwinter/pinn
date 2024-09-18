@@ -25,43 +25,10 @@ import tensorflow as tf
 from pinn import common
 
 
-# Program constants                                             
+# Program constants
 
 # Program description
 DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
-
-# Program defaults
-
-# Default activation function to use in hidden nodes
-DEFAULT_ACTIVATION = "sigmoid"
-
-# Default learning rate
-DEFAULT_LEARNING_RATE = 0.01
-
-# Default maximum number of training epochs
-DEFAULT_MAX_EPOCHS = 100
-
-# Default number of hidden nodes per layer
-DEFAULT_N_HID = 10
-
-# Default number of layers in the fully-connected network, each with n_hid
-# nodes
-DEFAULT_N_LAYERS = 1
-
-# Default TensorFlow precision for computations
-DEFAULT_PRECISION = "float32"
-
-# Default interval (in epochs) for saving the model
-# 0 = do not save model
-# -1 = only save at end
-# n > 0: Save after every n epochs
-DEFAULT_SAVE_MODEL = -1
-
-# Default random number generator seed
-DEFAULT_SEED = 0
-
-# Default normalized weight to apply to the data loss function
-DEFAULT_W_DATA = 0.0
 
 
 def create_command_line_argument_parser():
@@ -93,7 +60,7 @@ def create_command_line_argument_parser():
         help="Randomize order of training data (default: %(default)s)"
     )
     parser.add_argument(
-        "--w_data", "-w", type=float, default=DEFAULT_W_DATA,
+        "--w_data", "-w", type=float, default=0.0,
         help="Normalized weight for data loss function "
              "(default: %(default)s)."
     )
@@ -152,7 +119,6 @@ def pinn1(args: dict):
     randomize = args.get("randomize", False)
     save_model = args.get("save_model", -1)
     verbose = args.get("verbose", False)
-    use_constraints = args.get("use_constraints", False)
     w_data = args.get("w_data", 0.0)
     problem_path = args.get("problem_path", None)
     data_path = args.get("data_path", None)
@@ -299,6 +265,15 @@ def pinn1(args: dict):
 
     # -------------------------------------------------------------------------
 
+    # Create loss histories by epoch, batch, and model, so they can be
+    # easily updated. Shape is (max_epochs, n_batches, p.n_var + 1), where
+    # there is one plane per epoch, one row per batch, and one column per
+    # dependent variable, with an extra column for the aggregate loss.
+    _loss = np.zeros((max_epochs, len(batches), p.n_var + 1, 3))
+    _Le = np.zeros((max_epochs, 3))
+
+    # ------------------------------------------------------------------------
+
     # Compute weights for residual and data loss functions.
     w_res = 1.0 - w_data
     if debug:
@@ -341,8 +316,6 @@ def pinn1(args: dict):
         loss[v]["total"] = []
     loss["aggregate"] = {}
     loss["aggregate"]["residual"] = []
-    if use_constraints:
-        loss["aggregate"]["constraint"] = []
     loss["aggregate"]["data"] = []
     loss["aggregate"]["total"] = []
 
@@ -419,19 +392,6 @@ def pinn1(args: dict):
             if debug:
                 print(f"G_train_model = {G_train_model}")
 
-            # Compute the values of the constraint equations (if any) at all
-            # training points.
-            # NOTE: Constraints are not associated with models.
-            # C_train is a list of Tensor objects.
-            # There are p.n_constraint Tensors in the list (one per
-            # constraint).
-            # Each Tensor has shape (n_train, 1).
-            if use_constraints:
-                C_train = [f(X_train_tf, Y_train_model, dY_dX_train_model)
-                           for f in p.constraints]
-                if debug:
-                    print(f"C_train = {C_train}")
-
             # -----------------------------------------------------------------
 
             # Compute the loss function for the equation residuals at the
@@ -445,21 +405,6 @@ def pinn1(args: dict):
             ]
             if debug:
                 print(f"L_res_per_model = {L_res_per_model}")
-
-            # Compute the loss function for the constraints (if any) at the
-            # training points.
-            # L_constraint_per_constraint is a list of Tensor objects.
-            # There are p.n_nconstraint Tensors in the list (one per
-            # constraint).
-            # Each Tensor has shape () (scalar).
-            if use_constraints:
-                L_constraint_per_constraint = [
-                    tf.math.sqrt(tf.reduce_sum(C**2)/n_train)
-                    for C in C_train
-                ]
-                if debug:
-                    print(f"L_constraint_per_constraint = {L_constraint_per_constraint}",
-                          flush=True)
 
             # Compute the errors in the predicted values at the data points.
             # E_data_per_model is a list of tf.Tensor objects.
@@ -496,33 +441,26 @@ def pinn1(args: dict):
             if debug:
                 print(f"L_res = {L_res}")
 
-            # Compute the aggregated constraint loss function.
-            if use_constraints:
-                L_constraint = tf.math.reduce_sum(L_constraint_per_constraint)
-                if debug:
-                    print(f"L_constraint = {L_constraint}")
-
             # Compute the aggregated data loss function.
             L_data = tf.math.reduce_sum(L_data_per_model)
             if debug:
                 print(f"L_data = {L_data}")
 
             # Compute the weighted aggregate loss function.
-            if use_constraints:
-                L = w_res*(L_res + L_constraint) + w_data*L_data
-            else:
-                L = w_res*L_res + w_data*L_data
+            L = w_res*L_res + w_data*L_data
             if debug:
                 print(f"L = {L}")
 
             # Save the losses for this epoch.
             for (i, v) in enumerate(p.dependent_variable_names):
                 loss[v]["residual"].append(L_res_per_model[i].numpy())
+                _loss[epoch][0][i][0] = L_per_model[i].numpy()
                 loss[v]["data"].append(L_data_per_model[i].numpy())
+                _loss[epoch][0][i][1] = L_per_model[i].numpy()
                 loss[v]["total"].append(L_per_model[i].numpy())
+                _loss[epoch][0][i][2] = L_per_model[i].numpy()
             loss["aggregate"]["residual"].append(L_res.numpy())
-            if use_constraints:
-                loss["aggregate"]["constraint"].append(L_constraint.numpy())
+            _Le[epoch][0] = L_res.numpy()
             loss["aggregate"]["data"].append(L_data.numpy())
             loss["aggregate"]["total"].append(L.numpy())
             if debug:
@@ -552,12 +490,8 @@ def pinn1(args: dict):
         # --------------------------------------------------------------------
 
         if verbose:
-            if use_constraints:
-                print(f"epoch = {epoch}, (L_res, L_constraint, L_data, L) = "
-                    f"({L_res:6e}, {L_constraint:6e}, {L_data:6e}, {L:6e})")
-            else:
-                print(f"epoch = {epoch}, (L_res, L_data, L) = "
-                    f"({L_res:6e}, {L_data:6e}, {L:6e})")
+            print(f"epoch = {epoch}, (L_res, L_data, L) = "
+                f"({L_res:6e}, {L_data:6e}, {L:6e})")
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
@@ -616,10 +550,6 @@ def pinn1(args: dict):
     np.savetxt(
         os.path.join(output_dir, "L_res.dat"), loss["aggregate"]["residual"]
     )
-    if use_constraints:
-        np.savetxt(
-            os.path.join(output_dir, "L_constraint.dat"), loss["aggregate"]["constraint"]
-        )
     np.savetxt(
         os.path.join(output_dir, "L_data.dat"), loss["aggregate"]["data"]
     )

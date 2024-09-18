@@ -225,7 +225,7 @@ def pinn0(args: dict):
 
     # ------------------------------------------------------------------------
 
-    # Create loss histories by epoch and model as Python lists, so they can be
+    # Create loss histories by epoch, batch, and model, so they can be
     # easily updated. Shape is (max_epochs, n_batches, p.n_var + 1), where
     # there is one plane per epoch, one row per batch, and one column per
     # dependent variable, with an extra column for the aggregate loss.
