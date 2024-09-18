@@ -51,6 +51,10 @@ def create_command_line_argument_parser():
 
     # Add arguments specific to this script.
     parser.add_argument(
+        "--randomize", action="store_true",
+        help="Randomize order of training data (default: %(default)s)"
+    )
+    parser.add_argument(
         "problem_path",
         help="Path to problem description file (in python)"
     )
@@ -97,6 +101,7 @@ def pinn0(args: dict):
     load_models = args.get("load_models", None)
     max_epochs = args.get("max_epochs", 0)
     precision = args.get("precision", "float32")
+    randomize = args.get("randomize", False)
     save_model = args.get("save_model", -1)
     verbose = args.get("verbose", False)
     problem_path = args.get("problem_path", None)
@@ -201,6 +206,12 @@ def pinn0(args: dict):
         print(f"optimizer = {optimizer}")
 
     # ------------------------------------------------------------------------
+
+    # Randomize the data if needed.
+    if randomize:
+        if verbose:
+            print("Randomizing order of training data.")
+        np.random.shuffle(XY_data)
 
     # Split the data into batches of TensorFlow Variables.
     if verbose:
