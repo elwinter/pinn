@@ -254,7 +254,8 @@ def pinn0(args: dict):
             # Run the forward pass for this batch.
             with tf.GradientTape(persistent=True) as tape0:
 
-                # Compute the model outputs at the training points.
+                # Compute the model outputs at the training points in this
+                # batch.
                 # Ybm is a list of tf.Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (batch_size, 1).
