@@ -213,11 +213,11 @@ def pinn1_plots(args: dict):
     # Plot the per-epoch loss history.
 
     # Load the data.
-    path = os.path.join(results_path, "L.dat")
+    path = os.path.join(results_path, "Le.dat")
     L = np.loadtxt(path)
 
     # Create the plot.
-    fig = make_loss_plot(L)
+    fig = make_loss_plot(L[:, -1])
 
     # Save the plot to a PNG file.
     path = os.path.join(output_path, "L.png")
