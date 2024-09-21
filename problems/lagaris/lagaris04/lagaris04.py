@@ -207,6 +207,12 @@ def Ψ2_analytical(x):
     return Ψ2
 
 
+Y_analytical = [
+    Ψ1_analytical,
+    Ψ2_analytical,
+]
+
+
 def dΨ1_dx_analytical(x):
     """Analytical 1st derivative to lagaris04 equation 1.
 
