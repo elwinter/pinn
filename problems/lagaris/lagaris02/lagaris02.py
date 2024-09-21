@@ -174,6 +174,11 @@ def dΨ_dx_analytical(x):
     return dΨ_dx
 
 
+Y_analytical = [
+    Ψ_analytical
+]
+
+
 if __name__ == "__main__":
     print(f"independent_variable_names = {independent_variable_names}")
     print(f"independent_variable_labels = {independent_variable_labels}")
