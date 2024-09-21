@@ -142,11 +142,11 @@ def make_PAE_plot(X: np.ndarray, Yp: np.ndarray, Ya: np.ndarray,
     rms_err = np.sqrt(np.sum(Ye**2)/Ye.shape[0])
 
     # Plot predicted and analytical values on primary axis.
-    line_p = ax.plot(X, Yp, label="predicted")
-    line_a = ax.plot(X, Ya, label="analytical")
+    line_p = ax.plot(X, Yp, label="predicted", color="blue")
+    line_a = ax.plot(X, Ya, label="analytical", color="green")
 
     # Plot error values on secondary axis.
-    line_e = ax2.plot(X, Ye, label="error")
+    line_e = ax2.plot(X, Ye, label="error", color="red")
 
     # Create the legend.
     lines = line_p + line_a + line_e
