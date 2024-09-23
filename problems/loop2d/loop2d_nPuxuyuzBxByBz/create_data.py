@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-"""Create data for loop2d_nPuxuyuzBxByBz.
+"""Create data for the loop2d_nPuxuyuzBxByBz problem.
+
+Create data for the loop2d_nPuxuyuzBxByBz problem.
 
 Author
 ------
@@ -15,13 +17,15 @@ import argparse
 import numpy as np
 
 # Import project Python modules.
+from pinn import common
 import problems.loop2d.loop2d_nPuxuyuzBxByBz.loop2d_nPuxuyuzBxByBz as p
 
 
 # Program constants
 
 # Program description.
-description = "Compute initial conditions for loop2d_nPuxuyuzBxByBz problem."
+DESCRIPTION = "Create data for the loop2d_nPuxuyuzBxByBz problem."
+
 
 def create_command_line_argument_parser():
     """Create the command-line argument parser.
@@ -36,13 +40,22 @@ def create_command_line_argument_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
-    parser = argparse.ArgumentParser(description)
+    # Create the minimal command-line parser.
+    parser = common.create_minimal_command_line_argument_parser(DESCRIPTION)
+
+    # Add arguments specific to this script.
     parser.add_argument(
-        "--debug", "-d", action="store_true",
-        help="Print debugging output (default: %(default)s)."
+        "--file", "-f", default=None,
+        help="Path to file of input points (default: %(default)s)"
     )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
+
+    # Return the parser.
     return parser
 
 
@@ -110,6 +123,21 @@ def main():
             Bz = p.B0z
             print(tg[0], x, y, n, P, ux, uy, uz, Bx, By, Bz)
 
+
+def main():
+    """Driver for command-line version of code."""
+    # Set up the command-line parser.
+    parser = create_command_line_argument_parser()
+
+    # Parse the command-line arguments.
+    args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
+
+    # Pass the command-line arguments to the main function as a dict.
+    args = vars(args)
+    create_data(args)
+
+
 if __name__ == "__main__":
-    """Begin main program."""
     main()

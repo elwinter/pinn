@@ -83,7 +83,7 @@ def create_data(args: dict):
     rest = args["rest"]
 
     # If the evaluation points are provided in a file, read them. Otherwise,
-    # read the point limits from the rest of the command line.
+    # read the grid parameters from the rest of the command line.
     # NOTE: These options are mutually exclusive.
     if _file:
         if len(rest) > 0:
@@ -94,38 +94,46 @@ def create_data(args: dict):
         # Extract grid parameters.
         # They should be in a set of 3 for each independent variable:
         # min max n
-        xmin = float(rest[0])
-        xmax = float(rest[1])
-        nx = int(rest[2])
+        assert len(rest) % 3 == 0
+        xmin = [float(x) for x in rest[::3]]
+        xmax = [float(x) for x in rest[1::3]]
+        nx = [int(x) for x in rest[2::3]]
+        assert len(xmin) == p.n_dim
+        assert len(xmax) == p.n_dim
+        assert len(nx) == p.n_dim
         if debug:
-            print(f"{xmin} <= x <= {xmax}, nx = {nx}")
+            print(f"xmin = {xmin}")
+            print(f"xmax = {xmax}")
+            print(f"nx = {nx}")
 
-        # Compute the range of independent variables to use.
-        X = np.linspace(xmin, xmax, nx)
+        # Compute the ranges of independent variables to use.
+        raise TypeError("Fix this to use n-d grid generator.")
+        X = [np.linspace(_xmin, _xmax, _nx)
+             for (_xmin, _xmax, _nx) in zip(xmin, xmax, nx)]
 
     if debug:
         print(f"X = {X}")
 
     # Compute each dependent variable at each point.
-    Y = p.Y_analytical[0](X)
+    Y = p.Y_analytical[0](X[0])
     if debug:
         print(f"Y = {Y}")
 
     # Print the output header lines.
     header = "# GRID"
     print(header)
-    header = "# x"
+    header = f"# {' '.join(p.independent_variable_names)}"
     print(header)
-    header = f"# {xmin} {xmax} {nx}"
+    header = "#"
+    for iv in range(p.n_dim):
+        header += f" {xmin[iv]} {xmax[iv]} {nx[iv]}"
     print(header)
-    header = "# x Ψ"
+    labels = " ".join(p.independent_variable_names +
+                      p.dependent_variable_names)
+    header = f"# {labels}"
     print(header)
 
     # Print each data point.
-    # Each line is:
-    # x Ψ
-    for (x, y) in zip(X, Y):
-        print(x, y)
 
 
 def main():

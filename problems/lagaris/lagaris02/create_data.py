@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create data for the lagaris04 problem.
+"""Create data for the lagaris02 problem.
 
-Create data for the lagaris04 problem.
+Create data for the lagaris02 problem.
 
 Author
 ------
@@ -18,13 +18,13 @@ import numpy as np
 
 # Import project Python modules.
 from pinn import common
-import problems.lagaris.lagaris04.lagaris04 as p
+import problems.lagaris.lagaris02.lagaris02 as p
 
 
 # Program constants
 
 # Program description.
-DESCRIPTION = "Create data for the lagaris04 problem."
+DESCRIPTION = "Create data for the lagaris02 problem."
 
 
 def create_command_line_argument_parser():
@@ -60,9 +60,9 @@ def create_command_line_argument_parser():
 
 
 def create_data(args: dict):
-    """Create data for the lagaris04 problem.
+    """Create data for the lagaris02 problem.
 
-    Create data for the lagaris04 problem.
+    Create data for the lagaris02 problem.
 
     Parameters
     ----------
@@ -107,11 +107,9 @@ def create_data(args: dict):
         print(f"X = {X}")
 
     # Compute each dependent variable at each point.
-    Y = [None]*p.n_var
-    for iv in range(p.n_var):
-        Y[iv] = p.Y_analytical[0](X)
-        if debug:
-            print(f"Y[{iv}] = {Y[iv]}")
+    Y = p.Y_analytical[0](X)
+    if debug:
+        print(f"Y = {Y}")
 
     # Print the output header lines.
     header = "# GRID"
@@ -120,14 +118,14 @@ def create_data(args: dict):
     print(header)
     header = f"# {xmin} {xmax} {nx}"
     print(header)
-    header = "# x Ψ1 Ψ2"
+    header = "# x Ψ"
     print(header)
 
     # Print each data point.
     # Each line is:
-    # x Ψ1 Ψ2
-    for (x, y1, y2) in zip(X, Y[0], Y[1]):
-        print(x, y1, y2)
+    # x Ψ
+    for (x, y) in zip(X, Y):
+        print(x, y)
 
 
 def main():
