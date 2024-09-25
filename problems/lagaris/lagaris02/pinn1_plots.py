@@ -34,7 +34,7 @@ DESCRIPTION = "Create plots for pinn1 results for lagaris02 problem."
 PROBLEM_NAME = "lagaris02"
 
 # Name of directory to hold output plots
-OUTPUT_DIR = "pinn1_plots"
+OUTPUT_DIR = f"{PROBLEM_NAME}-pinn1_plots"
 
 
 def create_command_line_argument_parser():
@@ -136,17 +136,20 @@ def make_PAE_plot(X: np.ndarray, Yp: np.ndarray, Ya: np.ndarray,
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
 
+    # Fetch the default colors.
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
     # Create the plot.
     xlabel = args.get("xlabel", "x")
     ylabel = args.get("ylabel", "y")
     rms_err = np.sqrt(np.sum(Ye**2)/Ye.shape[0])
 
     # Plot predicted and analytical values on primary axis.
-    line_p = ax.plot(X, Yp, label="predicted")
-    line_a = ax.plot(X, Ya, label="analytical")
+    line_p = ax.plot(X, Yp, label="predicted", color=colors[0])
+    line_a = ax.plot(X, Ya, label="analytical", color=colors[1])
 
     # Plot error values on secondary axis.
-    line_e = ax2.plot(X, Ye, label="error")
+    line_e = ax2.plot(X, Ye, label="error", color=colors[2])
 
     # Create the legend.
     lines = line_p + line_a + line_e

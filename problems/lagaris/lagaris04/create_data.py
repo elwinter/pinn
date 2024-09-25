@@ -109,7 +109,7 @@ def create_data(args: dict):
     # Compute each dependent variable at each point.
     Y = [None]*p.n_var
     for iv in range(p.n_var):
-        Y[iv] = p.Y_analytical[0](X)
+        Y[iv] = p.Y_analytical[iv](X)
         if debug:
             print(f"Y[{iv}] = {Y[iv]}")
 
