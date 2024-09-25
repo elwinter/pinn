@@ -136,7 +136,7 @@ def pinn1(args: dict):
     # Create the output directory under the current directory.
     if verbose:
         print("Creating output directory.")
-    output_dir = common.create_output_directory(p, "-pinn1", clobber=clobber)
+    output_dir = common.create_output_directory(p, "-ppinn1", clobber=clobber)
 
     # Record system information and program arguments.
     if verbose:
@@ -543,6 +543,10 @@ def pinn1(args: dict):
     np.save(path, Lb)
     path = os.path.join(output_dir, "Le.dat")
     np.savetxt(path, Le)
+
+    # <HACK>
+    # Print final parameter estimates.
+    print(f"c1 = {Pbm[0]}")
 
 
 def main():
