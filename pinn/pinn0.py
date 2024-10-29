@@ -393,8 +393,8 @@ def pinn0(args: dict):
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
-            save_model(models, output_dir, epoch, p.dependent_variable_names,
-                       multi)
+            common.save_models(
+                models, output_dir, epoch, p.dependent_variable_names, multi)
 
         if debug:
             print(f"Ending epoch {epoch}.")
@@ -417,8 +417,8 @@ def pinn0(args: dict):
 
     # Save the final trained models and descriptions.
     if save_model != 0:
-        save_model(models, output_dir, epoch,
-                   p.dependent_variable_names, multi)
+        common.save_models(
+            models, output_dir, epoch, p.dependent_variable_names, multi)
 
     # Save the loss histories.
     path = os.path.join(output_dir, 'L.dat')

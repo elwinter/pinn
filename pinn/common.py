@@ -50,7 +50,7 @@ DEFAULT_ARGUMENTS = {
     "n_layers": 1,
     "nogpu": False,
     "precision": "float32",
-    "save_model": False,
+    "save_model": -1,
     "seed": 0,
     "verbose": False,
 }
@@ -750,7 +750,7 @@ def save_models(models: list, model_directory: str, epoch: int,
     None
     """
     if multi:
-        raise("--multi not supported!")
+        raise TypeError("--multi not supported!")
         # path = os.path.join(
         #     output_dir, "models", f"{epoch:06d}", "model_multi"
         # )
@@ -764,7 +764,7 @@ def save_models(models: list, model_directory: str, epoch: int,
         # sys.stdout = old_stdout
     else:
         for (i, model) in enumerate(models):
-            variable_name = p.dependent_variable_names[i]
+            variable_name = variable_names[i]
             save_dir = os.path.join(model_directory, "models", f"{epoch:06d}")
             path = os.path.join(save_dir, f"model_{variable_name}")
             model.save(path)
