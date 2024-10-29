@@ -341,7 +341,7 @@ def pinn0(args: dict):
                 # Compute the aggregate loss function for the batch.
                 # Tensor has shape () (scalar).
                 Lb = tf.reduce_sum(Lbs)
-                if verbose:
+                if debug:
                     print(f"epoch = {epoch}, batch = {i_batch}, Lb = {Lb:.6E}")
 
                 # End of tape0 context.
