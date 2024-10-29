@@ -352,7 +352,7 @@ def load_or_create_models(p, args: dict):
             for v in p.dependent_variable_names:
                 if args["verbose"]:
                     print(f"Creating untrained model for {v}.")
-                model = common.build_model(
+                model = common.create_model(
                     args["n_layers"], args["n_hid"], args["activation"]
                 )
                 if args["debug"]:
