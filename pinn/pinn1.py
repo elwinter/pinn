@@ -156,7 +156,7 @@ def pinn1(args: dict):
     nogpu = args["nogpu"]
     precision = args["precision"]
     randomize = args["randomize"]
-    # save_model = args["save_model"]
+    save_model = args["save_model"]
     seed = args["seed"]
     verbose = args["verbose"]
     w_data = args["w_data"]
@@ -335,7 +335,9 @@ def pinn1(args: dict):
     # ------------------------------------------------------------------------
 
     # Create loss histories by epoch, model, and type (residual, data, total).
-    losses = np.zeros((max_epochs, p.n_var, 3))
+    losses_res = np.zeros((max_epochs, p.n_var))
+    losses_dat = np.zeros((max_epochs, p.n_var))
+    losses = np.zeros((max_epochs, p.n_var))
 
     # ------------------------------------------------------------------------
 
@@ -365,17 +367,6 @@ def pinn1(args: dict):
     for epoch in range(max_epochs):
         if debug:
             print(f"Starting epoch {epoch}.")
-
-        # --------------------------------------------------------------------
-
-        # Create the list to hold the lists of unweighted and weighted
-        # residual losses for each batch of training points.
-        # Each list will contain n_batches elements, each of which is a list of
-        # p.n_var elements (one element per equation)
-        # The elements of the lowest-level list contain TensorFlow Variables
-        # of shape (1,).
-        # L_res_per_batch_per_eqn = [None]*nt_batches
-        # wL_res_per_batch_per_eqn = [None]*nt_batches
 
         # --------------------------------------------------------------------
 
@@ -437,14 +428,6 @@ def pinn1(args: dict):
                 if debug:
                     print(f"Lresbs = {Lresbs}")
 
-                # # Save a copy of the unweighted residual losses for each
-                # # equation for this batch.
-                # L_res_per_batch_per_eqn[it_batch] = copy.deepcopy(
-                #     Lresbs)
-                # if debug:
-                #     print("L_res_per_batch_per_eqn = "
-                #           f"{L_res_per_batch_per_eqn}")
-
                 # Compute the weighted loss function for the equation residuals
                 # at the training points in this batch for each model.
                 # wLresbs is a list of Tensor objects.
@@ -453,14 +436,6 @@ def pinn1(args: dict):
                 wLresbs = [L*w_res for L in Lresbs]
                 if debug:
                     print(f"wLresbs = {wLresbs}")
-
-                # # Save a copy of the weighted residual losses for each model
-                # # for this batch.
-                # wL_res_per_batch_per_eqn[it_batch] = copy.deepcopy(
-                #     wLresbs)
-                # if debug:
-                #     print("wL_res_per_batch_per_eqn = "
-                #           f"{wL_res_per_batch_per_eqn}")
 
                 # Compute the aggregated weighted residual loss function for
                 # all equations for this batch.
@@ -596,76 +571,23 @@ def pinn1(args: dict):
 
         # Step 2: Compute the end-of-epoch loss.
 
-#         # Convert the individual per-batch per-model unweighted residual
-#         # losses back to sum of squared residuals. Then total them, and
-#         # compute the RMS residual over the entire training set for each
-#         # model.
-#         sum_G2_per_eq = [0.0]*len(models)
-#         for it_batch in range(n_batches):
-#             this_batch_size = training_batches[it_batch].shape[0]
-#             for i_model in range(len(models)):
-#                 sum_G2_per_eq[i_model] += (
-#                     L_res_per_batch_per_eqn[it_batch][i_model]**2
-#                     * this_batch_size
-#                 )
-#         if debug:
-#             print(f"sum_G2_per_eq = {sum_G2_per_eq}")
-#         L_res_per_model = [
-#             tf.math.sqrt(sum_G2/n_train) for sum_G2 in sum_G2_per_eq
-#         ]
-#         L_res = tf.reduce_sum(L_res_per_model)
-#         if debug:
-#             print(f"L_res = {L_res}")
+        # if verbose:
+        #     print(f"Epoch = {epoch}: (L_res, L_data, L) = "
+        #           f"({L_res:.4e}, {L_data:.4e} {L:.4e})")
 
-#         # Convert the weighted data loss to unweighted.
-#         L_data = sum([Ldpm.numpy() for Ldpm in Ldatbs])
-#         if debug:
-#             print(f"L_data = {L_data}")
+        # --------------------------------------------------------------------
 
-#         # Compute the per-model weighted loss.
-#         L_per_model = [
-#             w_res*Lr + w_data*Ld
-#             for (Lr, Ld) in zip(L_res_per_model, Ldatbs)
-#         ]
-#         if debug:
-#             print(f"L_per_model = {L_per_model}")
-
-#         # Compute the final weighted loss.
-#         L = w_res*L_res + w_data*L_data
-#         if debug:
-#             print(f"L = {L}")
-
-#         # Save the per-model losses.
-#         # for (i, v) in enumerate(p.dependent_variable_names):
-#         #     loss[v]["residual"].append(L_res_per_model[i])
-#         #     loss[v]["data"].append(Ldatbs[i])
-#         #     loss[v]["total"].append(L_per_model[i])
-
-#         # Save the aggregate losses.
-#         # loss["aggregate"]["residual"].append(L_res)
-#         # loss["aggregate"]["data"].append(L_data)
-#         # loss["aggregate"]["total"].append(L)
-
-#         if verbose:
-#             print(f"Epoch = {epoch}: (L_res, L_data, L) = "
-#                   f"({L_res:.4e}, {L_data:.4e} {L:.4e})")
-
-#         # --------------------------------------------------------------------
-
-#         # Save the trained models.
-#         if save_model > 0 and epoch % save_model == 0:
-#             if multi:
-#                 path = os.path.join(
-#                     output_dir, "models", f"{epoch:06d}", "model_multi"
-#                 )
-#                 models[0].save(path)
-#             else:
-#                 for (i, model) in enumerate(models):
-#                     path = os.path.join(
-#                         output_dir, "models", f"{epoch:06d}",
-#                         f"model_{p.dependent_variable_names[i]}"
-#                     )
-#                     model.save(path)
+        # Save the trained models.
+        if save_model > 0 and epoch % save_model == 0:
+            if multi:
+                raise TypeError("--multi not supported!")
+                # path = os.path.join(
+                #     output_dir, "models", f"{epoch:06d}", "model_multi"
+                # )
+                # models[0].save(path)
+            else:
+                common.save_models(
+                    models, output_dir, epoch, p.dependent_variable_names, multi)
 
         if debug:
             print(f"Ending epoch {epoch}.")
@@ -686,56 +608,18 @@ def pinn1(args: dict):
 
     # ------------------------------------------------------------------------
 
-#     # Save the final trained models and descriptions.
-#     if save_model != 0:
-#         if multi:
-#             path = os.path.join(
-#                 output_dir, "models", f"{epoch:06d}", "model_multi"
-#             )
-#             model = models[0]
-#             model.save(path)
-#             path = os.path.join(output_dir, "models", "model_multi.txt")
-#             old_stdout = sys.stdout
-#             with open(path, "w", encoding="utf-8") as f:
-#                 sys.stdout = f
-#                 model.summary()
-#             sys.stdout = old_stdout
-#         else:
-#             for (i, model) in enumerate(models):
-#                 path = os.path.join(
-#                     output_dir, "models", f"{epoch:06d}",
-#                     f"model_{p.dependent_variable_names[i]}"
-#                 )
-#                 model.save(path)
-#                 variable_name = p.dependent_variable_names[i]
-#                 path = os.path.join(output_dir, "models",
-#                                     f"model_{variable_name}.txt")
-#                 old_stdout = sys.stdout
-#                 with open(path, "w", encoding="utf-8") as f:
-#                     sys.stdout = f
-#                     model.summary()
-#                 sys.stdout = old_stdout
+    # Save the final trained models and descriptions.
+    if save_model != 0:
+        common.save_models(
+            models, output_dir, epoch, p.dependent_variable_names, multi)
 
-#     # Save the loss histories.
-#     for (i, v) in enumerate(p.dependent_variable_names):
-#         np.savetxt(
-#             os.path.join(output_dir, f"L_res_{v}.dat"), loss[v]["residual"]
-#         )
-#         np.savetxt(
-#             os.path.join(output_dir, f"L_data_{v}.dat"), loss[v]["data"]
-#         )
-#         np.savetxt(
-#             os.path.join(output_dir, f"L_{v}.dat"), loss[v]["total"]
-#         )
-#     np.savetxt(
-#         os.path.join(output_dir, "L_res.dat"), loss["aggregate"]["residual"]
-#     )
-#     np.savetxt(
-#         os.path.join(output_dir, "L_data.dat"), loss["aggregate"]["data"]
-#     )
-#     np.savetxt(
-#         os.path.join(output_dir, "L.dat"), loss["aggregate"]["total"]
-#     )
+    # Save the loss histories.
+    path = os.path.join(output_dir, 'L_res.dat')
+    np.savetxt(path, losses_res)
+    path = os.path.join(output_dir, 'L_dat.dat')
+    np.savetxt(path, losses_dat)
+    path = os.path.join(output_dir, 'L.dat')
+    np.savetxt(path, losses)
 
 
 def main():
