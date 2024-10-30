@@ -440,7 +440,7 @@ def pinn1(args: dict):
                 # Compute the aggregated weighted residual loss function for
                 # all equations for this batch.
                 wLresb = tf.math.reduce_sum(wLresbs)
-                if verbose:
+                if debug:
                     print(f"epoch = {epoch}, training batch = {it_batch}, "
                           f"wLresb = {wLresb}")
 
@@ -530,7 +530,7 @@ def pinn1(args: dict):
 
                 # Compute the aggregated weighted data loss function.
                 wLdatb = tf.math.reduce_sum(wLdatbs)
-                if verbose:
+                if debug:
                     print(f"epoch = {epoch}, data batch = {id_batch}, "
                           f"wLdatb = {wLdatb}")
 
@@ -569,25 +569,56 @@ def pinn1(args: dict):
 
         # --------------------------------------------------------------------
 
-        # Step 2: Compute the end-of-epoch loss.
+        # Part 3: Compute the end-of-epoch loss.
 
-        # if verbose:
-        #     print(f"Epoch = {epoch}: (L_res, L_data, L) = "
-        #           f"({L_res:.4e}, {L_data:.4e} {L:.4e})")
+        # Part 3a: Compute residual loss.
+        sum_G2 = np.zeros(p.n_var)
+        for it_batch in range(nt_batches):
+            Xtb = Xtbs[it_batch]
+            with tf.GradientTape(persistent=True) as tape1:
+                Ymbs = [model(Xtb) for model in models]
+                # End of tape1 context.
+            dYmb_dXtbs = [tape1.gradient(Y, Xtb) for Y in Ymbs]
+            Gtbs = [f(Xtb, Ymbs, dYmb_dXtbs) for f in p.de]
+            sum_G2s = np.array([tf.reduce_sum(G**2).numpy() for G in Gtbs])
+            sum_G2 += sum_G2s
+            # End of training point batches.
+        Lress = np.array([np.sqrt(G2/n_train) for G2 in sum_G2])
+        Lres = np.sum(Lress)
+        losses_res[epoch] = Lress
+        losses_res[epoch][-1] = Lres
+
+        # Part 3b: Compute data loss.
+        sum_E2 = np.zeros(p.n_var)
+        for id_batch in range(nd_batches):
+            Xdb = Xdbs[id_batch]
+            Ydb = Ydbs[id_batch]
+            Ymbs = [model(Xdb) for model in models]
+            Embs = [
+                Ymbs[i] - tf.reshape(Ydb[:, i], (Ydb.shape[0], 1))
+                for i in range(p.n_var)
+            ]
+            sum_E2s = np.array([tf.reduce_sum(E**2) for E in Embs])
+            sum_E2 += sum_E2s
+            # End of data batches.
+        Ldats = np.array([np.sqrt(E2/n_data) for E2 in sum_E2])
+        Ldat = np.sum(Ldats)
+        losses_dat[epoch] = Ldats
+        losses_dat[epoch][-1] = Ldat
+
+        # Part 3c: Compute total loss.
+        losses[epoch] = w_res*Lress + w_data*Ldats
+        L = losses[epoch][-1] = w_res*Lres + w_data*Ldat
+        if verbose:
+            print(f"epoch = {epoch}, (Lres, Ldat, L) = "
+                  f"({Lres:.6E}, {Ldat:.6E}, {L:.6E})")
 
         # --------------------------------------------------------------------
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
-            if multi:
-                raise TypeError("--multi not supported!")
-                # path = os.path.join(
-                #     output_dir, "models", f"{epoch:06d}", "model_multi"
-                # )
-                # models[0].save(path)
-            else:
-                common.save_models(
-                    models, output_dir, epoch, p.dependent_variable_names, multi)
+            common.save_models(
+                models, output_dir, epoch, p.dependent_variable_names, multi)
 
         if debug:
             print(f"Ending epoch {epoch}.")
