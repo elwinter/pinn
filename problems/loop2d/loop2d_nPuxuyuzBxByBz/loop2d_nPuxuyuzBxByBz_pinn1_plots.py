@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 """Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem.
 
 Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem.
@@ -10,9 +11,11 @@ Eric Winter (eric.winter62@gmail.com)
 """
 
 # Import standard modules.
-import argparse
+import copy
 from importlib import import_module
 import os
+import shutil
+import subprocess
 import sys
 
 # Import supplemental modules.
@@ -22,13 +25,22 @@ import numpy as np
 import tensorflow as tf
 
 # Import project modules.
-import pinn.common
+from pinn import common
 
 
 # Program constants
 
 # Program description
-DESCRIPTION = "Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem."
+DESCRIPTION = (
+    "Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem."
+)
+
+# Default values for command-line arguments.
+DEFAULT_ARGUMENTS = {
+    "debug": False,
+    "verbose": False,
+    "results_path": None,
+}
 
 # Name of problem
 PROBLEM_NAME = "loop2d_nPuxuyuzBxByBz"
@@ -37,7 +49,7 @@ PROBLEM_NAME = "loop2d_nPuxuyuzBxByBz"
 OUTPUT_DIR = "pinn1_plots"
 
 
-def create_command_line_parser():
+def create_command_line_argument_parser():
     """Create the command-line argument parser.
 
     Create the command-line argument parser.
@@ -51,14 +63,11 @@ def create_command_line_parser():
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
     """
-    parser = argparse.ArgumentParser(DESCRIPTION)
+    parser = common.create_minimal_command_line_argument_parser(
+        DESCRIPTION)
     parser.add_argument(
-        "--debug", "-d", action="store_true",
-        help="Print debugging output (default: %(default)s)."
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Print verbose output (default: %(default)s)."
+        "--clobber", action="store_true",
+        help="Overwrite existing output directory (default: %(default)s)"
     )
     parser.add_argument(
         "results_path",
@@ -67,7 +76,7 @@ def create_command_line_parser():
     return parser
 
 
-def make_loss_plot(L_res: np.ndarray, L_data: np.ndarray, L: np.ndarray,
+def make_loss_plot(L_res: np.ndarray, L_dat: np.ndarray, L: np.ndarray,
                    **kwargs):
     """Make a plot of the aggregate L_res, L_dat, and L.
 
@@ -93,12 +102,15 @@ def make_loss_plot(L_res: np.ndarray, L_data: np.ndarray, L: np.ndarray,
     ------
     None
     """
+    title = kwargs.get("title", "")
+    figsize = kwargs.get("figsize", None)
+
     # Create the figure and Axes.
     fig, ax = plt.subplots()
 
     # Plot the data.
     ax.semilogy(L_res, label="$L_{res}$")
-    ax.semilogy(L_data, label="$L_{data}$")
+    ax.semilogy(L_dat, label="$L_{dat}$")
     ax.semilogy(L, label="$L$")
 
     # Decorate the plot.
@@ -106,7 +118,6 @@ def make_loss_plot(L_res: np.ndarray, L_data: np.ndarray, L: np.ndarray,
     ax.set_ylabel("Loss")
     ax.grid()
     ax.legend()
-    title = kwargs.get("title", "")
     ax.set_title(title)
 
     # Return the figure.
@@ -114,22 +125,26 @@ def make_loss_plot(L_res: np.ndarray, L_data: np.ndarray, L: np.ndarray,
 
 
 def make_predicted_analytical_error_plot(
-        Y_predicted: np.ndarray, Y_analytical: np.ndarray,
-        Y_error: np.ndarray, X_train: np.ndarray, **kwargs):
+        Zp: np.ndarray, Za: np.ndarray, Ze: np.ndarray,
+        X: np.ndarray, Y: np.ndarray, **kwargs):
     """Make a plot of the predicted and analytical solution, and error.
 
     Make a plot of the predicted and analytical solution, and error.
 
+    All array arguments must have the same shape (ny, nx).
+
     Parameters
     ----------
-    Y_predicted : np.ndarray, shape (n_train,)
+    Zp : np.ndarray, shape (ny, nx)
         Predicted solution at each point.
-    Y_analytical : np.ndarray, shape (n_train,)
+    Za : np.ndarray, shape (ny, nx)
         Analytical solution at each point.
-    Y_error : np.ndarray, shape (n_train,)
-        Absolute error at each point.
-    X_train : np.ndarray, shape (n_train,)
-        Independent variable for each training point.
+    Ze : np.ndarray, shape (ny, nx)
+        Absolute error (Zp - Za) at each point.
+    X : np.ndarray, shape (ny, nx)
+        x-values for each training point.
+    Y : np.ndarray, shape (ny, nx)
+        y-values for each training point.
     kwargs : dict
         dict of additional keyword arguments
 
@@ -142,40 +157,49 @@ def make_predicted_analytical_error_plot(
     ------
     None
     """
+    title = kwargs.get("title", "")
+    xlabel = kwargs.get("xlabel", "")
+    ylabel = kwargs.get("ylabel", "")
+    figsize = kwargs.get("figsize", None)
+
     # Create the figure and Axes.
-    fig, ax = plt.subplots()
+    fig, axs = plt.subplots(1, 3, layout="constrained", figsize=figsize)
+    axp, axa, axe = axs
 
-    # Plot the predicted and analytical solutions on the left y-axis.
-    ax.plot(X_train, Y_predicted, label="Predicted")
-    ax.plot(X_train, Y_analytical, label="Analytical")
+    # Plot the predicted, analytical, and error solutions.
+    pcmp = axs[0].pcolormesh(X, Y, Zp)
+    axp.set_title("Predicted")
+    axp.set_xlabel(xlabel)
+    axp.set_ylabel(ylabel)
+    fig.colorbar(pcmp, ax=axp, orientation="horizontal")
 
-    # Plot the error on the right y-axis.
-    ax2 = ax.twinx()
-    ax2.plot(X_train, Y_error, label="Error")
+    pcma = axs[1].pcolormesh(X, Y, Za)
+    axa.set_title("Analytical")
+    axa.set_xlabel(xlabel)
+    axa.set_ylabel(ylabel)
+    # Use the same color scale as the predicted solution.
+    fig.colorbar(pcmp, ax=axa, orientation="horizontal")
 
-    # Combine the axes for the legend.
-    lines_left, labels_left = ax.get_legend_handles_labels()
-    lines_right, labels_right = ax2.get_legend_handles_labels()
-    lines = lines_left + lines_right
-    labels = labels_left + labels_right
+    pcme = axs[2].pcolormesh(X, Y, Ze)
+    axe.set_title("Error")
+    axe.set_xlabel(xlabel)
+    axe.set_ylabel(ylabel)
+    fig.colorbar(pcme, ax=axe, orientation="horizontal")
+
+    # Set common plot options.
+    for ax in axs:
+        ax.grid()
+        ax.set_aspect("equal")
 
     # Decorate the plot.
-    xlabel = kwargs.get("xlabel", "")
-    ax.set_xlabel(xlabel)
-    ylabel = kwargs.get("ylabel", "")
-    ax.set_ylabel(ylabel)
-    ax2.set_ylabel("Error")
-    ax.grid()
-    ax.legend(lines, labels)
-    title = kwargs.get("title", "")
-    ax.set_title(title)
+    fig.suptitle(title)
 
     # Return the figure.
     return fig
 
 
 def pinn1_plots(args: dict):
-    """Main program code for pinn1 plots.
+    """Primary entry point for pinn1 plots.
 
     This is the main program code for making pinn1 plots. This function can be
     called from other python code.
@@ -194,43 +218,98 @@ def pinn1_plots(args: dict):
     ------
     None
     """
-    # Convenience variables.
-    if args["debug"]:
-        print(f"args = {args}")
+    # Use defaults for unspecified arguments. Merge in additional settings
+    # which are passed in by the caller.
+    local_args = copy.deepcopy(DEFAULT_ARGUMENTS)
+    if args is not None:
+        local_args.update(args)
+    args = local_args
+
+    # Local convenience variables
+    clobber = args["clobber"]
     debug = args["debug"]
     verbose = args["verbose"]
     results_path = args["results_path"]
 
     # ------------------------------------------------------------------------
 
-    # Add the run results directory to the module search path.
-    sys.path.append(results_path)
+    # Add the run results directory at the head of the module search path.
+    sys.path.insert(0, results_path)
 
     # Import the problem definition from the run results directory.
     p = import_module(PROBLEM_NAME)
 
     # Compute the path to the output directory, then create it.
     output_path = OUTPUT_DIR
+    if os.path.isdir(output_path) and clobber:
+        shutil.rmtree(output_path)
     os.mkdir(output_path)
+
+    # ------------------------------------------------------------------------
+
+    # Load the data.
+
+    # Load the loss data.
+    if verbose:
+        print("Loading loss data.")
+    path = os.path.join(results_path, "L_res.dat")
+    L_res = np.loadtxt(path)
+    path = os.path.join(results_path, "L_dat.dat")
+    L_dat = np.loadtxt(path)
+    path = os.path.join(results_path, "L.dat")
+    L = np.loadtxt(path)
+
+    # Extract the training grid description and data.
+    path = os.path.join(results_path, "X_train.dat")
+    column_descriptions, X_train = common.read_grid_file(path)
+
+    # NOTE: Column order is: t x y
+    # y varies fastest.
+    cname = column_descriptions["name"]
+    cmin = column_descriptions["min"]
+    cmax = column_descriptions["max"]
+    cn = column_descriptions["n"]
+    n_train = len(X_train)
+
+    # Extract grid counts.
+    nt, nx, ny = cn
+    nxy = nx*ny  # Number of xy grid points at each time step
+
+    # Extract and reshape the x- and y-grid values from the fitrs time step.
+    # It is assumed to be the same for all other time steps.
+    # NOTE: Extracted values of data must also use this reshape(ny, nx).T.
+    X = X_train[:nxy, 1].reshape(ny, nx).T
+    Y = X_train[:nxy, 2].reshape(ny, nx).T
+
+    # ------------------------------------------------------------------------
+
+    # Load the final trained models.
+
+    # Find the epoch of the last trained model.
+    last_epoch = common.find_last_epoch(results_path)
+
+    # Load the trained models.
+    models = []
+    for variable_name in p.dependent_variable_names:
+        path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+                            f"model_{variable_name}")
+        model = tf.keras.models.load_model(path)
+        models.append(model)
+
+    # ------------------------------------------------------------------------
 
     # Create the plots in a memory buffer.
     mpl.use("Agg")
 
     # ------------------------------------------------------------------------
 
-    # Plot the aggregate residual, data, and overall loss histories.
-
-    # Load the data.
-    path = os.path.join(results_path, "L_res.dat")
-    L_res = np.loadtxt(path)
-    path = os.path.join(results_path, "L_data.dat")
-    L_data = np.loadtxt(path)
-    path = os.path.join(results_path, "L.dat")
-    L = np.loadtxt(path)
+    # Plot the aggregate losses.
 
     # Create the figure.
+    if verbose:
+        print("Creating aggregate loss plot.")
     title = "Total residual, data, and weighted loss"
-    fig = make_loss_plot(L_res, L_data, L, title=title)
+    fig = make_loss_plot(L_res[:, -1], L_dat[:, -1], L[:, -1], title=title)
 
     # Save the plot to a PNG file.
     path = os.path.join(output_path, "L.png")
@@ -243,24 +322,21 @@ def pinn1_plots(args: dict):
 
     # ------------------------------------------------------------------------
 
-    # Plot the per-model residual, data, and weighted loss histories.
+    # Plot the per-model losses.
+    if verbose:
+        print("Creating per-model loss plots.")
 
     # Plot for each model.
     for iv in range(p.n_var):
 
-        # Load the data.
+        # Extract the data.
         variable_name = p.dependent_variable_names[iv]
         variable_label = p.dependent_variable_labels[iv]
-        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
-        L_res = np.loadtxt(path)
-        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
-        L_data = np.loadtxt(path)
-        path = os.path.join(results_path, f"L_{variable_name}.dat")
-        L = np.loadtxt(path)
 
         # Create the figure.
-        title = variable_label + " residual, data, and weighted loss"
-        fig = make_loss_plot(L_res, L_data, L, title=title)
+        title = f"{variable_label} residual, data, and weighted loss"
+        fig = make_loss_plot(L_res[:, iv], L_dat[:, iv], L[:, iv],
+                             title=title)
 
         # Save the plot to a PNG file.
         path = os.path.join(output_path, f"L_{variable_name}.png")
@@ -271,55 +347,92 @@ def pinn1_plots(args: dict):
         # Close the figure.
         plt.close(fig)
 
+        # End of variable loop.
+
     # ------------------------------------------------------------------------
 
-    # Plot the predicted and analytical solutions, and the error, for each
-    # model.
+    # Make a movie of the predicted and analytical solutions, and the error,
+    # for each model.
 
-    # Load the training points.
-    path = os.path.join(results_path, "X_train.dat")
-    X_train = np.loadtxt(path)
-    n_train = len(X_train)
+    # Compute the number of frames in each movie.
+    # Assumes same xy points used at each time.
+    n_frames = n_train//nxy
 
-    # Find the epoch of the last trained model.
-    last_epoch = pinn.common.find_last_epoch(results_path)
-
-    # Load the trained model for each variable.
-    models = []
-    for variable_name in p.dependent_variable_names:
-        path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-                            f"model_{variable_name}")
-        model = tf.keras.models.load_model(path)
-        models.append(model)
+    # Constant plot parameters
+    figsize = (12, 5)
+    xlabel = p.independent_variable_labels[1]
+    ylabel = p.independent_variable_labels[2]
+    frame_rate = 2  # frames/second
 
     # Make a plot for each model.
-    for (iv, variable_name) in enumerate(p.dependent_variable_names):
+    for iv in range(p.n_var):
+
+        # Extract the variable name and label.
+        variable_name = p.dependent_variable_names[iv]
+        variable_label = p.dependent_variable_labels[iv]
+
         if verbose:
-            print(f"Creating plot for {variable_name}.")
+            print("Creating predicted/analytical/error movie for "
+                  f"{variable_name}.")
 
         # Compute the predicted and analytical solution at each training point
         # and the resulting error.
-        Y_predicted = models[iv](X_train).numpy().reshape(n_train,)
-        Y_analytical = p.Y_analytical[iv](X_train)
-        Y_error = Y_predicted - Y_analytical
+        # reshape() needed since TF results are shape (n_train, 1).
+        Yp = models[iv](X_train).numpy().reshape(n_train,)
+        Ya = p.Y_analytical[iv](X_train[:, 0], X_train[:, 1], X_train[:, 2])
+        Ye = Yp - Ya
 
-        # Create the figure.
-        title = variable_label + " predicted, analytical and error"
-        xlabel = p.independent_variable_labels[0]
-        ylabel = p.dependent_variable_labels[iv]
-        fig = make_predicted_analytical_error_plot(
-            Y_predicted, Y_analytical, Y_error, X_train,
-            title=title, xlabel=xlabel, ylabel=ylabel
-        )
+        # Create the directory for the frames for this variable.
+        frame_dir = os.path.join(output_path, f"frames_{variable_name}")
+        os.mkdir(frame_dir)
 
-        # Save the plot to a PNG file.
-        path = os.path.join(output_path, f"{variable_name}.png")
+        # Create the frames.
         if verbose:
-            print(f"Saving {path}.")
-        plt.savefig(path)
+            print(f"Creating frames for {variable_name}.")
+        for i_frame in range(n_frames):
 
-        # Close the figure.
-        plt.close(fig)
+            # Extract the time of the frame.
+            t = X_train[i_frame*nxy, 0]
+
+            # Extract the data for the frame.
+            i1 = i_frame*nxy
+            i2 = (i_frame + 1)*nxy
+            # NOTE: Needs same reshape().T used by grid points,.
+            Zp = Yp[i1:i2].reshape(ny, nx).T
+            Za = Ya[i1:i2].reshape(ny, nx).T
+            Ze = Ye[i1:i2].reshape(ny, nx).T
+
+            # Compute the frame title.
+            title = f"{variable_label} at t = {t:0.3E}"
+            fig = make_predicted_analytical_error_plot(
+                Zp, Za, Ze, X, Y,
+                title=title, xlabel=xlabel, ylabel=ylabel, figsize=figsize
+            )
+
+            # Save the plot to a PNG file.
+            path = os.path.join(
+                frame_dir, f"{variable_name}-{i_frame:06d}.png")
+            if verbose:
+                print(f"Saving {path}.")
+            plt.savefig(path)
+
+            # Close the figure.
+            plt.close(fig)
+
+            # End of frame loop.
+
+        # Assemble the frames into a movie.
+        if verbose:
+            print(f"Assembling for {variable_name}.")
+        frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
+        movie_file = os.path.join(output_path, f"{variable_name}.mp4")
+        cmd = (
+            f"ffmpeg -r {frame_rate} -i {frame_pattern} -vcodec libx264 "
+            f"-crf 25 -pix_fmt yuv420p {movie_file}"
+        )
+        subprocess.run(cmd, shell=True, check=True)
+
+        # End of variable loop.
 
 
 def main():
@@ -342,20 +455,17 @@ def main():
     None
     """
     # Set up the command-line parser.
-    parser = create_command_line_parser()
+    parser = create_command_line_argument_parser()
 
     # Parse the command-line arguments.
     args = parser.parse_args()
     if args.debug:
         print(f"args = {args}")
 
-    # ------------------------------------------------------------------------
-
-    # Call the main program logic. Note that the Namespace object (args)
-    # returned from the option parser is converted to a dict using vars().
-    pinn1_plots(vars(args))
+    # Pass the command-line arguments to the main function as a dict.
+    args = vars(args)
+    pinn1_plots(args)
 
 
 if __name__ == "__main__":
-    """Begin main program."""
     main()
