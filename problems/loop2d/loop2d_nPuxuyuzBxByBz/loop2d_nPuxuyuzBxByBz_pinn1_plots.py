@@ -198,6 +198,205 @@ def make_predicted_analytical_error_plot(
     return fig
 
 
+def make_predicted_analytical_error_B_plot(
+        Bxp: np.ndarray, Byp: np.ndarray,
+        Bxa: np.ndarray, Bya: np.ndarray,
+        Bxe: np.ndarray, Bye: np.ndarray,
+        X: np.ndarray, Y: np.ndarray, **kwargs):
+    """Make a plot of the predicted and analytical B field, and error.
+
+    Make a plot of the predicted and analytical magnetic field, and error.
+
+    All array arguments must have the same shape (ny, nx).
+
+    Parameters
+    ----------
+    Bxp : np.ndarray, shape (ny, nx)
+        Predicted value of Bx.
+    Byp : np.ndarray, shape (ny, nx)
+        Predicted value of By.
+    Bxa : np.ndarray, shape (ny, nx)
+        Analytical value of Bx.
+    Bya : np.ndarray, shape (ny, nx)
+        Analytical value of By.
+    Bxe : np.ndarray, shape (ny, nx)
+        Absolute error (Bxp - Bxa) at each point.
+    Bye : np.ndarray, shape (ny, nx)
+        Absolute error (Byp - Bya) at each point.
+    X : np.ndarray, shape (ny, nx)
+        x-values for each training point.
+    Y : np.ndarray, shape (ny, nx)
+        y-values for each training point.
+    kwargs : dict
+        dict of additional keyword arguments
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure for plot.
+
+    Raises
+    ------
+    None
+    """
+    title = kwargs.get("title", "")
+    xlabel = kwargs.get("xlabel", "")
+    ylabel = kwargs.get("ylabel", "")
+    figsize = kwargs.get("figsize", None)
+
+    # Create the figure and Axes.
+    fig, axs = plt.subplots(1, 3, layout="constrained", figsize=figsize)
+    axp, axa, axe = axs
+
+    # Set common plot options.
+    for ax in axs:
+        ax.grid()
+        ax.set_aspect("equal")
+
+    # Decorate the plot.
+    fig.suptitle(title)
+
+    # Return the figure.
+    return fig
+
+
+def make_predicted_analytical_error_divB_plot(
+        dBxdxp: np.ndarray, dBydyp: np.ndarray, dBzdzp: np.ndarray,
+        dBxdxa: np.ndarray, dBydya: np.ndarray, dBzdza: np.ndarray,
+        dBxdxe: np.ndarray, dBydye: np.ndarray, dBzdze: np.ndarray,
+        X: np.ndarray, Y: np.ndarray, **kwargs):
+    """Make a plot of the predicted and analytical div B, and error.
+
+    Make a plot of the predicted and analytical magnetic field divergence,
+    and error.
+
+    All array arguments must have the same shape (ny, nx).
+
+    Parameters
+    ----------
+    dBxdxp : np.ndarray, shape (ny, nx)
+        Predicted value of dBx/dx.
+    dBydyp : np.ndarray, shape (ny, nx)
+        Predicted value of dBy/dy.
+    dBzdzp : np.ndarray, shape (ny, nx)
+        Predicted value of dBz/dz.
+    dBxdxa : np.ndarray, shape (ny, nx)
+        Analytical value of dBx/dx.
+    dBydya : np.ndarray, shape (ny, nx)
+        Analytical value of dBy/dy.
+    dBzdza : np.ndarray, shape (ny, nx)
+        Analytical value of dBz/dz.
+    dBxdxe : np.ndarray, shape (ny, nx)
+        Absolute error (dBxdxp - dBxdxa) at each point.
+    dBydye : np.ndarray, shape (ny, nx)
+        Absolute error (dBydyp - dBydya) at each point.
+    dBzdze : np.ndarray, shape (ny, nx)
+        Absolute error (dBzdzp - dBzdza) at each point.
+    X : np.ndarray, shape (ny, nx)
+        x-values for each training point.
+    Y : np.ndarray, shape (ny, nx)
+        y-values for each training point.
+    kwargs : dict
+        dict of additional keyword arguments
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure for plot.
+
+    Raises
+    ------
+    None
+    """
+    title = kwargs.get("title", "")
+    xlabel = kwargs.get("xlabel", "")
+    ylabel = kwargs.get("ylabel", "")
+    figsize = kwargs.get("figsize", None)
+
+    # Create the figure and Axes.
+    fig, axs = plt.subplots(1, 3, layout="constrained", figsize=figsize)
+    axp, axa, axe = axs
+
+    # Set common plot options.
+    for ax in axs:
+        ax.grid()
+        ax.set_aspect("equal")
+
+    # Decorate the plot.
+    fig.suptitle(title)
+
+    # Return the figure.
+    return fig
+
+
+def make_predicted_analytical_error_PB_plot(
+        Bxp: np.ndarray, Byp: np.ndarray, Bzp: np.ndarray,
+        Bxa: np.ndarray, Bya: np.ndarray, Bza: np.ndarray,
+        Bxe: np.ndarray, Bye: np.ndarray, Bze: np.ndarray,
+        X: np.ndarray, Y: np.ndarray, **kwargs):
+    """Make a plot of the predicted and analytical B pressure, and error.
+
+    Make a plot of the predicted and analytical magnetic pressure, and error.
+
+    All array arguments must have the same shape (ny, nx).
+
+    Parameters
+    ----------
+    Bxp : np.ndarray, shape (ny, nx)
+        Predicted value of Bx.
+    Byp : np.ndarray, shape (ny, nx)
+        Predicted value of By.
+    Bzp : np.ndarray, shape (ny, nx)
+        Predicted value of Bz.
+    Bxa : np.ndarray, shape (ny, nx)
+        Analytical value of Bx.
+    Bya : np.ndarray, shape (ny, nx)
+        Analytical value of By.
+    Bza : np.ndarray, shape (ny, nx)
+        Analytical value of Bz.
+    Bxe : np.ndarray, shape (ny, nx)
+        Absolute error (Bxp - Bxa) at each point.
+    Bye : np.ndarray, shape (ny, nx)
+        Absolute error (Byp - Bya) at each point.
+    Bze : np.ndarray, shape (ny, nx)
+        Absolute error (Bzp - Bza) at each point.
+    X : np.ndarray, shape (ny, nx)
+        x-values for each training point.
+    Y : np.ndarray, shape (ny, nx)
+        y-values for each training point.
+    kwargs : dict
+        dict of additional keyword arguments
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure for plot.
+
+    Raises
+    ------
+    None
+    """
+    title = kwargs.get("title", "")
+    xlabel = kwargs.get("xlabel", "")
+    ylabel = kwargs.get("ylabel", "")
+    figsize = kwargs.get("figsize", None)
+
+    # Create the figure and Axes.
+    fig, axs = plt.subplots(1, 3, layout="constrained", figsize=figsize)
+    axp, axa, axe = axs
+
+    # Set common plot options.
+    for ax in axs:
+        ax.grid()
+        ax.set_aspect("equal")
+
+    # Decorate the plot.
+    fig.suptitle(title)
+
+    # Return the figure.
+    return fig
+
+
 def pinn1_plots(args: dict):
     """Primary entry point for pinn1 plots.
 
@@ -433,6 +632,69 @@ def pinn1_plots(args: dict):
         subprocess.run(cmd, shell=True, check=True)
 
         # End of variable loop.
+
+    # ------------------------------------------------------------------------
+
+    # Make a movie of the predicted and analytical magnetic field vector, and
+    # the error.
+    if verbose:
+        print("Creating predicted/analytical/error movie for xy-magnetic "
+              "field.")
+    title = "Magnetic Field"
+    fig = make_predicted_analytical_error_B_plot(
+        None, None, None, None, None, None, None, None
+    )
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "BxBy.png")
+    if verbose:
+        print(f"Saving {path}.")
+    plt.savefig(path)
+
+    # Close the figure.
+    plt.close(fig)
+
+    # ------------------------------------------------------------------------
+
+    # Make a movie of the predicted and analytical magnetic divergence, and
+    # the error.
+    if verbose:
+        print("Creating predicted/analytical/error movie for magnetic "
+              "divergence.")
+    title = "Magnetic Divergence"
+    fig = make_predicted_analytical_error_divB_plot(
+        None, None, None, None, None, None, None, None, None, None, None
+    )
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "divB.png")
+    if verbose:
+        print(f"Saving {path}.")
+    plt.savefig(path)
+
+    # Close the figure.
+    plt.close(fig)
+
+    # ------------------------------------------------------------------------
+
+    # Make a movie of the predicted and analytical magnetic pressure, and
+    # the error.
+    if verbose:
+        print("Creating predicted/analytical/error movie for magnetic "
+              "pressure.")
+    title = "Magnetic Pressure"
+    fig = make_predicted_analytical_error_PB_plot(
+        None, None, None, None, None, None, None, None, None, None, None
+    )
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "PB.png")
+    if verbose:
+        print(f"Saving {path}.")
+    plt.savefig(path)
+
+    # Close the figure.
+    plt.close(fig)
 
 
 def main():
