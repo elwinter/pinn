@@ -645,16 +645,33 @@ def pinn1(args: dict):
             models, output_dir, epoch, p.dependent_variable_names, multi)
 
     # Save the loss histories.
-    path = os.path.join(output_dir, 'L_res.dat')
+    path = os.path.join(output_dir, "L_res.dat")
     np.savetxt(path, losses_res)
-    path = os.path.join(output_dir, 'L_dat.dat')
+    path = os.path.join(output_dir, "L_dat.dat")
     np.savetxt(path, losses_dat)
-    path = os.path.join(output_dir, 'L.dat')
+    path = os.path.join(output_dir, "L.dat")
     np.savetxt(path, losses)
 
 
 def main():
-    """Driver for command-line version of code."""
+    """Main program code for the command-line version of the script.
+
+    This is the main program code for the command-line version of the script.
+    It processes command-line options, then calls the general-purpose entry
+    point.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    None
+    """
     # Set up the command-line parser.
     parser = create_command_line_argument_parser()
 
