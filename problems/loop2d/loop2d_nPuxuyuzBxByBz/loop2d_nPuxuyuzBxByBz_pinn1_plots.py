@@ -5,6 +5,8 @@
 
 Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem.
 
+Note on notation: "PAE" -> predicted/analytical/error
+
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
@@ -124,7 +126,7 @@ def make_loss_plot(L_res: np.ndarray, L_dat: np.ndarray, L: np.ndarray,
     return fig
 
 
-def make_predicted_analytical_error_plot(
+def make_PAE_plot(
         Zp: np.ndarray, Za: np.ndarray, Ze: np.ndarray,
         X: np.ndarray, Y: np.ndarray, **kwargs):
     """Make a plot of the predicted and analytical solution, and error.
@@ -198,7 +200,7 @@ def make_predicted_analytical_error_plot(
     return fig
 
 
-def make_predicted_analytical_error_B_plot(
+def make_PAE_B_plot(
         Bxp: np.ndarray, Byp: np.ndarray,
         Bxa: np.ndarray, Bya: np.ndarray,
         Bxe: np.ndarray, Bye: np.ndarray,
@@ -260,7 +262,7 @@ def make_predicted_analytical_error_B_plot(
     return fig
 
 
-def make_predicted_analytical_error_divB_plot(
+def make_PAE_divB_plot(
         dBxdxp: np.ndarray, dBydyp: np.ndarray, dBzdzp: np.ndarray,
         dBxdxa: np.ndarray, dBydya: np.ndarray, dBzdza: np.ndarray,
         dBxdxe: np.ndarray, dBydye: np.ndarray, dBzdze: np.ndarray,
@@ -329,7 +331,7 @@ def make_predicted_analytical_error_divB_plot(
     return fig
 
 
-def make_predicted_analytical_error_PB_plot(
+def make_PAE_PB_plot(
         Bxp: np.ndarray, Byp: np.ndarray, Bzp: np.ndarray,
         Bxa: np.ndarray, Bya: np.ndarray, Bza: np.ndarray,
         Bxe: np.ndarray, Bye: np.ndarray, Bze: np.ndarray,
@@ -603,7 +605,7 @@ def pinn1_plots(args: dict):
 
             # Compute the frame title.
             title = f"{variable_label} at t = {t:0.3E}"
-            fig = make_predicted_analytical_error_plot(
+            fig = make_PAE_plot(
                 Zp, Za, Ze, X, Y,
                 title=title, xlabel=xlabel, ylabel=ylabel, figsize=figsize
             )
@@ -641,7 +643,7 @@ def pinn1_plots(args: dict):
         print("Creating predicted/analytical/error movie for xy-magnetic "
               "field.")
     title = "Magnetic Field"
-    fig = make_predicted_analytical_error_B_plot(
+    fig = make_PAE_B_plot(
         None, None, None, None, None, None, None, None
     )
 
@@ -662,7 +664,7 @@ def pinn1_plots(args: dict):
         print("Creating predicted/analytical/error movie for magnetic "
               "divergence.")
     title = "Magnetic Divergence"
-    fig = make_predicted_analytical_error_divB_plot(
+    fig = make_PAE_divB_plot(
         None, None, None, None, None, None, None, None, None, None, None
     )
 
@@ -683,7 +685,7 @@ def pinn1_plots(args: dict):
         print("Creating predicted/analytical/error movie for magnetic "
               "pressure.")
     title = "Magnetic Pressure"
-    fig = make_predicted_analytical_error_PB_plot(
+    fig = make_PAE_PB_plot(
         None, None, None, None, None, None, None, None, None, None, None
     )
 
