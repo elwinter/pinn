@@ -250,10 +250,20 @@ def make_PAE_B_plot(
     fig, axs = plt.subplots(1, 3, layout="constrained", figsize=figsize)
     axp, axa, axe = axs
 
+    # Plot the fields.
+    axp.quiver(X, Y, Bxp, Byp)
+    axp.set_title("Predicted")
+    axa.quiver(X, Y, Bxa, Bya)
+    axa.set_title("Analytical")
+    axe.quiver(X, Y, Bxe, Bye)
+    axe.set_title("Error")
+
     # Set common plot options.
     for ax in axs:
         ax.grid()
         ax.set_aspect("equal")
+        ax.set_xlabel("$x$")
+        ax.set_ylabel("$y$")
 
     # Decorate the plot.
     fig.suptitle(title)
@@ -262,141 +272,33 @@ def make_PAE_B_plot(
     return fig
 
 
-def make_PAE_divB_plot(
-        dBxdxp: np.ndarray, dBydyp: np.ndarray, dBzdzp: np.ndarray,
-        dBxdxa: np.ndarray, dBydya: np.ndarray, dBzdza: np.ndarray,
-        dBxdxe: np.ndarray, dBydye: np.ndarray, dBzdze: np.ndarray,
-        X: np.ndarray, Y: np.ndarray, **kwargs):
-    """Make a plot of the predicted and analytical div B, and error.
+def assemble_movie(movie_file: str, frame_pattern: str, frame_rate: int):
+    """Assemble a movie from individual frames.
 
-    Make a plot of the predicted and analytical magnetic field divergence,
-    and error.
-
-    All array arguments must have the same shape (ny, nx).
+    Assemble a movie from individual frames.
 
     Parameters
     ----------
-    dBxdxp : np.ndarray, shape (ny, nx)
-        Predicted value of dBx/dx.
-    dBydyp : np.ndarray, shape (ny, nx)
-        Predicted value of dBy/dy.
-    dBzdzp : np.ndarray, shape (ny, nx)
-        Predicted value of dBz/dz.
-    dBxdxa : np.ndarray, shape (ny, nx)
-        Analytical value of dBx/dx.
-    dBydya : np.ndarray, shape (ny, nx)
-        Analytical value of dBy/dy.
-    dBzdza : np.ndarray, shape (ny, nx)
-        Analytical value of dBz/dz.
-    dBxdxe : np.ndarray, shape (ny, nx)
-        Absolute error (dBxdxp - dBxdxa) at each point.
-    dBydye : np.ndarray, shape (ny, nx)
-        Absolute error (dBydyp - dBydya) at each point.
-    dBzdze : np.ndarray, shape (ny, nx)
-        Absolute error (dBzdzp - dBzdza) at each point.
-    X : np.ndarray, shape (ny, nx)
-        x-values for each training point.
-    Y : np.ndarray, shape (ny, nx)
-        y-values for each training point.
-    kwargs : dict
-        dict of additional keyword arguments
+    movie_file : str
+        Path to movie file.
+    frame_pattern : str
+        glob pattern for frame file names.
+    frame_rate : int
+        Frame rate (frames/second).
 
     Returns
     -------
-    fig : matplotlib.figure.Figure
-        Figure for plot.
+    None
 
     Raises
     ------
     None
     """
-    title = kwargs.get("title", "")
-    xlabel = kwargs.get("xlabel", "")
-    ylabel = kwargs.get("ylabel", "")
-    figsize = kwargs.get("figsize", None)
-
-    # Create the figure and Axes.
-    fig, axs = plt.subplots(1, 3, layout="constrained", figsize=figsize)
-    axp, axa, axe = axs
-
-    # Set common plot options.
-    for ax in axs:
-        ax.grid()
-        ax.set_aspect("equal")
-
-    # Decorate the plot.
-    fig.suptitle(title)
-
-    # Return the figure.
-    return fig
-
-
-def make_PAE_PB_plot(
-        Bxp: np.ndarray, Byp: np.ndarray, Bzp: np.ndarray,
-        Bxa: np.ndarray, Bya: np.ndarray, Bza: np.ndarray,
-        Bxe: np.ndarray, Bye: np.ndarray, Bze: np.ndarray,
-        X: np.ndarray, Y: np.ndarray, **kwargs):
-    """Make a plot of the predicted and analytical B pressure, and error.
-
-    Make a plot of the predicted and analytical magnetic pressure, and error.
-
-    All array arguments must have the same shape (ny, nx).
-
-    Parameters
-    ----------
-    Bxp : np.ndarray, shape (ny, nx)
-        Predicted value of Bx.
-    Byp : np.ndarray, shape (ny, nx)
-        Predicted value of By.
-    Bzp : np.ndarray, shape (ny, nx)
-        Predicted value of Bz.
-    Bxa : np.ndarray, shape (ny, nx)
-        Analytical value of Bx.
-    Bya : np.ndarray, shape (ny, nx)
-        Analytical value of By.
-    Bza : np.ndarray, shape (ny, nx)
-        Analytical value of Bz.
-    Bxe : np.ndarray, shape (ny, nx)
-        Absolute error (Bxp - Bxa) at each point.
-    Bye : np.ndarray, shape (ny, nx)
-        Absolute error (Byp - Bya) at each point.
-    Bze : np.ndarray, shape (ny, nx)
-        Absolute error (Bzp - Bza) at each point.
-    X : np.ndarray, shape (ny, nx)
-        x-values for each training point.
-    Y : np.ndarray, shape (ny, nx)
-        y-values for each training point.
-    kwargs : dict
-        dict of additional keyword arguments
-
-    Returns
-    -------
-    fig : matplotlib.figure.Figure
-        Figure for plot.
-
-    Raises
-    ------
-    None
-    """
-    title = kwargs.get("title", "")
-    xlabel = kwargs.get("xlabel", "")
-    ylabel = kwargs.get("ylabel", "")
-    figsize = kwargs.get("figsize", None)
-
-    # Create the figure and Axes.
-    fig, axs = plt.subplots(1, 3, layout="constrained", figsize=figsize)
-    axp, axa, axe = axs
-
-    # Set common plot options.
-    for ax in axs:
-        ax.grid()
-        ax.set_aspect("equal")
-
-    # Decorate the plot.
-    fig.suptitle(title)
-
-    # Return the figure.
-    return fig
+    cmd = (
+        f"ffmpeg -r {frame_rate} -i {frame_pattern} -vcodec libx264 "
+        f"-crf 25 -pix_fmt yuv420p {movie_file}"
+    )
+    subprocess.run(cmd, shell=True, check=True)
 
 
 def pinn1_plots(args: dict):
@@ -499,6 +401,38 @@ def pinn1_plots(args: dict):
 
     # ------------------------------------------------------------------------
 
+    # Compute the predicted and analytical solutions, and error.
+    if verbose:
+        print("Computing predicted and analytical values, and error.")
+    Yp = [model(X_train).numpy().reshape(n_train,) for model in models]
+    Ya = [f(X_train[:, 0], X_train[:, 1], X_train[:, 2])
+          for f in p.Y_analytical]
+    Ye = [pr - an for (pr, an) in zip(Yp, Ya)]
+
+    # Compute the predicted and analytical magnetic divergence, and error.
+    if verbose:
+        print("Computing predicted and analytical magnetic divergence, and "
+              "error.")
+    dBx_dxp = np.zeros((n_train,))
+    dBy_dyp = np.zeros((n_train,))
+    divBp = dBx_dxp**2 + dBy_dyp**2
+    dBx_dxa = np.zeros((n_train,))
+    dBy_dya = np.zeros((n_train,))
+    divBa = dBx_dxa**2 + dBy_dya**2
+    dBx_dxe = dBx_dxp - dBx_dxa
+    dBy_dye = dBy_dyp - dBy_dya
+    divBe = divBp - divBa
+
+    # Compute the predicted and analytical magnetic pressure and error.
+    if verbose:
+        print("Computing predicted and analytical magnetic pressure, and "
+              "error.")
+    PBp = Yp[p.iBx]**2 + Yp[p.iBy]**2
+    PBa = Ya[p.iBx]**2 + Ya[p.iBy]**2
+    PBe = PBp - PBa
+
+    # ------------------------------------------------------------------------
+
     # Create the plots in a memory buffer.
     mpl.use("Agg")
 
@@ -552,18 +486,22 @@ def pinn1_plots(args: dict):
 
     # ------------------------------------------------------------------------
 
-    # Make a movie of the predicted and analytical solutions, and the error,
-    # for each model.
-
     # Compute the number of frames in each movie.
     # Assumes same xy points used at each time.
     n_frames = n_train//nxy
+
+    # Specify the frame rate in frames/second.
+    frame_rate = 2
+
+    # ------------------------------------------------------------------------
+
+    # Make a movie of the predicted and analytical solutions, and the error,
+    # for each model.
 
     # Constant plot parameters
     figsize = (12, 5)
     xlabel = p.independent_variable_labels[1]
     ylabel = p.independent_variable_labels[2]
-    frame_rate = 2  # frames/second
 
     # Make a plot for each model.
     for iv in range(p.n_var):
@@ -575,13 +513,6 @@ def pinn1_plots(args: dict):
         if verbose:
             print("Creating predicted/analytical/error movie for "
                   f"{variable_name}.")
-
-        # Compute the predicted and analytical solution at each training point
-        # and the resulting error.
-        # reshape() needed since TF results are shape (n_train, 1).
-        Yp = models[iv](X_train).numpy().reshape(n_train,)
-        Ya = p.Y_analytical[iv](X_train[:, 0], X_train[:, 1], X_train[:, 2])
-        Ye = Yp - Ya
 
         # Create the directory for the frames for this variable.
         frame_dir = os.path.join(output_path, f"frames_{variable_name}")
@@ -599,9 +530,9 @@ def pinn1_plots(args: dict):
             i1 = i_frame*nxy
             i2 = (i_frame + 1)*nxy
             # NOTE: Needs same reshape().T used by grid points,.
-            Zp = Yp[i1:i2].reshape(ny, nx).T
-            Za = Ya[i1:i2].reshape(ny, nx).T
-            Ze = Ye[i1:i2].reshape(ny, nx).T
+            Zp = Yp[iv][i1:i2].reshape(ny, nx).T
+            Za = Ya[iv][i1:i2].reshape(ny, nx).T
+            Ze = Ye[iv][i1:i2].reshape(ny, nx).T
 
             # Compute the frame title.
             title = f"{variable_label} at t = {t:0.3E}"
@@ -624,37 +555,69 @@ def pinn1_plots(args: dict):
 
         # Assemble the frames into a movie.
         if verbose:
-            print(f"Assembling for {variable_name}.")
+            print(f"Assembling frames for {variable_name}.")
         frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
         movie_file = os.path.join(output_path, f"{variable_name}.mp4")
-        cmd = (
-            f"ffmpeg -r {frame_rate} -i {frame_pattern} -vcodec libx264 "
-            f"-crf 25 -pix_fmt yuv420p {movie_file}"
-        )
-        subprocess.run(cmd, shell=True, check=True)
+        assemble_movie(movie_file, frame_pattern, frame_rate)
 
         # End of variable loop.
 
     # ------------------------------------------------------------------------
 
-    # Make a movie of the predicted and analytical magnetic field vector, and
+    # Make a movie of the predicted and analytical magnetic field vectors, and
     # the error.
     if verbose:
         print("Creating predicted/analytical/error movie for xy-magnetic "
               "field.")
-    title = "Magnetic Field"
-    fig = make_PAE_B_plot(
-        None, None, None, None, None, None, None, None
-    )
 
-    # Save the plot to a PNG file.
-    path = os.path.join(output_path, "BxBy.png")
+    # Create the directory for the frames.
+    frame_dir = os.path.join(output_path, "frames_BxBy")
+    os.mkdir(frame_dir)
+
+    # Create the frames.
     if verbose:
-        print(f"Saving {path}.")
-    plt.savefig(path)
+        print("Creating frames for magnetic field vector movie.")
+    for i_frame in range(n_frames):
 
-    # Close the figure.
-    plt.close(fig)
+        # Extract the time of the frame.
+        t = X_train[i_frame*nxy, p.it]
+
+        # Extract the data for the frame.
+        i1 = i_frame*nxy
+        i2 = (i_frame + 1)*nxy
+        # NOTE: Needs same reshape().T used by grid points,.
+        Bxp = Yp[p.iBx][i1:i2].reshape(ny, nx).T
+        Byp = Yp[p.iBy][i1:i2].reshape(ny, nx).T
+        Bxa = Ya[p.iBx][i1:i2].reshape(ny, nx).T
+        Bya = Ya[p.iBy][i1:i2].reshape(ny, nx).T
+        Bxe = Bxp - Bxa
+        Bye = Byp - Bya
+
+        # Compute the frame title.
+        title = f"Magnetic field at t = {t:0.3E}"
+
+        # Plot the magnetic field vectors.
+        fig = make_PAE_B_plot(Bxp, Byp, Bxa, Bya, Bxe, Bye, X, Y, title=title,
+                              figsize=figsize)
+
+        # Save the plot to a PNG file.
+        path = os.path.join(
+            frame_dir, f"BxBy-{i_frame:06d}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+
+        # Close the figure.
+        plt.close(fig)
+
+        # End of frame loop.
+
+    # Assemble the frames into a movie.
+    if verbose:
+        print("Assembling frames for BxBy.")
+    frame_pattern = os.path.join(frame_dir, f"BxBy-%06d.png")
+    movie_file = os.path.join(output_path, "BxBy.mp4")
+    assemble_movie(movie_file, frame_pattern, frame_rate)
 
     # ------------------------------------------------------------------------
 
@@ -663,19 +626,51 @@ def pinn1_plots(args: dict):
     if verbose:
         print("Creating predicted/analytical/error movie for magnetic "
               "divergence.")
-    title = "Magnetic Divergence"
-    fig = make_PAE_divB_plot(
-        None, None, None, None, None, None, None, None, None, None, None
-    )
 
-    # Save the plot to a PNG file.
-    path = os.path.join(output_path, "divB.png")
+    # Create the directory for the frames.
+    frame_dir = os.path.join(output_path, "frames_divB")
+    os.mkdir(frame_dir)
+
+    # Create the frames.
     if verbose:
-        print(f"Saving {path}.")
-    plt.savefig(path)
+        print("Creating frames for magnetic divergence movie.")
+    for i_frame in range(n_frames):
 
-    # Close the figure.
-    plt.close(fig)
+        # Extract the time of the frame.
+        t = X_train[i_frame*nxy, p.it]
+
+        # Extract the data for the frame.
+        i1 = i_frame*nxy
+        i2 = (i_frame + 1)*nxy
+        # NOTE: Needs same reshape().T used by grid points,.
+        Zp = divBp[i1:i2].reshape(ny, nx).T
+        Za = divBa[i1:i2].reshape(ny, nx).T
+        Ze = divBe[i1:i2].reshape(ny, nx).T
+
+        # Compute the frame title.
+        title = f"Magnetic divergence at t = {t:0.3E}"
+
+        # Plot the magnetic field vectors.
+        fig = make_PAE_plot(Zp, Za, Ze, X, Y, title=title, figsize=figsize)
+
+        # Save the plot to a PNG file.
+        path = os.path.join(
+            frame_dir, f"divB-{i_frame:06d}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+
+        # Close the figure.
+        plt.close(fig)
+
+        # End of frame loop.
+
+    # Assemble the frames into a movie.
+    if verbose:
+        print("Assembling frames for divB.")
+    frame_pattern = os.path.join(frame_dir, "divB-%06d.png")
+    movie_file = os.path.join(output_path, "divB.mp4")
+    assemble_movie(movie_file, frame_pattern, frame_rate)
 
     # ------------------------------------------------------------------------
 
@@ -684,19 +679,51 @@ def pinn1_plots(args: dict):
     if verbose:
         print("Creating predicted/analytical/error movie for magnetic "
               "pressure.")
-    title = "Magnetic Pressure"
-    fig = make_PAE_PB_plot(
-        None, None, None, None, None, None, None, None, None, None, None
-    )
 
-    # Save the plot to a PNG file.
-    path = os.path.join(output_path, "PB.png")
+    # Create the directory for the frames.
+    frame_dir = os.path.join(output_path, "frames_PB")
+    os.mkdir(frame_dir)
+
+    # Create the frames.
     if verbose:
-        print(f"Saving {path}.")
-    plt.savefig(path)
+        print("Creating frames for magnetic pressure movie.")
+    for i_frame in range(n_frames):
 
-    # Close the figure.
-    plt.close(fig)
+        # Extract the time of the frame.
+        t = X_train[i_frame*nxy, p.it]
+
+        # Extract the data for the frame.
+        i1 = i_frame*nxy
+        i2 = (i_frame + 1)*nxy
+        # NOTE: Needs same reshape().T used by grid points,.
+        Zp = PBp[i1:i2].reshape(ny, nx).T
+        Za = PBa[i1:i2].reshape(ny, nx).T
+        Ze = PBe[i1:i2].reshape(ny, nx).T
+
+        # Compute the frame title.
+        title = f"Magnetic pressure at t = {t:0.3E}"
+
+        # Plot the magnetic field vectors.
+        fig = make_PAE_plot(Zp, Za, Ze, X, Y, title=title, figsize=figsize)
+
+        # Save the plot to a PNG file.
+        path = os.path.join(
+            frame_dir, f"PB-{i_frame:06d}.png")
+        if verbose:
+            print(f"Saving {path}.")
+        plt.savefig(path)
+
+        # Close the figure.
+        plt.close(fig)
+
+        # End of frame loop.
+
+    # Assemble the frames into a movie.
+    if verbose:
+        print("Assembling frames for PB.")
+    frame_pattern = os.path.join(frame_dir, "PB-%06d.png")
+    movie_file = os.path.join(output_path, "PB.mp4")
+    assemble_movie(movie_file, frame_pattern, frame_rate)
 
 
 def main():
