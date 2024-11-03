@@ -295,8 +295,8 @@ def assemble_movie(movie_file: str, frame_pattern: str, frame_rate: int):
     None
     """
     cmd = (
-        f"ffmpeg -r {frame_rate} -i {frame_pattern} -vcodec libx264 "
-        f"-crf 25 -pix_fmt yuv420p {movie_file}"
+        f"ffmpeg -r {frame_rate} -i {frame_pattern} -vcodec mpeg4 "
+        f"-pix_fmt yuv420p {movie_file}"
     )
     subprocess.run(cmd, shell=True, check=True)
 
