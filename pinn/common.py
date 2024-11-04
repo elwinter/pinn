@@ -16,7 +16,7 @@ Eric Winter (eric.winter62@gmail.com)
 # Import standard modules.
 import argparse
 import datetime
-# import glob
+import glob
 import importlib
 import os
 import platform
@@ -330,6 +330,65 @@ def load_problem_data(data_path: str, precision: str):
 
     # Return the problem data.
     return XY
+
+
+def read_grid_file(path: str):
+    """Read grid description and data from a file.
+
+    Read the grid description and data from a file. The file is assumed to
+    contain a grid header, followed list of nrows points. Each point
+    definines a grid location (x0, x1, ...) and zero or more values defined
+    at that location (y0, y1, ...).
+
+    Parameters
+    ----------
+    path : str
+        Path to grid file
+
+    Returns
+    -------
+    column_descriptions : list of ncols tuples, each (str, float, float, int)
+        List of (varname, min, max, n) for each grid dimension.
+    data : np.ndarray, shape (nrows, ncols)
+        Numpy array of data in file
+
+    Raises
+    ------
+    AssertionError
+        If this is not a grid file
+    """
+    # Read the grid description.
+    column_descriptions = []
+    COMMENT_PREFIX = "# "
+    COMMENT_PREFIX_LEN = len(COMMENT_PREFIX)
+    GRID_HEADER_LINE = f"{COMMENT_PREFIX}GRID"
+    with open(path, "r", encoding="utf-8") as f:
+
+        # Make sure this is a grid file.
+        line = f.readline().rstrip()
+        assert line == GRID_HEADER_LINE
+
+        # Read the column descriptions.
+        line = f.readline().rstrip()
+        assert line.startswith(COMMENT_PREFIX)
+        line = line.lstrip("# ")
+        fields = line.split()
+        vnames = fields[::4]
+        nvar = len(vnames)
+        vmin = [float(x) for x in fields[1::4]]
+        vmax = [float(x) for x in fields[2::4]]
+        nv = [int(n) for n in fields[3::4]]
+        column_descriptions = {}
+        column_descriptions["name"] = vnames
+        column_descriptions["min"] = vmin
+        column_descriptions["max"] = vmax
+        column_descriptions["n"] = nv
+
+    # Now load the data table.
+    data = np.loadtxt(path)
+
+    # Return the grid description and data.
+    return column_descriptions, data
 
 
 # ----------------------------------------------------------------------------
@@ -683,6 +742,49 @@ def create_optimizer(learning_rate: float):
     return optimizer
 
 
+def find_last_epoch(results_path: str):
+    """Find the last epoch for a model in the results directory.
+
+    Find the last epoch for a model in the results directory.
+
+    Parameters
+    ----------
+    results_path : str
+        Path to results directory.
+
+    Returns
+    -------
+    last_epoch : int
+        Number for last epoch found in results directory.
+
+    Raises
+    ------
+    None
+    """
+    # Save the current directory.
+    original_directory = os.getcwd()
+
+    # Construct the path to the saved models.
+    models_directory = os.path.join(results_path, "models")
+
+    # Move to the saved models directory.
+    os.chdir(models_directory)
+
+    # Make a list of all subdirectories with names starting with digits.
+    # These digits represent epoch numbers at which the models were saved.
+    epoch_directories = glob.glob("[0-9]*")
+
+    # Return to the original directory.
+    os.chdir(original_directory)
+
+    # Find the largest epoch number.
+    epochs = [int(s) for s in epoch_directories]
+    last_epoch = max(epochs)
+
+    # Return the largest epoch number.
+    return last_epoch
+
+
 def load_models(model_directory: str, variable_names: list, multi: bool):
     """Load trained models.
 
@@ -775,49 +877,6 @@ def save_models(models: list, model_directory: str, epoch: int,
                 model.summary()
             sys.stdout = old_stdout
 
-
-# def find_last_epoch(results_path):
-#     """Find the last epoch for a model in the results directory.
-
-#     Find the last epoch for a model in the results directory.
-
-#     Parameters
-#     ----------
-#     results_path : str
-#         Path to results directory.
-
-#     Returns
-#     -------
-#     last_epoch : int
-#         Number for last epoch found in results directory.
-
-#     Raises
-#     ------
-#     None
-#     """
-#     # Save the current directory.
-#     original_directory = os.getcwd()
-
-#     # Construct the path to the saved models.
-#     models_directory = os.path.join(results_path, "models")
-
-#     # Move to the saved models directory.
-#     os.chdir(models_directory)
-
-#     # Make a list of all subdirectories with names starting with digits.
-#     # These digits represent epoch numbers at which the models were saved.
-#     epoch_directories = glob.glob("[0-9]*")
-
-#     # Return to the original directory.
-#     os.chdir(original_directory)
-
-#     # Find the largest epoch number.
-#     epochs = [int(s) for s in epoch_directories]
-#     last_epoch = max(epochs)
-
-#     # Return the largest epoch number.
-#     return last_epoch
-
 # # ----------------------------------------------------------------------------
 
 # # General PINN utilities
@@ -867,81 +926,6 @@ def save_models(models: list, model_directory: str, epoch: int,
 # #         else:
 # #             pass
 # #     return xg, ng
-
-
-# def read_grid_file(path):
-#     """Read grid description and data from a file.
-
-#     Read the grid description and data from a file. The file is assumed to
-#     contain a grid header, followed list of nrows points. Each point
-#     definines a grid location (x0, x1, ...) and zero or more values defined
-#     at that location (y0, y1, ...).
-
-#     Parameters
-#     ----------
-#     path : str
-#         Path to grid file
-
-#     Returns
-#     -------
-#     column_descriptions : list of ncols tuples, each (str, float, float, int)
-#         List of (varname, min, max, n) for each grid dimension.
-#     data : np.ndarray, shape (nrows, ncols)
-#         Numpy array of data in file
-
-#     Raises
-#     ------
-#     AssertionError
-#         If this is not a grid file
-#     """
-#     # Read the grid description.
-#     column_descriptions = []
-#     COMMENT_PREFIX = "# "
-#     COMMENT_PREFIX_LEN = len(COMMENT_PREFIX)
-#     GRID_HEADER_LINE = f"{COMMENT_PREFIX}GRID"
-#     with open(path, "r", encoding="utf-8") as f:
-
-#         # Make sure this is a grid file.
-#         line = f.readline().rstrip()
-#         assert line == GRID_HEADER_LINE
-
-#         # Read the names of the independent variables (dimensions) which
-#         # define the grid points.
-#         line = f.readline().rstrip()
-#         assert line.startswith(COMMENT_PREFIX)
-#         dim_names_str = line[COMMENT_PREFIX_LEN:]
-#         dim_names = dim_names_str.split(" ")
-#         n_dim = len(dim_names)
-#         assert n_dim > 0
-
-#         # Read the grid description.
-#         line = f.readline().rstrip()
-#         assert line.startswith(COMMENT_PREFIX)
-#         description_str = line[COMMENT_PREFIX_LEN:]
-#         fields = description_str.split(" ")
-#         xmin = [float(f) for f in fields[::3]]
-#         xmax = [float(f) for f in fields[1::3]]
-#         nx = [int(f) for f in fields[2::3]]
-
-#         # Read the column names.
-#         line = f.readline().rstrip()
-#         assert line.startswith(COMMENT_PREFIX)
-#         column_names_str = line[COMMENT_PREFIX_LEN:]
-#         column_names = column_names_str.split(" ")
-#         n_cols = len(column_names)
-#         n_var = n_cols - n_dim
-#         pad = [None]*n_var
-#         column_descriptions = [
-#             (s1, f1, f2, i1)
-#             for (s1, f1, f2, i1) in
-#             zip(column_names, xmin + pad, xmax + pad, nx + pad)
-#         ]
-
-#     # Now load the data table.
-#     data = np.loadtxt(path)
-
-#     # Return the grid description and data.
-#     return column_descriptions, data
 
 
 if __name__ == "__main__":

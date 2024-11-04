@@ -6,11 +6,11 @@ This program will create a set of training points. The set can be an evenly-
 spaced grid in each dimension (the default), or random points in each
 dimension.
 
-For gridded results, the user supplies the minimum and maximum values for each
-dimension, and the number of points in each dimension.
+For gridded results, the user supplies the name, minimum and maximum
+values for each dimension, and the number of points in each dimension.
 
-For random points, the user supplies the minimum and maximum values for each
-dimension, and the total number of points.
+For random points, the user supplies the name, minimum and maximum
+values for each dimension, and the total number of points.
 
 The training points are created as a Numpy array, shape (n_train, n_dim),
 where n_train is the number of training points, and n_dim is the number of
@@ -19,6 +19,7 @@ dimensions in the training space.l
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
+
 """
 
 
@@ -102,36 +103,40 @@ def main():
     rest = args.rest
 
     # Fetch the remaining command-line arguments.
-    # For gridded results, they should be in sets of 3:
-    # t_min t_max n_t x_min x_max n_x y_min y_max n_y z_min z_max n_z ...
-    # For random results, sets of 2, plus 1.
+    # For random results:
+    # v1name x1min x1max v2name x2min x2max ... n
+    # For gridded results:
+    # v1name x1min x1max nx1 x2name x2min x2max nx2 ...
     if random:
-        X_min = np.array(rest[:-1:2], dtype=float)
-        X_max = np.array(rest[1:-1:2], dtype=float)
+        Xname = rest[::3]
+        Xmin = np.array(rest[1:-1:3], dtype=float)
+        Xmax = np.array(rest[2:-1:3], dtype=float)
         n = int(rest[-1])
     else:
-        X_min = np.array(rest[::3], dtype=float)
-        X_max = np.array(rest[1::3], dtype=float)
-        X_n = np.array(rest[2::3], dtype=int)
-        assert len(X_min) == len(X_max) == len(X_n)
+        Xname = rest[::4]
+        Xmin = np.array(rest[1::4], dtype=float)
+        Xmax = np.array(rest[2::4], dtype=float)
+        nX = np.array(rest[3::4], dtype=int)
+        assert len(Xname) == len(Xmin) == len(Xmax) == len(nX)
     if debug:
-        print(f"X_min = {X_min}")
-        print(f"X_max = {X_max}")
+        print(f"Xname = {Xname}")
+        print(f"Xmin = {Xmin}")
+        print(f"Xmax = {Xmax}")
         if random:
             print(f"n = {n}")
         else:
-            print(f"X_n = {X_n}")
+            print(f"nX = {nX}")
 
     # Assemble the minima and maxima into a combined array of boundaries of
     # the form:
     # [
-    #  [t_min, t_max],
-    #  [x_min, x_max],
-    #  [y_min, y_max],
-    #  [z_min, z_max],
+    #  [x0min, x0max],
+    #  [x1min, x1max],
+    #  [x2min, x2max],
+    #  [x3min, x3max],
     #  ...
     # ]
-    b = np.vstack([X_min, X_max]).T
+    b = np.vstack([Xmin, Xmax]).T
     if debug:
         print(f"b = {b}")
 
@@ -147,7 +152,7 @@ def main():
     else:
         # Create the flattened, evenly-spaced grid. The last dimension varies
         # fastest.
-        points = training_data.create_training_points_gridded(X_n, b)
+        points = training_data.create_training_points_gridded(nX, b)
     if debug:
         print(f"points = {points}")
 
@@ -164,16 +169,24 @@ def main():
         header = "# RANDOM"
         print(header)
         header = "#"
-        for (xmin, xmax) in zip(X_min, X_max):
-            header += f" {xmin} {xmax}"
-        header += f"{n}"
+        for (xname, xmin, xmax) in zip(Xname, Xmin, Xmax):
+            header += f" {xname} {xmin} {xmax}"
+        header += f" {n}"
+        print(header)
+        header = "#"
+        for xname in Xname:
+            header += f" {xname}"
         print(header)
     else:
         header = "# GRID"
         print(header)
         header = "#"
-        for (xmin, xmax, nx) in zip(X_min, X_max, X_n):
-            header += f" {xmin} {xmax} {nx}"
+        for (xname, xmin, xmax, nx) in zip(Xname, Xmin, Xmax, nX):
+            header += f" {xname} {xmin} {xmax} {nx}"
+        print(header)
+        header = "#"
+        for xname in Xname:
+            header += f" {xname}"
         print(header)
     np.savetxt(sys.stdout, points)
 

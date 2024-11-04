@@ -56,37 +56,45 @@ def main():
     debug = args.debug
     rest = args.rest
     if debug:
-        print("args = %s" % args)
+        print(f"args = {args}")
 
     # Fetch the remaining command-line arguments.
-    # They should be in 3 sets of 3:
-    # t_min t_max n_t x_min x_max n_x y_min y_max n_y
-    assert len(rest) == 9
-    (t_min, x_min, y_min) = np.array(rest[::3], dtype=float)
-    (t_max, x_max, y_max) = np.array(rest[1::3], dtype=float)
-    (n_t, n_x, n_y) = np.array(rest[2::3], dtype=int)
+    # They should be in 3 sets of 4:
+    # t t_min t_max n_t x x_min x_max n_x y y_min y_max n_y
+    Xname = rest[::4]
+    Xmin = np.array(rest[1::4], dtype=float)
+    Xmax = np.array(rest[2::4], dtype=float)
+    nX = np.array(rest[3::4], dtype=int)
+    assert len(Xname) == len(Xmin) == len(Xmax) == len(nX) == 3
+    (tname, xname, yname) = Xname
+    (tmin, xmin, ymin) = Xmin
+    (tmax, xmax, ymax) = Xmax
+    (nt, nx, ny) = nX
     if debug:
-        print("%s <= t <= %s, n_t = %s" % (t_min, t_max, n_t))
-        print("%s <= x <= %s, n_x = %s" % (x_min, x_max, n_x))
-        print("%s <= y <= %s, n_y = %s" % (y_min, y_max, n_y))
+        print(f"{tmin} <= t <= {tmax}, nt = {nt}")
+        print(f"{xmin} <= x <= {xmax}, nx = {nx}")
+        print(f"{ymin} <= y <= {ymax}, ny = {ny}")
 
     # Create the (t, x, y) grid points for the initial conditions.
-    tg = np.linspace(t_min, t_max, n_t)
-    xg = np.linspace(x_min, x_max, n_x)
-    yg = np.linspace(y_min, y_max, n_y)
+    tg = np.linspace(tmin, tmax, nt)
+    xg = np.linspace(xmin, xmax, nx)
+    yg = np.linspace(ymin, ymax, ny)
     if debug:
-        print("tg = %s" % tg)
-        print("xg = %s" % xg)
-        print("yg = %s" % yg)
+        print(f"tg = {tg}")
+        print(f"xg = {xg}")
+        print(f"yg = {yg}")
 
     # Print the output header lines.
     header = "# GRID"
     print(header)
-    header = "# t x y"
+    header = "#"
+    for (xname, xmin, xmax, nx) in zip(Xname, Xmin, Xmax, nX):
+        header += f" {xname} {xmin} {xmax} {nx}"
     print(header)
-    header = f"# {t_min} {t_max} {n_t} {x_min} {x_max} {n_x} {y_min} {y_max} {n_y}"
-    print(header)
-    header = "# t x y n P ux uy uz Bx By Bz"
+    header = "#"
+    for xname in Xname:
+        header += f" {xname}"
+    header += " n P ux uy uz Bx By Bz"
     print(header)
 
     # Compute the initial conditions at spatial locations.
