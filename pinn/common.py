@@ -417,7 +417,8 @@ def get_git_branch():
         If unable to determine git branch.
     """
     cwd = os.getcwd()
-    os.chdir(os.environ["PINN_ROOT"])
+    this_dir = os.path.split(os.path.realpath(__file__))[0]
+    os.chdir(this_dir)
     cmd = "git branch"
     cproc = subprocess.run(cmd, shell=True, check=True, text=True,
                            capture_output=True)
@@ -453,7 +454,8 @@ def get_git_hash():
     None
     """
     cwd = os.getcwd()
-    os.chdir(os.environ["PINN_ROOT"])
+    this_dir = os.path.split(os.path.realpath(__file__))[0]
+    os.chdir(this_dir)
     cmd = "git rev-parse HEAD"
     cproc = subprocess.run(cmd, shell=True, check=True, text=True,
                            capture_output=True)
