@@ -15,6 +15,7 @@ import copy
 import datetime
 import os
 import shutil
+import sys
 
 # Import supplemental modules.
 import numpy as np
@@ -36,10 +37,10 @@ DEFAULT_ARGUMENTS["problem_path"] = None
 DEFAULT_ARGUMENTS["data_path"] = None
 
 
-def create_command_line_argument_parser():
-    """Create the command-line argument parser.
+def create_command_line_parser():
+    """Create the command-line parser.
 
-    Create the command-line argument parser.
+    Create the command-line parser.
 
     Parameters
     ----------
@@ -424,20 +425,28 @@ def pinn0(args: dict):
     path = os.path.join(output_dir, 'L.dat')
     np.savetxt(path, losses)
 
+    # ------------------------------------------------------------------------
+
+    # Return normally.
+    return 0
+
 
 def main():
     """Driver for command-line version of code."""
     # Set up the command-line parser.
-    parser = create_command_line_argument_parser()
+    parser = create_command_line_parser()
 
     # Parse the command-line arguments.
     args = parser.parse_args()
     if args.debug:
         print(f"args = {args}")
 
-    # Pass the command-line arguments to the main function as a dict.
+    # Convert the arguments from Namespace to dict.
     args = vars(args)
-    pinn0(args)
+
+    # Call the main program logic.
+    return_code = pinn0(args)
+    sys.exit(return_code)
 
 
 if __name__ == "__main__":
