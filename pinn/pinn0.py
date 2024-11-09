@@ -422,7 +422,7 @@ def pinn0(args: dict):
             models, output_dir, epoch, p.dependent_variable_names, multi)
 
     # Save the loss histories.
-    path = os.path.join(output_dir, 'L.dat')
+    path = os.path.join(output_dir, "L.dat")
     np.savetxt(path, losses)
 
     # ------------------------------------------------------------------------
