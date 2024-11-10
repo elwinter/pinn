@@ -16,7 +16,7 @@ Eric Winter (eric.winter62@gmail.com)
 # Import standard modules.
 import argparse
 import datetime
-# import glob
+import glob
 import importlib
 import os
 import platform
@@ -350,63 +350,69 @@ def load_problem_data(data_path: str, precision: str = "float32"):
     return XY
 
 
-# def read_grid_file(path: str):
-#     """Read grid description and data from a file.
+def read_grid_file(path: str):
+    """Read grid description and data from a file.
 
-#     Read the grid description and data from a file. The file is assumed to
-#     contain a grid header, followed list of nrows points. Each point
-#     definines a grid location (x0, x1, ...) and zero or more values defined
-#     at that location (y0, y1, ...).
+    Read the grid description and data from a file. The file is assumed to
+    contain a grid header, followed by a list of nrows points. Each point
+    definines a grid location (x0, x1, ...) and zero or more values defined
+    at that location (y0, y1, ...).
 
-#     Parameters
-#     ----------
-#     path : str
-#         Path to grid file
+    Parameters
+    ----------
+    path : str
+        Path to grid file
 
-#     Returns
-#     -------
-#     column_descriptions : list of ncols tuples, each (str, float, float, int)
-#         List of (varname, min, max, n) for each grid dimension.
-#     data : np.ndarray, shape (nrows, ncols)
-#         Numpy array of data in file
+    Returns
+    -------
+    column_descriptions : list of ncols tuples, each (str, float, float, int)
+        List of (varname, min, max, n) for each grid dimension.
+    data : np.ndarray, shape (nrows, ncols)
+        Numpy array of data in file
 
-#     Raises
-#     ------
-#     AssertionError
-#         If this is not a grid file
-#     """
-#     # Read the grid description.
-#     column_descriptions = []
-#     COMMENT_PREFIX = "# "
-#     COMMENT_PREFIX_LEN = len(COMMENT_PREFIX)
-#     GRID_HEADER_LINE = f"{COMMENT_PREFIX}GRID"
-#     with open(path, "r", encoding="utf-8") as f:
+    Raises
+    ------
+    AssertionError
+        If this is not a grid file.
+    """
+    # Read the grid description.
+    column_descriptions = []
+    COMMENT_PREFIX = "# "
+    # COMMENT_PREFIX_LEN = len(COMMENT_PREFIX)
+    GRID_HEADER_PREFIX = f"{COMMENT_PREFIX}GRID"
+    with open(path, "r", encoding="utf-8") as f:
 
-#         # Make sure this is a grid file.
-#         line = f.readline().rstrip()
-#         assert line == GRID_HEADER_LINE
+        # Make sure this is a grid file.
+        line = f.readline().rstrip()
+        assert line.startswith(GRID_HEADER_PREFIX)
 
-#         # Read the column descriptions.
-#         line = f.readline().rstrip()
-#         assert line.startswith(COMMENT_PREFIX)
-#         line = line.lstrip("# ")
-#         fields = line.split()
-#         vnames = fields[::4]
-#         nvar = len(vnames)
-#         vmin = [float(x) for x in fields[1::4]]
-#         vmax = [float(x) for x in fields[2::4]]
-#         nv = [int(n) for n in fields[3::4]]
-#         column_descriptions = {}
-#         column_descriptions["name"] = vnames
-#         column_descriptions["min"] = vmin
-#         column_descriptions["max"] = vmax
-#         column_descriptions["n"] = nv
+        # Read the grid description.
+        line = line.lstrip(GRID_HEADER_PREFIX)
+        fields = line.split()
+        vnames = fields[::4]
+        nvar = len(vnames)
+        vmin = [float(x) for x in fields[1::4]]
+        vmax = [float(x) for x in fields[2::4]]
+        nv = [int(n) for n in fields[3::4]]
+        column_descriptions = {}
+        for (cn, _min, _max, n) in zip(vnames, vmin, vmax, nv):
+            column_descriptions[cn] = {
+                "min": _min,
+                "max": _max,
+                "n": n,
+            }
 
-#     # Now load the data table.
-#     data = np.loadtxt(path)
+        # Read the column names.
+        line = f.readline().rstrip()
+        assert line.startswith(COMMENT_PREFIX)
+        line = line.lstrip(COMMENT_PREFIX)
+        column_names = line.split()
 
-#     # Return the grid description and data.
-#     return column_descriptions, data
+    # Now load the data table.
+    data = np.loadtxt(path)
+
+    # Return the grid description and data.
+    return column_names, column_descriptions, data
 
 
 # ----------------------------------------------------------------------------
@@ -710,47 +716,47 @@ def create_optimizer(learning_rate: float = DEFAULT_ARGUMENTS["learning_rate"]):
     return optimizer
 
 
-# def find_last_epoch(results_path: str):
-#     """Find the last epoch for a model in the results directory.
+def find_last_epoch(results_path: str = "."):
+    """Find the last epoch for a model in the results directory.
 
-#     Find the last epoch for a model in the results directory.
+    Find the last epoch for a model in the results directory.
 
-#     Parameters
-#     ----------
-#     results_path : str
-#         Path to results directory.
+    Parameters
+    ----------
+    results_path : str, default "."
+        Path to results directory.
 
-#     Returns
-#     -------
-#     last_epoch : int
-#         Number for last epoch found in results directory.
+    Returns
+    -------
+    last_epoch : int
+        Number for last epoch found in results directory.
 
-#     Raises
-#     ------
-#     None
-#     """
-#     # Save the current directory.
-#     original_directory = os.getcwd()
+    Raises
+    ------
+    None
+    """
+    # Save the current directory.
+    original_directory = os.getcwd()
 
-#     # Construct the path to the saved models.
-#     models_directory = os.path.join(results_path, "models")
+    # Construct the path to the saved models.
+    models_directory = os.path.join(results_path, "models")
 
-#     # Move to the saved models directory.
-#     os.chdir(models_directory)
+    # Move to the saved models directory.
+    os.chdir(models_directory)
 
-#     # Make a list of all subdirectories with names starting with digits.
-#     # These digits represent epoch numbers at which the models were saved.
-#     epoch_directories = glob.glob("[0-9]*")
+    # Make a list of all subdirectories with names starting with digits.
+    # These digits represent epoch numbers at which the models were saved.
+    epoch_directories = glob.glob("[0-9]*")
 
-#     # Return to the original directory.
-#     os.chdir(original_directory)
+    # Return to the original directory.
+    os.chdir(original_directory)
 
-#     # Find the largest epoch number.
-#     epochs = [int(s) for s in epoch_directories]
-#     last_epoch = max(epochs)
+    # Find the largest epoch number.
+    epochs = [int(s) for s in epoch_directories]
+    last_epoch = max(epochs)
 
-#     # Return the largest epoch number.
-#     return last_epoch
+    # Return the largest epoch number.
+    return last_epoch
 
 
 def load_models(variable_names: list, model_directory: str = "."):
