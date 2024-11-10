@@ -2,7 +2,7 @@
 
 """Create data for lagaris01 problem.
 
-This is for problem 1 from Lagaris (1998).
+Create data for lagaris01 problem. This is for problem 1 from Lagaris (1998).
 
 Author
 ------
@@ -39,22 +39,23 @@ args_default = {
 def create_command_line_parser(description: str = DESCRIPTION):
     """Create the command-line parser.
 
-    Create the command-line argument parser.
+    Create the command-line parser.
 
     Parameters
     ----------
-    None
+    description : str, default DESCRIPTION
+        Description string for script.
 
     Returns
     -------
     parser : argparse.ArgumentParser
-        Parser for command-line arguments.
+        Parser for the command-line.
 
     Raises
     ------
     None
     """
-    parser = common.create_minimal_command_line_parser(DESCRIPTION)
+    parser = common.create_minimal_command_line_parser(description)
     parser.add_argument("rest", nargs=argparse.REMAINDER)
     return parser
 
@@ -62,8 +63,7 @@ def create_command_line_parser(description: str = DESCRIPTION):
 def create_data(args: dict):
     """Create data for the lagaris01 problem.
 
-    Create data for the lagaris01 problem. Results are sent to standard
-    output.
+    Create data for the lagaris01 problem.
 
     Parameters
     ----------
@@ -72,7 +72,10 @@ def create_data(args: dict):
 
     Returns
     -------
-    0 on success.
+    header : list of str
+        Header lines describing data.
+    data : np.ndarray of object
+        Array of data.
 
     Raises
     ------
@@ -84,6 +87,8 @@ def create_data(args: dict):
     if args is not None:
         local_args.update(args)
     args = local_args
+    if args["debug"]:
+        print(f"args = {args}")
 
     # Local convenience variables.
     debug = args["debug"]
@@ -100,24 +105,24 @@ def create_data(args: dict):
     nx = int(rest[2])
     if debug: print(f"{xmin} <= x <= {xmax}, nx = {nx}")
 
-    # Print the output header lines.
-    header = f"# GRID x {xmin} {xmax} {nx}"
-    print(header)
-    header = "# x Ψ"
-    print(header)
+    # Create a list for the header lines.
+    header = []
+    header.append(f"# GRID x {xmin} {xmax} {nx}")
+    header.append(f"# x Ψ")
 
     # Compute the value at each grid point.
     # Each line is:
     # x Ψ
-    x = np.linspace(xmin, xmax, nx)
-    for _x in x:
-        Ψ = p.Ψ_analytical(_x)
-        print(_x, Ψ)
+    x = np.linspace(xmin, xmax, nx).reshape(nx, 1)
+    Ψ = p.Ψ_analytical(x)
+
+    # Assemble the data into a single array.
+    data = np.hstack([x, Ψ])
 
     # ------------------------------------------------------------------------
 
-    # Return normally.
-    return 0
+    # Return the header and data.
+    return header, data
 
 
 def main():
@@ -125,6 +130,7 @@ def main():
 
     This is the top-level code for the command-line version of create_data.
     It processes command-line options, then calls the create_data() function.
+    The results are then printed to stdout.
 
     Parameters
     ----------
@@ -150,8 +156,16 @@ def main():
     args = vars(args)
 
     # Call the main program logic.
-    return_code = create_data(args)
-    sys.exit(return_code)
+    header, data = create_data(args)
+
+    # Print the data.
+    for line in header:
+        print(line)
+    for (x, Ψ) in data:
+        print(f"{x} {Ψ}")
+
+    # Exit normally.
+    sys.exit(0)
 
 
 if __name__ == "__main__":
