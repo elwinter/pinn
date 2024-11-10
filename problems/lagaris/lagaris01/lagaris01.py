@@ -1,7 +1,6 @@
 """Problem definition file for simple ODE (Lagaris problem 1).
 
-This is a first-order, nonlinear ODE, defined on the domain [0, 1], with the
-initial condition Ψ(0) = 1.
+This is a first-order, nonlinear ODE, with the initial condition Ψ(0) = 1.
 
 This ordinary differential equation is taken from the paper:
 
@@ -112,13 +111,9 @@ def ode_Ψ(X, Y, delY):
     None
     """
     nX = X.shape[0]
-    # x is a Tensor of shape (nX, 1).
     x = tf.reshape(X[:, ix], (nX, 1))
-    # Ψ is a Tensor of shape (nX, 1).
     (Ψ,) = Y
-    # delΨ is a Tensor of shape (nX, 1).
     (delΨ,) = delY
-    # dΨ_dx is a Tensor of shape (nX, 1).
     dΨ_dx = tf.reshape(delΨ[:, ix], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
@@ -144,12 +139,12 @@ def Ψ_analytical(x):
 
     Parameters
     ----------
-    x : np.array of float, shape (n,)
+    x : np.array of float, shape (n,) or (n, 1)
         Value of x for each evaluation point.
 
     Returns
     -------
-    Ψ : np.array of float, shape (n,)
+    Ψ : np.array of float, shape (n,) or (n, 1)
         Analytical solution at each x-value.
 
     Raises
@@ -160,24 +155,25 @@ def Ψ_analytical(x):
     return Ψ
 
 
-# List all analytical solutions.
+# Gather all analytical solutions in a list.
 Y_analytical = [
     Ψ_analytical,
- ]
+]
+
 
 def dΨ_dx_analytical(x):
-    """Analytical 1st derivative to lagaris01.
+    """Analytical 1st derivative for lagaris01.
 
     Analytical 1st derivative of lagaris01 analytical solution.
 
     Parameters
     ----------
-    x : np.array of float, shape (n,)
+    x : np.array of float, shape (n,) or (n, 1)
         Value of x for each evaluation point.
 
     Returns
     -------
-    dΨ_dx : np.array of float, shape (n,)
+    dΨ_dx : np.array of float, shape (n,) or (n, 1)
         Value of dΨ/dx for each evaluation point.
 
     Raises
@@ -190,6 +186,12 @@ def dΨ_dx_analytical(x):
     return dΨ_dx
 
 
+# Gather all analytical derivatives in a list.
+delY_analytical = [
+    Ψ_analytical,
+]
+
+
 if __name__ == "__main__":
     print(f"independent_variable_names = {independent_variable_names}")
     print(f"independent_variable_labels = {independent_variable_labels}")
@@ -198,10 +200,14 @@ if __name__ == "__main__":
     print(f"dependent_variable_labels = {dependent_variable_labels}")
     print(f"n_var = {n_var}")
 
-    # Test the analytical solution and derivative.
+    # Test the analytical solution, derivative, and differential equation.
     xmin, xmax, nx = 0.0, 1.0, 11
     x = np.linspace(xmin, xmax, nx)
-    Ψ = Ψ_analytical(x)
-    dΨ_dx = dΨ_dx_analytical(x)
+    Ψ = Y_analytical[0](x)
+    dΨ_dx = delY_analytical[0](x)
+    x_tf = tf.Variable(x.reshape(nx, 1))
+    Ψ_tf = tf.Variable(Ψ.reshape(nx, 1))
+    dΨ_dx_tf = tf.Variable(dΨ_dx.reshape(nx, 1))
+    G = de[0](x_tf, [Ψ_tf], [dΨ_dx_tf])
     for i in range(nx):
-        print(f"{i} {x[i]} {Ψ[i]} {dΨ_dx[i]}")
+        print(f"{i} {x[i]} {Ψ[i]} {dΨ_dx[i]} {G[i][0]}")
