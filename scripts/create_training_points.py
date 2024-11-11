@@ -198,6 +198,7 @@ def create_training_points(args: dict):
             w = np.where(~np.isclose(x[:, i], 0.0))
             x = x[w]
 
+
     # If a problem was specified, compute the value of each
     # solution function at each point, then augment the array with
     # a column for each dependent variable.
@@ -206,6 +207,8 @@ def create_training_points(args: dict):
         p = common.import_problem(problem)
         y = np.hstack([f(x) for f in p.Y_analytical])
         xy = np.hstack([x, y])
+        # Add names for new columns.
+        header[1] += f" {' '.join(p.dependent_variable_names)}"
     else:
         xy = x
 
