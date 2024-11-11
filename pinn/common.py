@@ -45,7 +45,6 @@ DEFAULT_ARGUMENTS = {
     "learning_rate": 0.01,
     "load_model": None,
     "max_epochs": 100,
-    "multi": False,
     "n_hid": 10,
     "n_layers": 1,
     "nogpu": False,
@@ -143,10 +142,6 @@ def create_neural_network_command_line_parser(description: str):
         "--max_epochs", type=int,
         default=DEFAULT_ARGUMENTS["max_epochs"],
         help="Maximum number of training epochs (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--multi", action="store_true",
-        help="Use a single multi-output network (default: %(default)s)"
     )
     parser.add_argument(
         "--n_hid", type=int,

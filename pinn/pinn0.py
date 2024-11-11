@@ -126,7 +126,6 @@ def pinn0(args: dict):
     learning_rate = args["learning_rate"]
     load_model = args["load_model"]
     max_epochs = args["max_epochs"]
-    multi = args["multi"]
     n_hid = args["n_hid"]
     n_layers = args["n_layers"]
     nogpu = args["nogpu"]
@@ -137,13 +136,6 @@ def pinn0(args: dict):
     verbose = args["verbose"]
     problem_path = args["problem_path"]
     data_path = args["data_path"]
-
-    # ------------------------------------------------------------------------
-
-    # <HACK>
-    if multi:
-        raise TypeError("--multi not supported yet!")
-    # </HACK>
 
     # ------------------------------------------------------------------------
 
