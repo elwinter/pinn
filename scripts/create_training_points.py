@@ -45,6 +45,7 @@ DESCRIPTION = "Create a set of training points."
 args_default = {
     "debug": False,
     "no0": False,
+    "problem_path": None,
     "randomize": False,
     "seed": 0,
     "verbose": False,
@@ -73,6 +74,11 @@ def create_command_line_parser(description: str = DESCRIPTION):
     parser.add_argument(
         "--no0", action="store_true",
         help="Ignore the origin as a data point (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--problem", type=str, default=args_default["problem_path"],
+        help="If set, compute dependent variable values using the analytical "
+        "solutions defined in this Python file (default: %(default)s)."
     )
     parser.add_argument(
         "--randomize", "-r", action="store_true",
@@ -119,6 +125,7 @@ def create_training_points(args: dict):
     # Local convenience variables.
     debug = args["debug"]
     no0 = args["no0"]
+    problem = args["problem"]
     randomize = args["randomize"]
     seed = args["seed"]
     verbose = args["verbose"]
@@ -191,8 +198,19 @@ def create_training_points(args: dict):
             w = np.where(~np.isclose(x[:, i], 0.0))
             x = x[w]
 
+    # If a problem was specified, compute the value of each
+    # solution function at each point, then augment the array with
+    # a column for each dependent variable.
+    xy = None
+    if problem:
+        p = common.import_problem(problem)
+        y = np.hstack([f(x) for f in p.Y_analytical])
+        xy = np.hstack([x, y])
+    else:
+        xy = x
+
     # Return the header and data.
-    return header, x
+    return header, xy
 
 
 def main():
