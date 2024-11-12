@@ -16,6 +16,7 @@ import copy
 import datetime
 import os
 import shutil
+import sys
 
 # Import 3rd-party modules.
 import numpy as np
@@ -32,34 +33,27 @@ DESCRIPTION = "Solve a set of coupled 1st-order PDE using the PINN method."
 
 # Default values for command-line arguments.
 DEFAULT_ARGUMENTS = copy.deepcopy(common.DEFAULT_ARGUMENTS)
-DEFAULT_ARGUMENTS["randomize"] = False
 DEFAULT_ARGUMENTS["w_data"] = 0.5
-DEFAULT_ARGUMENTS["problem_path"] = None
 DEFAULT_ARGUMENTS["data_path"] = None
 DEFAULT_ARGUMENTS["training_path"] = None
 
 
-def create_command_line_argument_parser():
-    """Create the command-line argument parser.
+def create_command_line_parser(description: str = DESCRIPTION):
+    """Create the command-line parser.
 
-    Create the command-line argument parser.
+    Create the command-line parser.
 
     Parameters
     ----------
-    None
+    description : str, default DESCRIPTION
+        Parser for the command-line.
 
     Returns
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
     """
-    parser = common.create_neural_network_command_line_argument_parser(
-        DESCRIPTION)
-    parser.add_argument(
-        "--randomize", "-r", action="store_true",
-        default=DEFAULT_ARGUMENTS["randomize"],
-        help="Randomize the order of the training data (default: %(default)s)"
-    )
+    parser = common.create_neural_network_command_line_parser(DESCRIPTION)
     parser.add_argument(
         "--w_data", "-w", type=float,
         default=DEFAULT_ARGUMENTS["w_data"],
@@ -67,12 +61,8 @@ def create_command_line_argument_parser():
              "(default: %(default)s)."
     )
     parser.add_argument(
-        "problem_path",
-        help="Path to problem description file (in python)"
-    )
-    parser.add_argument(
         "data_path",
-        help="Path to problem data file"
+        help="Path to file containing BC, IC, and other data"
     )
     parser.add_argument(
         "training_path",
@@ -81,17 +71,14 @@ def create_command_line_argument_parser():
     return parser
 
 
-def create_output_directory(problem_name: str, clobber: bool):
+def create_output_directory(clobber: bool = False):
     """Create the output directory for this problem.
 
     Create the output directory for this problem. The name of the output
-    directory is the name of the problem python module, with "-pinn1"
-    appended to the end of the name.
+    directory is "pinn1".
 
     Parameters
     ----------
-    problem_name : str
-        Problem name.
     clobber : bool, default False
         True to delete existing directory of same name.
 
@@ -104,7 +91,7 @@ def create_output_directory(problem_name: str, clobber: bool):
     ------
     None
     """
-    output_dir = os.path.join(".", f"{problem_name}-pinn1")
+    output_dir = "pinn1"
     if os.path.isdir(output_dir) and clobber:
         shutil.rmtree(output_dir)
     os.mkdir(output_dir)
@@ -112,7 +99,7 @@ def create_output_directory(problem_name: str, clobber: bool):
 
 
 def pinn1(args: dict):
-    """Primary entry point for 1st-order PINN code.
+    """Use a 1st-order PINN to solve a set of differential equations.
 
     Use a 1st-order PINN to solve a set of differential equations.
 
@@ -125,11 +112,11 @@ def pinn1(args: dict):
     Parameters
     ----------
     args : dict
-        Dictionary of command-line options.
+        Dictionary of command-line and other options.
 
     Returns
     -------
-    None
+    int 0 on success
 
     Raises
     ------
@@ -141,6 +128,8 @@ def pinn1(args: dict):
     if args is not None:
         local_args.update(args)
     args = local_args
+    if args["debug"]:
+        print(f"args = {args}")
 
     # Local convenience variables
     activation = args["activation"]
@@ -150,7 +139,6 @@ def pinn1(args: dict):
     learning_rate = args["learning_rate"]
     load_model = args["load_model"]
     max_epochs = args["max_epochs"]
-    multi = args["multi"]
     n_hid = args["n_hid"]
     n_layers = args["n_layers"]
     nogpu = args["nogpu"]
@@ -163,13 +151,6 @@ def pinn1(args: dict):
     problem_path = args["problem_path"]
     data_path = args["data_path"]
     training_path = args["training_path"]
-
-    # ------------------------------------------------------------------------
-
-    # <HACK>
-    if multi:
-        raise TypeError("--multi not supported yet!")
-    # </HACK>
 
     # ------------------------------------------------------------------------
 
@@ -190,7 +171,7 @@ def pinn1(args: dict):
     # Create the output directory under the current directory.
     if verbose:
         print("Creating output directory.")
-    output_dir = create_output_directory(p.__name__, clobber)
+    output_dir = create_output_directory(clobber)
     if debug:
         print(f"output_dir = {output_dir}")
 
@@ -221,6 +202,11 @@ def pinn1(args: dict):
     if verbose:
         print(f"Loading data from {data_path}.")
     XY_data = common.load_problem_data(data_path, precision)
+    # <HACK>
+    # Fix shape for a single point.
+    if XY_data.shape[1] == 1:
+        XY_data = XY_data.T
+    # </HACK>
     if debug:
         print(f"XY_data = {XY_data}")
 
@@ -268,12 +254,11 @@ def pinn1(args: dict):
     # Load or create PINN models for the variables.
     if load_model is not None:
         # <TODO> TEST THIS.
-        models = common.load_models(load_model, p.dependent_variable_names,
-                                    multi)
+        models = common.load_models(p.dependent_variable_names, load_model)
         # </TODO>
     else:
         models = common.create_models(p.dependent_variable_names, n_layers,
-                                      n_hid, activation, multi)
+                                      n_hid, activation)
     if debug:
         print(f"models = {models}")
 
@@ -288,45 +273,32 @@ def pinn1(args: dict):
 
     # ------------------------------------------------------------------------
 
-    # Prepare training data for TensorFlow.
+    # Prepare inputs for TensorFlow.
 
-    # Convert independent and dependent variables to tf.Variable.
-    Xd = tf.Variable(X_data)
-    Yd = tf.Variable(Y_data)
-    if debug:
-        print(f"Xd = {Xd}")
-        print(f"Yd = {Yd}")
-
-    # Batch the training data as tf.Variable.
+    # Batch the problem data as tf.Variable.
+    # Xdbs = X values for data batches
     # Xdbs is a list of tf.Variable.
     # Each tf.Variable has shape (<= batch_size, p.n_dim)
+    # Ydbs = Y values for data batches
     # Ydbs is a list of tf.Variable.
     # Each tf.Variable has shape (<= batch_size, p.n_var)
     if verbose:
-        print("Batching training data.")
-    Xdbs = common.create_batches(X_data, batch_size)
-    Ydbs = common.create_batches(Y_data, batch_size)
+        print("Batching problem data.")
+    Xdbs = common.create_tf_batches(X_data, batch_size)
+    Ydbs = common.create_tf_batches(Y_data, batch_size)
     nd_batches = len(Xdbs)
     if debug:
         print(f"Xdbs = {Xdbs}")
         print(f"Ydbs = {Ydbs}")
         print(f"nd_batches = {nd_batches}")
 
-    # ------------------------------------------------------------------------
-
-    # Prepare training points for TensorFlow.
-
-    # Convert training points to tf.Variable.
-    Xt = tf.Variable(X_train)
-    if debug:
-        print(f"Xt = {Xt}")
-
     # Batch the training points as tf.Variable.
+    # Xtbs = X values for training batches
     # Xtbs is a list of tf.Variable.
     # Each tf.Variable has shape (<= batch_size, p.n_dim)
     if verbose:
         print("Batching training points.")
-    Xtbs = common.create_batches(X_train, batch_size)
+    Xtbs = common.create_tf_batches(X_train, batch_size)
     nt_batches = len(Xtbs)
     if debug:
         print(f"Xtbs = {Xtbs}")
@@ -334,10 +306,11 @@ def pinn1(args: dict):
 
     # ------------------------------------------------------------------------
 
-    # Create loss histories by epoch, model, and type (residual, data, total).
-    losses_res = np.zeros((max_epochs, p.n_var))
-    losses_dat = np.zeros((max_epochs, p.n_var))
-    losses = np.zeros((max_epochs, p.n_var))
+    # Create loss histories by type (residual, data, combined), epoch, and
+    # model.
+    losses_res = np.zeros((max_epochs, p.n_var + 1))
+    losses_dat = np.zeros((max_epochs, p.n_var + 1))
+    losses = np.zeros((max_epochs, p.n_var + 1))
 
     # ------------------------------------------------------------------------
 
@@ -351,13 +324,6 @@ def pinn1(args: dict):
 
     # Train the models.
 
-    # Training involves presenting the training points and data points
-    # to each model, a total of max_epochs times. Each epoch is composed of
-    # all of the batches of the training points, and all of the batches of
-    # additional data. The model parameters are adjusted after each batch is
-    # processed. The overall loss function for the epoch is computed after
-    # all batches are processed.
-
     # Record the training start time.
     t_start = datetime.datetime.now()
     if verbose:
@@ -370,7 +336,7 @@ def pinn1(args: dict):
 
         # --------------------------------------------------------------------
 
-        # Part 1: Process each batch of training points for this epoch.
+        # Part 1: Process each batch of training points.
         for it_batch in range(nt_batches):
             if debug:
                 print(f"Starting epoch {epoch}, training batch {it_batch}.")
@@ -477,6 +443,8 @@ def pinn1(args: dict):
 
             # Xdb is a tf.Variable containing the independent variable values
             # for this batch. It has shape (<= batch_size, p.n_dim).
+            # Ydb is a tf.Variable containing the dependent variable values
+            # for this batch. It has shape (<=batch_size, p.n_var).
             Xdb = Xdbs[id_batch]
             Ydb = Ydbs[id_batch]
             if debug:
@@ -564,11 +532,6 @@ def pinn1(args: dict):
 
         # --------------------------------------------------------------------
 
-        # At this point, all of the training points, and all of the data
-        # points, have been used to train the network for this epoch.
-
-        # --------------------------------------------------------------------
-
         # Part 3: Compute the end-of-epoch loss.
 
         # Part 3a: Compute residual loss.
@@ -611,15 +574,15 @@ def pinn1(args: dict):
         L = losses[epoch][-1] = w_res*Lres + w_data*Ldat
         if verbose:
             print(f"epoch = {epoch}, (Lres, Ldat, L) = "
-                  f"({Lres:.6E}, {Ldat:.6E}, {L:.6E})")
+                  f"({Lres:E}, {Ldat:E}, {L:E})")
 
         # --------------------------------------------------------------------
 
         # Save the trained models.
         if save_model > 0 and epoch % save_model == 0:
             common.save_models(
-                models, output_dir, epoch, p.dependent_variable_names, multi)
-
+                models, p.dependent_variable_names, epoch, output_dir
+            )
         if debug:
             print(f"Ending epoch {epoch}.")
 
@@ -635,14 +598,15 @@ def pinn1(args: dict):
         print(f"Training stopped at {t_stop}.")
         print(f"Total training time: {t_elapsed.total_seconds()} seconds")
         print(f"Epochs: {n_epochs}")
-        # print(f"Final value of loss function: {L}")
+        print(f"Final value of loss function: {L}")
 
     # ------------------------------------------------------------------------
 
     # Save the final trained models and descriptions.
     if save_model != 0:
         common.save_models(
-            models, output_dir, epoch, p.dependent_variable_names, multi)
+            models, p.dependent_variable_names, epoch, output_dir
+        )
 
     # Save the loss histories.
     path = os.path.join(output_dir, "L_res.dat")
@@ -652,13 +616,17 @@ def pinn1(args: dict):
     path = os.path.join(output_dir, "L.dat")
     np.savetxt(path, losses)
 
+    # ------------------------------------------------------------------------
+
+    # Return normally.
+    return 0
+
 
 def main():
-    """Main program code for the command-line version of the script.
+    """Top-level code for the command-line version of pinn0.
 
-    This is the main program code for the command-line version of the script.
-    It processes command-line options, then calls the general-purpose entry
-    point.
+    This is the top-level code for the command-line version of pinn0.
+    It processes command-line options, then calls the pinn0() function.
 
     Parameters
     ----------
@@ -666,23 +634,26 @@ def main():
 
     Returns
     -------
-    None
+    0 on success
 
     Raises
     ------
     None
     """
     # Set up the command-line parser.
-    parser = create_command_line_argument_parser()
+    parser = create_command_line_parser()
 
     # Parse the command-line arguments.
     args = parser.parse_args()
     if args.debug:
         print(f"args = {args}")
 
-    # Pass the command-line arguments to the main function as a dict.
+    # Convert the arguments from Namespace to dict.
     args = vars(args)
-    pinn1(args)
+
+    # Call the main program logic.
+    return_code = pinn1(args)
+    sys.exit(return_code)
 
 
 if __name__ == "__main__":
