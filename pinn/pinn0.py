@@ -103,7 +103,7 @@ def pinn0(args: dict):
 
     Returns
     -------
-    None
+    int 0 on success
 
     Raises
     ------
@@ -232,11 +232,11 @@ def pinn0(args: dict):
 
     # Convert independent and dependent variables to tf.Variable.
     # Xd, Yd = X and Y for data points
-    Xd = tf.Variable(X_data)
-    Yd = tf.Variable(Y_data)
-    if debug:
-        print(f"Xd = {Xd}")
-        print(f"Yd = {Yd}")
+    # Xd = tf.Variable(X_data)
+    # Yd = tf.Variable(Y_data)
+    # if debug:
+    #     print(f"Xd = {Xd}")
+    #     print(f"Yd = {Yd}")
 
     # Batch the training points as tf.Variable.
     # Xdbs = X values for data batches
@@ -274,7 +274,7 @@ def pinn0(args: dict):
         if debug:
             print(f"Starting epoch {epoch}.")
 
-        # Part 1: Process each batch of training points.
+        # Part 1: Process each batch of data points.
         for i_batch in range(n_batches):
             if debug:
                 print(f"Starting epoch {epoch}, batch {i_batch}.")
@@ -293,7 +293,7 @@ def pinn0(args: dict):
             # tape0 is for computing gradients wrt model parameters.
             with tf.GradientTape(persistent=True) as tape0:
 
-                # Compute the model outputs at the training points.
+                # Compute the model outputs at the data points.
                 # Ymb is a list of tf.Tensor objects.
                 # There are p.n_var Tensors in the list (one per model).
                 # Each Tensor has shape (<= batch_size, 1).
@@ -372,6 +372,8 @@ def pinn0(args: dict):
             # End of data batches.
         Ls = np.array([np.sqrt(E2/n_data) for E2 in sum_E2])
         L = np.sum(Ls)
+        if verbose:
+            print(f"Epoch = {epoch}, L = {L:E}")
 
         # Record the losses for the epoch.
         losses[epoch, :-1] = Ls
@@ -382,9 +384,6 @@ def pinn0(args: dict):
             common.save_models(
                 models, p.dependent_variable_names, epoch, output_dir
             )
-
-        if verbose:
-            print(f"Epoch = {epoch}, L = {L:E}")
 
         if debug:
             print(f"Ending epoch {epoch}.")
