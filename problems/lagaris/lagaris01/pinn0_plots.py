@@ -29,7 +29,7 @@ from pinn import common
 # Program constants
 
 # Program description
-DESCRIPTION = "Create plots for pinn results for the lagaris01 problem."
+DESCRIPTION = "Create plots for pinn0 results for the lagaris01 problem."
 
 # Default values for command-line arguments.
 DEFAULT_ARGUMENTS = {
@@ -61,6 +61,10 @@ def create_command_line_parser():
     -------
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
+
+    Raises
+    ------
+    None
     """
     parser = common.create_minimal_command_line_parser(DESCRIPTION)
     parser.add_argument(
@@ -278,11 +282,14 @@ def pinn0_plots(args: dict):
         print("Loading loss data.")
     path = os.path.join(results_path, "L.dat")
     L = np.loadtxt(path)
+    if debug:
+        print(f"L = {L}")
 
     # Extract the training grid description and data.
     path = os.path.join(results_path, "XY_data.dat")
     column_names, column_descriptions, XY_data = common.read_grid_file(path)
     if debug:
+        print(f"column_names = {column_names}")
         print(f"column_descriptions = {column_descriptions}")
         print(f"XY_data = {XY_data}")
 
@@ -323,7 +330,7 @@ def pinn0_plots(args: dict):
 
     # Plot loss histories.
 
-    # Plot the model loss histories for each model.
+    # Plot the loss history for each model.
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
         if verbose:
             print(f"Creating loss plot for {variable_name}.")
