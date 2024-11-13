@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Create plots for pinn10 results for the lagaris01 problem.
+"""Create plots for pinn0 results for the lagaris01 problem.
 
 Create plots for pinn0 results for the lagaris01 problem.
 
@@ -110,9 +110,9 @@ def create_output_directory(clobber: bool = False):
 
 
 def make_pinn0_loss_plot(L: np.ndarray,  **kwargs):
-    """Make a plot of the model loss history.
+    """Make a plot of the pinn0 model loss history.
 
-    Make a plot of the model loss history.
+    Make a plot of the pinn0 model loss history.
 
     Parameters
     ----------
@@ -152,7 +152,7 @@ def make_pinn0_loss_plot(L: np.ndarray,  **kwargs):
 
 def make_PAE_plot(
         Yp: np.ndarray, Ya: np.ndarray, Ye: np.ndarray,
-        Xd: np.ndarray, **kwargs):
+        X: np.ndarray, **kwargs):
     """Make a plot of the predicted and analytical solution, and error.
 
     Make a plot of the predicted and analytical solution, and error.
@@ -165,8 +165,8 @@ def make_PAE_plot(
         Analytical solution at each point.
     Ye : np.ndarray, shape (n,)
         Absolute error at each point.
-    Xd : np.ndarray, shape (n,)
-        Independent variable for each training point.
+    X : np.ndarray, shape (n,)
+        Independent variable for each point.
     kwargs : dict
         dict of additional keyword arguments
 
@@ -193,12 +193,12 @@ def make_PAE_plot(
     fig, ax = plt.subplots(layout="constrained", figsize=figsize)
 
     # Plot the predicted and analytical solutions on the left y-axis.
-    ax.plot(Xd, Yp, label="Predicted", color=colors[0])
-    ax.plot(Xd, Ya, label="Analytical", color=colors[1])
+    ax.plot(X, Yp, label="Predicted", color=colors[0])
+    ax.plot(X, Ya, label="Analytical", color=colors[1])
 
     # Plot the error on the right y-axis.
     ax2 = ax.twinx()
-    ax2.plot(Xd, Ye, label="Absolute error", color=colors[2])
+    ax2.plot(X, Ye, label="Absolute error", color=colors[2])
 
     # Combine the axes for the legend.
     lines_left, labels_left = ax.get_legend_handles_labels()
@@ -337,7 +337,7 @@ def pinn0_plots(args: dict):
 
         # Create the figure.
         if verbose:
-            print(f"Creating model loss plot for variable {variable_name}.")
+            print(f"Creating pinn0 model loss plot for variable {variable_name}.")
         title = (
             f"pinn0 model loss for {PROBLEM_NAME} "
             f"{p.dependent_variable_labels[iv]}"

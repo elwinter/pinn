@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-# """Create plots for pinn1 results for lagaris01 problem.
+# """Create plots for pinn1 results for the lagaris01 problem.
 
-# Create plots for pinn1 results for lagaris01 problem.
+# Create plots for pinn1 results for the lagaris01 problem.
 
 # Author
 # ------
@@ -10,7 +10,6 @@
 # """
 
 # Import standard modules.
-# import argparse
 import copy
 from importlib import import_module
 import shutil
@@ -30,7 +29,7 @@ from pinn import common
 # Program constants
 
 # Program description
-DESCRIPTION = "Create plots for pinn1 results for lagaris01 problem."
+DESCRIPTION = "Create plots for pinn1 results for the lagaris01 problem."
 
 # Default values for command-line arguments.
 DEFAULT_ARGUMENTS = {
@@ -112,9 +111,9 @@ def create_output_directory(clobber: bool = False):
 
 def make_pinn1_loss_plot(Lres: np.ndarray, Ldat: np.ndarray, L: np.ndarray,
                          **kwargs):
-    """Make a plot of the losses for a model.
+    """Make a plot of the pinn1 model loss history.
 
-    Make a plot of the losses for a model.
+    Make a plot of the pinn1 model loss history.
 
     Parameters
     ----------
@@ -161,7 +160,7 @@ def make_pinn1_loss_plot(Lres: np.ndarray, Ldat: np.ndarray, L: np.ndarray,
 
 def make_PAE_plot(
         Yp: np.ndarray, Ya: np.ndarray, Ye: np.ndarray,
-        Xd: np.ndarray, **kwargs):
+        X: np.ndarray, **kwargs):
     """Make a plot of the predicted and analytical solution, and error.
 
     Make a plot of the predicted and analytical solution, and error.
@@ -174,8 +173,8 @@ def make_PAE_plot(
         Analytical solution at each point.
     Ye : np.ndarray, shape (n,)
         Absolute error at each point.
-    Xd : np.ndarray, shape (n,)
-        Independent variable for each training point.
+    X : np.ndarray, shape (n,)
+        Independent variable for each point.
     kwargs : dict
         dict of additional keyword arguments
 
@@ -202,12 +201,12 @@ def make_PAE_plot(
     fig, ax = plt.subplots(layout="constrained", figsize=figsize)
 
     # Plot the predicted and analytical solutions on the left y-axis.
-    ax.plot(Xd, Yp, label="Predicted", color=colors[0])
-    ax.plot(Xd, Ya, label="Analytical", color=colors[1])
+    ax.plot(X, Yp, label="Predicted", color=colors[0])
+    ax.plot(X, Ya, label="Analytical", color=colors[1])
 
     # Plot the error on the right y-axis.
     ax2 = ax.twinx()
-    ax2.plot(Xd, Ye, label="Absolute error", color=colors[2])
+    ax2.plot(X, Ye, label="Absolute error", color=colors[2])
 
     # Combine the axes for the legend.
     lines_left, labels_left = ax.get_legend_handles_labels()
@@ -225,67 +224,6 @@ def make_PAE_plot(
 
     # Return the figure.
     return fig
-
-
-# def make_predicted_analytical_error_plot(
-#         Y_predicted: np.ndarray, Y_analytical: np.ndarray,
-#         Y_error: np.ndarray, X_train: np.ndarray, **kwargs):
-#     """Make a plot of the predicted and analytical solution, and error.
-
-#     Make a plot of the predicted and analytical solution, and error.
-
-#     Parameters
-#     ----------
-#     Y_predicted : np.ndarray, shape (n_train,)
-#         Predicted solution at each point.
-#     Y_analytical : np.ndarray, shape (n_train,)
-#         Analytical solution at each point.
-#     Y_error : np.ndarray, shape (n_train,)
-#         Absolute error at each point.
-#     X_train : np.ndarray, shape (n_train,)
-#         Independent variable for each training point.
-#     kwargs : dict
-#         dict of additional keyword arguments
-
-#     Returns
-#     -------
-#     fig : matplotlib.figure.Figure
-#         Figure for plot.
-
-#     Raises
-#     ------
-#     None
-#     """
-#     # Create the figure and Axes.
-#     fig, ax = plt.subplots()
-
-#     # Plot the predicted and analytical solutions on the left y-axis.
-#     ax.plot(X_train, Y_predicted, label="Predicted")
-#     ax.plot(X_train, Y_analytical, label="Analytical")
-
-#     # Plot the error on the right y-axis.
-#     ax2 = ax.twinx()
-#     ax2.plot(X_train, Y_error, label="Error")
-
-#     # Combine the axes for the legend.
-#     lines_left, labels_left = ax.get_legend_handles_labels()
-#     lines_right, labels_right = ax2.get_legend_handles_labels()
-#     lines = lines_left + lines_right
-#     labels = labels_left + labels_right
-
-#     # Decorate the plot.
-#     xlabel = kwargs.get("xlabel", "")
-#     ax.set_xlabel(xlabel)
-#     ylabel = kwargs.get("ylabel", "")
-#     ax.set_ylabel(ylabel)
-#     ax2.set_ylabel("Error")
-#     ax.grid()
-#     ax.legend(lines, labels)
-#     title = kwargs.get("title", "")
-#     ax.set_title(title)
-
-#     # Return the figure.
-#     return fig
 
 
 def pinn1_plots(args: dict):
@@ -479,7 +417,7 @@ def pinn1_plots(args: dict):
 
         # Create the figure.
         if verbose:
-            print(f"pinn1 model loss plot for variable {variable_name}.")
+            print(f"Creating pinn1 model loss plot for {variable_name}.")
         title = (
             f"pinn1 model loss for {PROBLEM_NAME} "
             f"{p.dependent_variable_labels[iv]}"
@@ -502,9 +440,7 @@ def pinn1_plots(args: dict):
     # Plot the aggregate losses.
     if verbose:
         print("Creating aggregate loss plot.")
-    title = (
-        f"Aggregate residual, data, and weighted loss for {PROBLEM_NAME}"
-    )
+    title = f"pinn1 model loss for {PROBLEM_NAME}"
     fig = make_pinn1_loss_plot(Lres[:, -1], Ldat[:, -1], L[:, -1], title=title)
 
     # Save the plot to a file.
