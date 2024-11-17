@@ -711,15 +711,20 @@ def create_optimizer(learning_rate: float = DEFAULT_ARGUMENTS["learning_rate"]):
     return optimizer
 
 
-def find_last_epoch(results_path: str = "."):
+def find_last_epoch(results_path: str = ".", min_epoch: int = -1):
     """Find the last epoch for a model in the results directory.
 
-    Find the last epoch for a model in the results directory.
+    Find the last epoch for a model in the results directory. If min_epoch is
+    specified, find the epoch of the earliest saved model which is
+    >= min_epoch. If min_epoch is -1, or greater than all saved model epochs,
+    the highest model epoch is returned.
 
     Parameters
     ----------
     results_path : str, default "."
         Path to results directory.
+    min_epoch : int, default -1
+        Find the model from the earliest epoch >= min_epoch.
 
     Returns
     -------
@@ -746,9 +751,15 @@ def find_last_epoch(results_path: str = "."):
     # Return to the original directory.
     os.chdir(original_directory)
 
-    # Find the largest epoch number.
+    # Find the largest epoch number, or the earliest epoch >= min_epoch.
     epochs = [int(s) for s in epoch_directories]
-    last_epoch = max(epochs)
+    epochs.sort()
+    last_epoch = epochs[-1]
+    if min_epoch != -1:
+        for e in epochs:
+            if e >= min_epoch:
+                last_epoch = e
+                break
 
     # Return the largest epoch number.
     return last_epoch
