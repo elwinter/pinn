@@ -230,14 +230,6 @@ def pinn0(args: dict):
 
     # Prepare inputs for TensorFlow.
 
-    # Convert independent and dependent variables to tf.Variable.
-    # Xd, Yd = X and Y for data points
-    # Xd = tf.Variable(X_data)
-    # Yd = tf.Variable(Y_data)
-    # if debug:
-    #     print(f"Xd = {Xd}")
-    #     print(f"Yd = {Yd}")
-
     # Batch the training points as tf.Variable.
     # Xdbs = X values for data batches
     # Xdbs is a list of tf.Variable.

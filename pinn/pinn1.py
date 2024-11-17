@@ -202,11 +202,6 @@ def pinn1(args: dict):
     if verbose:
         print(f"Loading data from {data_path}.")
     XY_data = common.load_problem_data(data_path, precision)
-    # <HACK>
-    # Fix shape for a single point.
-    if XY_data.shape[1] == 1:
-        XY_data = XY_data.T
-    # </HACK>
     if debug:
         print(f"XY_data = {XY_data}")
 
@@ -548,8 +543,8 @@ def pinn1(args: dict):
             # End of training point batches.
         Lress = np.array([np.sqrt(G2/n_train) for G2 in sum_G2])
         Lres = np.sum(Lress)
-        losses_res[epoch] = Lress
-        losses_res[epoch][-1] = Lres
+        losses_res[epoch, :-1] = Lress
+        losses_res[epoch, -1] = Lres
 
         # Part 3b: Compute data loss.
         sum_E2 = np.zeros(p.n_var)
@@ -566,12 +561,12 @@ def pinn1(args: dict):
             # End of data batches.
         Ldats = np.array([np.sqrt(E2/n_data) for E2 in sum_E2])
         Ldat = np.sum(Ldats)
-        losses_dat[epoch] = Ldats
-        losses_dat[epoch][-1] = Ldat
+        losses_dat[epoch, :-1] = Ldats
+        losses_dat[epoch, -1] = Ldat
 
         # Part 3c: Compute total loss.
-        losses[epoch] = w_res*Lress + w_data*Ldats
-        L = losses[epoch][-1] = w_res*Lres + w_data*Ldat
+        losses[epoch, :-1] = w_res*Lress + w_data*Ldats
+        L = losses[epoch, -1] = w_res*Lres + w_data*Ldat
         if verbose:
             print(f"epoch = {epoch}, (Lres, Ldat, L) = "
                   f"({Lres:E}, {Ldat:E}, {L:E})")

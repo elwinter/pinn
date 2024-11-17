@@ -65,7 +65,7 @@ def create_command_line_argument_parser():
     parser : argparse.ArgumentParser
         Parser for command-line arguments.
     """
-    parser = common.create_minimal_command_line_argument_parser(
+    parser = common.create_minimal_command_line_parser(
         DESCRIPTION)
     parser.add_argument(
         "--clobber", action="store_true",
