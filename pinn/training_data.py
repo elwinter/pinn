@@ -20,8 +20,12 @@ import numpy as np
 def create_training_points_gridded(ng: np.ndarray, bg: np.ndarray):
     """Create evenly-spaced training points.
 
-    Create a set of training points evenly spaced in n orthogonal dimensions.
-    Flatten the data to a list of of n-dimensional points.
+    Create a set of training points evenly spaced in n_dim orthogonal
+    dimensions. Flatten the data to a list of of n_dim-dimensional points.
+    The list is length np.prod(ng).
+
+    Note that the resulting data is returned as a 2-D np.ndarray, to
+    facilitate use with TensorFlow.
 
     Parameters
     ----------
@@ -54,7 +58,7 @@ def create_training_points_gridded(ng: np.ndarray, bg: np.ndarray):
         )
     Xg = np.vstack(grid).T
 
-    # Flatten the list of training points.
+    # Flatten the list to a list of n_dim-dimensional training points.
     Xg.shape = (np.prod(ng), n_dim)
 
     # Return the training grid.

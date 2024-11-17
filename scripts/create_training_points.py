@@ -147,7 +147,7 @@ def create_training_points(args: dict):
             print(f"nr = {nr}")
     else:
         # For gridded points:
-        # x1name x1min x1max nx1 x2name x2min x2max nx2 ...
+        # x0name x0min x0max nx0 x1name x1min x1max nx1 ...
         xname = rest[::4]
         xmin = np.array(rest[1::4], dtype=float)
         xmax = np.array(rest[2::4], dtype=float)
@@ -176,7 +176,7 @@ def create_training_points(args: dict):
     # [
     #  [x0min, x0max],
     #  [x1min, x1max],
-    #  [x3min, x3max],
+    #  [x2min, x2max],
     #  ...
     # ]
     b = np.vstack([xmin, xmax]).T
@@ -186,13 +186,15 @@ def create_training_points(args: dict):
     # Compute the value at each grid point.
     # Each point is a row of the form:
     # x0 x1 x2 ...
+    # Note that even a single single-dimension data point is returned as a
+    # 2-D array.
     if randomize:
         np.random.seed(seed)
         x = training_data.create_training_points_random(nr, b)
     else:
         x = training_data.create_training_points_gridded(nx, b)
 
-    # Remove points with a coordinate of 0.
+    # Remove points with a coordinate of 0 (optional).
     if no0:
         for i in range(len(b)):
             w = np.where(~np.isclose(x[:, i], 0.0))
@@ -205,7 +207,8 @@ def create_training_points(args: dict):
     xy = None
     if problem:
         p = common.import_problem(problem)
-        y = np.hstack([f(x) for f in p.Y_analytical])
+        yl = [f(x) for f in p.Y_analytical]
+        y = np.hstack(yl)
         xy = np.hstack([x, y])
         # Add names for new columns.
         header[1] += f" {' '.join(p.dependent_variable_names)}"

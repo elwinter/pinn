@@ -260,18 +260,15 @@ def pinn0_plots(args: dict):
 
     # Import the problem definition from the run results directory.
     p = import_module(PROBLEM_NAME)
+    if debug:
+        print(f"p = {p}")
 
     # Compute the path to the output directory, then create it.
-    # output_path = OUTPUT_DIR
-    # os.mkdir(output_path)
     if verbose:
         print("Creating output directory.")
     output_dir = create_output_directory(clobber)
     if debug:
         print(f"output_dir = {output_dir}")
-
-    # Create the plots in a memory buffer.
-    mpl.use("Agg")
 
     # ------------------------------------------------------------------------
 
@@ -279,14 +276,18 @@ def pinn0_plots(args: dict):
 
     # Loss
     if verbose:
-        print("Loading loss data.")
+        print("Loading loss history.")
     path = os.path.join(results_path, "L.dat")
+    # L is np.ndarray shape (n_epochs,).
     L = np.loadtxt(path)
     if debug:
         print(f"L = {L}")
 
-    # Extract the training grid description and data.
+    # Extract the training data description and data.
     path = os.path.join(results_path, "XY_data.dat")
+    # column_names is a list of str, length p.n_var.
+    # column_descriptions is a dict of dicts, length p.n_var.
+    # XY_data.dat is a np.ndarray of float, shape (n_data, p.n_dim + p.n_var).
     column_names, column_descriptions, XY_data = common.read_grid_file(path)
     if debug:
         print(f"column_names = {column_names}")
@@ -294,11 +295,16 @@ def pinn0_plots(args: dict):
         print(f"XY_data = {XY_data}")
 
     # Count the data points.
-    n_train = XY_data.shape[0]
+    n_data = XY_data.shape[0]
+    if debug:
+        print(f"n_data = {n_data}")
 
     # Extract individual columns.
     Xd = XY_data[:, 0]
     Yd = XY_data[:, 1]
+    if debug:
+        print(f"Xd = {Xd}")
+        print(f"Yd = {Yd}")
 
     # ------------------------------------------------------------------------
 
@@ -306,6 +312,8 @@ def pinn0_plots(args: dict):
 
     # Find the epoch of the last trained model.
     last_epoch = common.find_last_epoch(results_path)
+    if debug:
+        print(f"last_epoch = {last_epoch}")
 
     # Load the trained models.
     models = []
@@ -316,15 +324,22 @@ def pinn0_plots(args: dict):
                             f"model_{variable_name}")
         model = tf.keras.models.load_model(path)
         models.append(model)
+    if debug:
+        print(f"models = {models}")
 
     # ------------------------------------------------------------------------
 
     # Compute the predicted and analytical solutions, and error.
     if verbose:
         print("Computing predicted and analytical values, and error.")
-    Yp = [model(Xd).numpy().reshape(n_train,) for model in models]
+    Yp = [model(Xd).numpy().reshape(n_data,) for model in models]
     Ya = [f(Xd) for f in p.Y_analytical]
     Ye = [pr - an for (pr, an) in zip(Yp, Ya)]
+
+    # ------------------------------------------------------------------------
+
+    # Create the plots in a memory buffer.
+    mpl.use("Agg")
 
     # ------------------------------------------------------------------------
 
@@ -337,7 +352,8 @@ def pinn0_plots(args: dict):
 
         # Create the figure.
         if verbose:
-            print(f"Creating pinn0 model loss plot for variable {variable_name}.")
+            print("Creating pinn0 model loss plot for variable "
+                  f"{variable_name}.")
         title = (
             f"pinn0 model loss for {PROBLEM_NAME} "
             f"{p.dependent_variable_labels[iv]}"
