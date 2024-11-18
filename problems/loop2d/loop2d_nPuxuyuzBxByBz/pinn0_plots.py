@@ -375,8 +375,8 @@ def pinn0_plots(args: dict):
 
     # ------------------------------------------------------------------------
 
-    # Add the run results directory to the module search path.
-    sys.path.append(results_path)
+    # Add the run results directory at the head of the module search path.
+    sys.path.insert(0, results_path)
 
     # Import the problem definition from the run results directory.
     p = import_module(PROBLEM_NAME)
@@ -454,6 +454,8 @@ def pinn0_plots(args: dict):
 
     # Trim the loss data to the last epoch if needed.
     if min_epoch != -1:
+        if verbose:
+            print(f"Trimming loss data to epoch {last_epoch}.")
         L = L[:last_epoch + 1, :]
         if debug:
             print(f"L = {L}")
@@ -689,9 +691,6 @@ def pinn0_plots(args: dict):
     if verbose:
         print("Creating predicted/analytical/error movie for magnetic "
               "pressure.")
-    if verbose:
-        print("Creating predicted/analytical/error movie for xy-magnetic "
-              "field.")
 
     # Create the directory for the frames.
     frame_dir = os.path.join(output_dir, "frames_PB")

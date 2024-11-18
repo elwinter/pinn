@@ -283,8 +283,10 @@ def pinn0_plots(args: dict):
     if debug:
         print(f"L = {L}")
 
-    # Extract the training data description and data.
+    # Load the training data description and data.
     path = os.path.join(results_path, "XY_data.dat")
+    if verbose:
+        print(f"Loading training data from {path}.")
     # column_names is a list of str, length p.n_var.
     # column_descriptions is a dict of dicts, length p.n_var.
     # XY_data.dat is a np.ndarray of float, shape (n_data, p.n_dim + p.n_var).

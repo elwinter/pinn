@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-# """Create plots for pinn1 results for the lagaris01 problem.
 
-# Create plots for pinn1 results for the lagaris01 problem.
+"""Create plots for pinn1 results for the lagaris01 problem.
 
-# Author
-# ------
-# Eric Winter (eric.winter62@gmail.com)
-# """
+Create plots for pinn1 results for the lagaris01 problem.
+
+Author
+------
+Eric Winter (eric.winter62@gmail.com)
+"""
 
 # Import standard modules.
 import copy
@@ -42,9 +43,6 @@ DEFAULT_ARGUMENTS = {
 
 # Name of problem
 PROBLEM_NAME = "lagaris01"
-
-# Name of directory to hold output plots
-OUTPUT_DIR = "pinn1_plots"
 
 
 def create_command_line_parser():
@@ -312,8 +310,10 @@ def pinn1_plots(args: dict):
     if debug:
         print(f"Ldat = {Ldat}")
 
-    # Extract the training point description and data.
+    # Load the training point description and data.
     path = os.path.join(results_path, "X_train.dat")
+    if verbose:
+        print(f"Loading training data from {path}.")
     column_names, column_descriptions, X_train = common.read_grid_file(path)
     # <HACK>
     # Convert to 2-D array.
@@ -518,7 +518,7 @@ def main():
     # Convert the arguments from Namespace to dict.
     args = vars(args)
 
-    # Call the main program logic.
+    # Pass the command-line arguments to the main function as a dict.
     return_code = pinn1_plots(args)
     sys.exit(return_code)
 

@@ -854,7 +854,7 @@ Y_analytical = [
 # Other useful analytical functions.
 
 
-def dBx_dx_analytical(t, x, y):
+def dBx_dx_analytical(X: np.ndarray):
     """Analytical solution for dBx/dx of the magnetic field.
 
     Compute the analytical solution for dBx/dx of the magnetic field.
@@ -864,18 +864,17 @@ def dBx_dx_analytical(t, x, y):
 
     Parameters
     ----------
-    t : np.array of float, shape (n,)
-        Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
-        Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
-        Value of y for each evaluation point.
+    X : np.ndarray, shape (n_points, n_dim)
+        Array of points for evaluation, one (t, x, y) tuple per row.
 
     Returns
     -------
     dBx_dx : np.array of float, shape (n,)
         Value of dBx/dx for each evaluation point.
     """
+    t = X[:, it]
+    x = X[:, ix]
+    y = X[:, iy]
     xp = x - u0x*t
     yp = y - u0y*t
     r = np.sqrt(xp**2 + yp**2)
@@ -885,7 +884,7 @@ def dBx_dx_analytical(t, x, y):
     return dBx_dx
 
 
-def dBy_dy_analytical(t, x, y):
+def dBy_dy_analytical(X: np.ndarray):
     """Analytical solution for dBy/dy of the magnetic field.
 
     Compute the analytical solution for dBy/dy of the magnetic field.
@@ -895,18 +894,17 @@ def dBy_dy_analytical(t, x, y):
 
     Parameters
     ----------
-    t : np.array of float, shape (n,)
-        Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
-        Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
-        Value of y for each evaluation point.
+    X : np.ndarray, shape (n_points, n_dim)
+        Array of points for evaluation, one (t, x, y) tuple per row.
 
     Returns
     -------
     dBy_dy : np.array of float, shape (n,)
         Value of dBy/dy for each evaluation point.
     """
+    t = X[:, it]
+    x = X[:, ix]
+    y = X[:, iy]
     xp = x - u0x*t
     yp = y - u0y*t
     r = np.sqrt(xp**2 + yp**2)
