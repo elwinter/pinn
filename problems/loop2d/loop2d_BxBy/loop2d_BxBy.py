@@ -117,26 +117,12 @@ C1 = μ0*I/(2*np.pi)  # Leading constant in analytical solutions for Bx, By.
 # Define the constant fluid flow field.
 θ = 60.0  # Angle in degrees clockwise from +y axis
 u0 = 1.0  # Flow speed
-u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
-u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
+u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity (0.8660)
+u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity (0.5)
 
+#-----------------------------------------------------------------------------
 
-
-# NOTE: In the functions defined below for the differential equations, the
-# arguments can be unpacked as follows:
-# def pde_XXX(X, Y, del_Y):
-#     nX = X.shape[0]
-#     t = tf.reshape(X[:, it], (nX, 1))
-#     x = tf.reshape(X[:, ix], (nX, 1))
-#     y = tf.reshape(X[:, iy], (nX, 1))
-#     (Bx, By) = Y
-#     (del_Bx, del_By) = del_Y
-#     dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
-#     dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
-#     dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
-#     dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
-#     dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
-#     dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
+# Define the differential equations to solve.
 
 
 # @tf.function
@@ -162,17 +148,17 @@ def pde_Bx(X, Y, del_Y):
         Value of differential equation at each evaluation point.
     """
     nX = X.shape[0]
-#     t = tf.reshape(X[:, it], (nX, 1))
-#     x = tf.reshape(X[:, ix], (nX, 1))
-#     y = tf.reshape(X[:, iy], (nX, 1))
-    (Bx, By) = Y
+    # t = tf.reshape(X[:, it], (nX, 1))
+    # x = tf.reshape(X[:, ix], (nX, 1))
+    # y = tf.reshape(X[:, iy], (nX, 1))
+    # (Bx, By) = Y
     (del_Bx, del_By) = del_Y
     dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
     dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
     dBx_dy = tf.reshape(del_Bx[:, iy], (nX, 1))
-#     dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
-#     dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
-#     dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
+    # dBy_dt = tf.reshape(del_By[:, it], (nX, 1))
+    # dBy_dx = tf.reshape(del_By[:, ix], (nX, 1))
+    # dBy_dy = tf.reshape(del_By[:, iy], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
     G = dBx_dt + u0x*dBx_dx + u0y*dBx_dy
@@ -205,7 +191,7 @@ def pde_By(X, Y, del_Y):
     # t = tf.reshape(X[:, it], (nX, 1))
     # x = tf.reshape(X[:, ix], (nX, 1))
     # y = tf.reshape(X[:, iy], (nX, 1))
-    (Bx, By) = Y
+    # (Bx, By) = Y
     (del_Bx, del_By) = del_Y
     # dBx_dt = tf.reshape(del_Bx[:, it], (nX, 1))
     # dBx_dx = tf.reshape(del_Bx[:, ix], (nX, 1))
@@ -229,7 +215,9 @@ de = [
 ]
 
 
-# Define analytical solutions.
+#-----------------------------------------------------------------------------
+
+# Define the analytical solutions.
 
 
 def Bx_analytical(X: np.ndarray):
@@ -361,6 +349,9 @@ def dBy_dy_analytical(X: np.ndarray):
     dBy_dy = np.zeros(t.shape[0])
     dBy_dy[w] = -A*xp[w]*yp[w]/r[w]**3
     return dBy_dy
+
+
+#-----------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
