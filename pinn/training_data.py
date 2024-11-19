@@ -6,7 +6,6 @@ creating training data for neural networks.
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
-
 """
 
 
@@ -21,8 +20,12 @@ import numpy as np
 def create_training_points_gridded(ng: np.ndarray, bg: np.ndarray):
     """Create evenly-spaced training points.
 
-    Create a set of training points evenly spaced in n orthogonal dimensions.
-    Flatten the data to a list of of n-dimensional points.
+    Create a set of training points evenly spaced in n_dim orthogonal
+    dimensions. Flatten the data to a list of of n_dim-dimensional points.
+    The list is length np.prod(ng).
+
+    Note that the resulting data is returned as a 2-D np.ndarray, to
+    facilitate use with TensorFlow.
 
     Parameters
     ----------
@@ -55,7 +58,7 @@ def create_training_points_gridded(ng: np.ndarray, bg: np.ndarray):
         )
     Xg = np.vstack(grid).T
 
-    # Flatten the list of training points.
+    # Flatten the list to a list of n_dim-dimensional training points.
     Xg.shape = (np.prod(ng), n_dim)
 
     # Return the training grid.
@@ -65,7 +68,11 @@ def create_training_points_gridded(ng: np.ndarray, bg: np.ndarray):
 def create_training_points_random(n: int, b: np.ndarray):
     """Create randomly-spaced training points.
 
-    Create a set of training points randomly spaced in n orthogonal dimensions.
+    Create a set of training points randomly spaced in n orthogonal
+    dimensions. Each point is uniformly distributed within the domain,
+    where dimension i is bounded  using [xmin[i], xmax[i]], i.e. upper
+    boundary is *excluded* from the domain.
+
     Return the data as a ndarray of shape (n, n_dim).
 
     Parameters
@@ -96,7 +103,7 @@ def create_training_points_random(n: int, b: np.ndarray):
     return X
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Gridded training points.
     ng = np.array([2, 3, 4, 5], dtype=int)

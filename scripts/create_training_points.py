@@ -19,113 +19,157 @@ dimensions in the training space.l
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
-
 """
 
 
 # Import standard Python modules.
 import argparse
+import copy
 import sys
 
 # Import 3rd-party modules.
 import numpy as np
 
 # Import project modules.
+from pinn import common
 from pinn import training_data
 
 
 # Program constants
 
 # Program description.
-description = "Create a set of training points."
+DESCRIPTION = "Create a set of training points."
 
-# Default random number generator seed.
-default_seed = 0
+# Default values for command-line arguments when none are supplied (such as
+# when create_training_points() is called by external code).
+args_default = {
+    "debug": False,
+    "no0": False,
+    "problem_path": None,
+    "randomize": False,
+    "seed": 0,
+    "verbose": False,
+}
 
+def create_command_line_parser(description: str = DESCRIPTION):
+    """Create the command-line parser.
 
-def create_command_line_argument_parser():
-    """Create the command-line argument parser.
-
-    Create the command-line argument parser.
+    Create the command-line parser.
 
     Parameters
     ----------
-    None
+    description : str, default DESCRIPTION
+        Description string for script.
 
     Returns
     -------
     parser : argparse.ArgumentParser
-        Parser for command-line arguments.
+        Parser for the command-line.
 
     Raises
     ------
     None
     """
-    parser = argparse.ArgumentParser(description)
-    parser.add_argument(
-        "--debug", "-d", action="store_true",
-        help="Print debugging output (default: %(default)s)."
-    )
+    parser = common.create_minimal_command_line_parser(description)
     parser.add_argument(
         "--no0", action="store_true",
         help="Ignore the origin as a data point (default: %(default)s)."
     )
     parser.add_argument(
-        "--random", "-r", action="store_true",
+        "--problem", type=str, default=args_default["problem_path"],
+        help="If set, compute dependent variable values using the analytical "
+        "solutions defined in this Python file (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--randomize", "-r", action="store_true",
         help="Select points randomly within domain (default: %(default)s)."
     )
     parser.add_argument(
-        "--seed", type=int, default=default_seed,
+        "--seed", type=int, default=args_default["seed"],
         help="Seed for random number generator (default: %(default)s)"
-    )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument("rest", nargs=argparse.REMAINDER)
     return parser
 
 
-def main():
-    """Begin main program."""
-    # Set up the command-line parser.
-    parser = create_command_line_argument_parser()
+def create_training_points(args: dict):
+    """Create training points.
 
-    # Parse the command-line arguments.
-    args = parser.parse_args()
-    if args.debug:
+    Create training points.
+
+    Parameters
+    ----------
+    args : dict
+        Dictionary of command-line and other options.
+
+    Returns
+    -------
+    header : list of str
+        Header lines describing data.
+    data : np.ndarray of object
+        Array of data.
+
+    Raises
+    ------
+    None
+    """
+    # Use defaults for unspecified arguments. Merge additional settings
+    # which are passed in by the caller.
+    local_args = copy.deepcopy(args_default)
+    if args is not None:
+        local_args.update(args)
+    args = local_args
+    if args["debug"]:
         print(f"args = {args}")
-    debug = args.debug
-    no0 = args.no0
-    random = args.random
-    seed = args.seed
-    verbose = args.verbose
-    rest = args.rest
+
+    # Local convenience variables.
+    debug = args["debug"]
+    no0 = args["no0"]
+    problem = args["problem"]
+    randomize = args["randomize"]
+    seed = args["seed"]
+    verbose = args["verbose"]
+    rest = args["rest"]
+
+    # ------------------------------------------------------------------------
 
     # Fetch the remaining command-line arguments.
-    # For random results:
-    # v1name x1min x1max v2name x2min x2max ... n
-    # For gridded results:
-    # v1name x1min x1max nx1 x2name x2min x2max nx2 ...
-    if random:
-        Xname = rest[::3]
-        Xmin = np.array(rest[1:-1:3], dtype=float)
-        Xmax = np.array(rest[2:-1:3], dtype=float)
-        n = int(rest[-1])
+    if randomize:
+        # For random points:
+        # x1name x1min x1max x2name x2min x2max ... n
+        xname = rest[:-1:3]
+        xmin = np.array(rest[1:-1:3], dtype=float)
+        xmax = np.array(rest[2:-1:3], dtype=float)
+        nr = int(rest[-1])
+        if debug:
+            for i in range(len(xname)):
+                print(f"{xmin[i]} <= {xname[i]} <= {xmax[i]}")
+            print(f"nr = {nr}")
     else:
-        Xname = rest[::4]
-        Xmin = np.array(rest[1::4], dtype=float)
-        Xmax = np.array(rest[2::4], dtype=float)
-        nX = np.array(rest[3::4], dtype=int)
-        assert len(Xname) == len(Xmin) == len(Xmax) == len(nX)
-    if debug:
-        print(f"Xname = {Xname}")
-        print(f"Xmin = {Xmin}")
-        print(f"Xmax = {Xmax}")
-        if random:
-            print(f"n = {n}")
-        else:
-            print(f"nX = {nX}")
+        # For gridded points:
+        # x0name x0min x0max nx0 x1name x1min x1max nx1 ...
+        xname = rest[::4]
+        xmin = np.array(rest[1::4], dtype=float)
+        xmax = np.array(rest[2::4], dtype=float)
+        nx = np.array(rest[3::4], dtype=int)
+        if debug:
+            for i in range(len(xname)):
+                print(f"{xmin[i]} <= {xname[i]} <= {xmax[i]}, nx = {nx[i]}")
+
+    # Create a list for the header lines.
+    header = []
+    if randomize:
+        line = "# RANDOM"
+        for i in range(len(xname)):
+            line += f" {xname[i]} {xmin[i]} {xmax[i]}"
+        line += f" {nr}"
+        header.append(line)
+    else:
+        line = "# GRID"
+        for i in range(len(xname)):
+            line += f" {xname[i]} {xmin[i]} {xmax[i]} {nx[i]}"
+        header.append(line)
+    header.append(f"# {' '.join(xname)}")
 
     # Assemble the minima and maxima into a combined array of boundaries of
     # the form:
@@ -133,64 +177,90 @@ def main():
     #  [x0min, x0max],
     #  [x1min, x1max],
     #  [x2min, x2max],
-    #  [x3min, x3max],
     #  ...
     # ]
-    b = np.vstack([Xmin, Xmax]).T
+    b = np.vstack([xmin, xmax]).T
     if debug:
         print(f"b = {b}")
 
-    # Create the training points.
-    if random:
-
-        # Seed the random number generator.
+    # Compute the value at each grid point.
+    # Each point is a row of the form:
+    # x0 x1 x2 ...
+    # Note that even a single single-dimension data point is returned as a
+    # 2-D array.
+    if randomize:
         np.random.seed(seed)
-
-        # Select the training points randomly within the domain.
-        points = training_data.create_training_points_random(n, b)
-
+        x = training_data.create_training_points_random(nr, b)
     else:
-        # Create the flattened, evenly-spaced grid. The last dimension varies
-        # fastest.
-        points = training_data.create_training_points_gridded(nX, b)
-    if debug:
-        print(f"points = {points}")
+        x = training_data.create_training_points_gridded(nx, b)
 
-    # (Optional) Remove points with a *spatial* coordinate of 0.
+    # Remove points with a coordinate of 0 (optional).
     if no0:
-        for i in range(len(b) - 1):
-            # Remove points where coordinate i is ~0.
-            w = np.where(~np.isclose(points[:, i + 1], 0))
-            points = points[w]
+        for i in range(len(b)):
+            w = np.where(~np.isclose(x[:, i], 0.0))
+            x = x[w]
 
-    # Send the points to standard output.
-    # Include a header as a comment describing the data.
-    if random:
-        header = "# RANDOM"
-        print(header)
-        header = "#"
-        for (xname, xmin, xmax) in zip(Xname, Xmin, Xmax):
-            header += f" {xname} {xmin} {xmax}"
-        header += f" {n}"
-        print(header)
-        header = "#"
-        for xname in Xname:
-            header += f" {xname}"
-        print(header)
+
+    # If a problem was specified, compute the value of each
+    # solution function at each point, then augment the array with
+    # a column for each dependent variable.
+    xy = None
+    if problem:
+        p = common.import_problem(problem)
+        yl = [f(x) for f in p.Y_analytical]
+        y = np.hstack(yl)
+        xy = np.hstack([x, y])
+        # Add names for new columns.
+        header[1] += f" {' '.join(p.dependent_variable_names)}"
     else:
-        header = "# GRID"
-        print(header)
-        header = "#"
-        for (xname, xmin, xmax, nx) in zip(Xname, Xmin, Xmax, nX):
-            header += f" {xname} {xmin} {xmax} {nx}"
-        print(header)
-        header = "#"
-        for xname in Xname:
-            header += f" {xname}"
-        print(header)
-    np.savetxt(sys.stdout, points)
+        xy = x
+
+    # Return the header and data.
+    return header, xy
+
+
+def main():
+    """Top-level code for the command-line version of create_training_points.
+
+    This is the top-level code for the command-line version of
+    create_training_points. It processes command-line options, then calls the
+    create_training_points() function. The results are then printed to stdout.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    0 on success
+
+    Raises
+    ------
+    None
+    """
+    # Set up the command-line parser.
+    parser = create_command_line_parser()
+
+    # Parse the command-line arguments.
+    args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
+
+    # Convert the arguments from Namespace to dict.
+    args = vars(args)
+
+    # Call the main program logic.
+    header, data = create_training_points(args)
+
+    # Print the data.
+    for line in header:
+        print(line)
+    for x in data:
+        print(f"{' '.join([str(_x) for _x in x])}")
+
+    # Exit normally.
+    sys.exit(0)
 
 
 if __name__ == "__main__":
-    """Begin main program."""
     main()

@@ -45,22 +45,23 @@ DEFAULT_ARGUMENTS = {
     "learning_rate": 0.01,
     "load_model": None,
     "max_epochs": 100,
-    "multi": False,
     "n_hid": 10,
     "n_layers": 1,
     "nogpu": False,
     "precision": "float32",
+    "randomize": False,
     "save_model": -1,
     "seed": 0,
     "verbose": False,
+    "problem_path": None,
 }
 
 
-def create_minimal_command_line_argument_parser(description):
-    """Create a minimal command-line argument parser.
+def create_minimal_command_line_parser(description: str):
+    """Create a minimal command-line parser.
 
-    Create a minimal command-line argument parser. It just adds the --debug
-    and --verbose options.
+    Create a minimal command-line parser. It just adds the --debug and
+    --verbose options.
 
     Parameters
     ----------
@@ -90,12 +91,12 @@ def create_minimal_command_line_argument_parser(description):
     return parser
 
 
-def create_neural_network_command_line_argument_parser(description):
-    """Create a command-line argument parser for neural network code.
+def create_neural_network_command_line_parser(description: str):
+    """Create a command-line parser for neural network code.
 
-    Create a command-line argument parser for neural network code. This
-    code builds on the minimal command-line argument parser by adding a set
-    of options for neural network code in the pinn package.
+    Create a command-line parser for neural network code. This code builds on
+    the minimal command-line parser by adding a set of options common for
+    neural network code in the pinn package.
 
     Parameters
     ----------
@@ -105,13 +106,13 @@ def create_neural_network_command_line_argument_parser(description):
     Returns
     -------
     parser : argparse.ArgumentParser
-        Parser for command-line arguments.
+        Parser for the command-line.
 
     Raises
     ------
     None
     """
-    parser = create_minimal_command_line_argument_parser(description)
+    parser = create_minimal_command_line_parser(description)
     parser.add_argument(
         "--activation", "-a",
         default=DEFAULT_ARGUMENTS["activation"],
@@ -143,10 +144,6 @@ def create_neural_network_command_line_argument_parser(description):
         help="Maximum number of training epochs (default: %(default)s)"
     )
     parser.add_argument(
-        "--multi", action="store_true",
-        help="Use a single multi-output network (default: %(default)s)"
-    )
-    parser.add_argument(
         "--n_hid", type=int,
         default=DEFAULT_ARGUMENTS["n_hid"],
         help="Number of hidden nodes per layer (default: %(default)s)"
@@ -166,6 +163,11 @@ def create_neural_network_command_line_argument_parser(description):
         help="Precision to use in TensorFlow solution (default: %(default)s)"
     )
     parser.add_argument(
+        "--randomize", "-r", action="store_true",
+        default=DEFAULT_ARGUMENTS["randomize"],
+        help="Randomize the order of the training data (default: %(default)s)"
+    )
+    parser.add_argument(
         "--save_model", type=int,
         default=DEFAULT_ARGUMENTS["save_model"],
         help="Save interval (epochs) for trained model (0 = do not save, "
@@ -175,6 +177,10 @@ def create_neural_network_command_line_argument_parser(description):
         "--seed", type=int,
         default=DEFAULT_ARGUMENTS["seed"],
         help="Seed for random number generator (default: %(default)s)"
+    )
+    parser.add_argument(
+        "problem_path",
+        help="Path to problem description file (in python)"
     )
 
     # Return the parser.
@@ -186,7 +192,7 @@ def create_neural_network_command_line_argument_parser(description):
 # General program utilities
 
 
-def import_problem(problem_path):
+def import_problem(problem_path: str):
     """Import the Python file which defines the problem to solve.
 
     Import the Python file which defines the problem to solve.
@@ -216,7 +222,7 @@ def import_problem(problem_path):
     return p
 
 
-def save_arguments(args: dict, output_dir: str):
+def save_arguments(args: dict, output_dir: str = "."):
     """Save the program arguments.
 
     Save a record of the program arguments as the file "arguments.py" in the
@@ -227,7 +233,7 @@ def save_arguments(args: dict, output_dir: str):
     ----------
     args : dict
         dict of command-line arguments.
-    output_dir : str
+    output_dir : str, default "."
         Path to directory to contain the report.
 
     Returns
@@ -245,7 +251,7 @@ def save_arguments(args: dict, output_dir: str):
     return path
 
 
-def save_system_information(output_dir):
+def save_system_information(output_dir: str = "."):
     """Save a summary of system characteristics.
 
     Save a summary of the host system hardware and software in the specified
@@ -253,7 +259,7 @@ def save_system_information(output_dir):
 
     Parameters
     ----------
-    output_dir : str
+    output_dir : str, default "."
         Path to directory to contain the report.
 
     Returns
@@ -272,6 +278,13 @@ def save_system_information(output_dir):
         f.write(f"Host name: {platform.node()}\n")
         f.write(f"Platform: {platform.platform()}\n")
         f.write(f"uname: {' '.join(platform.uname())}\n")
+        cpuinfo_path = "/proc/cpuinfo"
+        if os.path.isfile(cpuinfo_path):
+            # Typical for Linux.
+            f.write(f"{cpuinfo_path}:\n")
+            with open(cpuinfo_path, encoding="utf-8") as fcpu:
+                cpuinfo = fcpu.readlines()
+            f.writelines(cpuinfo)
         f.write(f"Python version: {sys.version}\n")
         f.write(f"Python build: {' '.join(platform.python_build())}\n")
         f.write(f"Python compiler: {platform.python_compiler()}\n")
@@ -287,7 +300,7 @@ def save_system_information(output_dir):
     return path
 
 
-def load_problem_data(data_path: str, precision: str):
+def load_problem_data(data_path: str, precision: str = "float32"):
     """Load the problem data.
 
     Load the problem data, which specifies the function values at each
@@ -305,7 +318,7 @@ def load_problem_data(data_path: str, precision: str):
     ----------
     data_path : str
         Path to Numpy-format text data file.
-    precision : str
+    precision : str, default "float32"
         Precision to use when creating NumPy array for data. The valid values
         are defined as TensorFlow data types, which usually are the same as
         NumPy data types.
@@ -336,7 +349,7 @@ def read_grid_file(path: str):
     """Read grid description and data from a file.
 
     Read the grid description and data from a file. The file is assumed to
-    contain a grid header, followed list of nrows points. Each point
+    contain a grid header, followed by a list of nrows points. Each point
     definines a grid location (x0, x1, ...) and zero or more values defined
     at that location (y0, y1, ...).
 
@@ -355,23 +368,21 @@ def read_grid_file(path: str):
     Raises
     ------
     AssertionError
-        If this is not a grid file
+        If this is not a grid file.
     """
     # Read the grid description.
     column_descriptions = []
     COMMENT_PREFIX = "# "
-    COMMENT_PREFIX_LEN = len(COMMENT_PREFIX)
-    GRID_HEADER_LINE = f"{COMMENT_PREFIX}GRID"
+    # COMMENT_PREFIX_LEN = len(COMMENT_PREFIX)
+    GRID_HEADER_PREFIX = f"{COMMENT_PREFIX}GRID"
     with open(path, "r", encoding="utf-8") as f:
 
         # Make sure this is a grid file.
         line = f.readline().rstrip()
-        assert line == GRID_HEADER_LINE
+        assert line.startswith(GRID_HEADER_PREFIX)
 
-        # Read the column descriptions.
-        line = f.readline().rstrip()
-        assert line.startswith(COMMENT_PREFIX)
-        line = line.lstrip("# ")
+        # Read the grid description.
+        line = line.lstrip(GRID_HEADER_PREFIX)
         fields = line.split()
         vnames = fields[::4]
         nvar = len(vnames)
@@ -379,16 +390,24 @@ def read_grid_file(path: str):
         vmax = [float(x) for x in fields[2::4]]
         nv = [int(n) for n in fields[3::4]]
         column_descriptions = {}
-        column_descriptions["name"] = vnames
-        column_descriptions["min"] = vmin
-        column_descriptions["max"] = vmax
-        column_descriptions["n"] = nv
+        for (cn, _min, _max, n) in zip(vnames, vmin, vmax, nv):
+            column_descriptions[cn] = {
+                "min": _min,
+                "max": _max,
+                "n": n,
+            }
+
+        # Read the column names.
+        line = f.readline().rstrip()
+        assert line.startswith(COMMENT_PREFIX)
+        line = line.lstrip(COMMENT_PREFIX)
+        column_names = line.split()
 
     # Now load the data table.
     data = np.loadtxt(path)
 
     # Return the grid description and data.
-    return column_descriptions, data
+    return column_names, column_descriptions, data
 
 
 # ----------------------------------------------------------------------------
@@ -396,20 +415,20 @@ def read_grid_file(path: str):
 # git utilities
 
 
-def get_git_branch():
-    """Get the current git branch.
+def get_git_branch(path: str = os.path.realpath(__file__)):
+    """Get the current git branch for a file.
 
-    Get the current git branch of the pinn code using the PINN_ROOT
-    environment variable.
+    Get the current git branch for a file.
 
     Parameters
     ----------
-    None
+    path : str, default os.path.realpath(__file__)
+        Path to file to examine.
 
     Returns
     -------
     git_branch : str
-        Name of current git branch for active pinn code.
+        Name of current git branch for the file.
 
     Raises
     ------
@@ -417,7 +436,8 @@ def get_git_branch():
         If unable to determine git branch.
     """
     cwd = os.getcwd()
-    os.chdir(os.environ["PINN_ROOT"])
+    this_dir = os.path.split(path)[0]
+    os.chdir(this_dir)
     cmd = "git branch"
     cproc = subprocess.run(cmd, shell=True, check=True, text=True,
                            capture_output=True)
@@ -433,7 +453,7 @@ def get_git_branch():
     return git_branch
 
 
-def get_git_hash():
+def get_git_hash(path: str = os.path.realpath(__file__)):
     """Get the current git hash.
 
     Get the current git hash of the pinn code using the PINN_ROOT environment
@@ -441,19 +461,21 @@ def get_git_hash():
 
     Parameters
     ----------
-    None
+    path : str, default os.path.realpath(__file__)
+        Path to file to examine.
 
     Returns
     -------
     git_hash : str
-        Hash for current commit of active pinn code.
+        Hash for current commit of the file.
 
     Raises
     ------
     None
     """
     cwd = os.getcwd()
-    os.chdir(os.environ["PINN_ROOT"])
+    this_dir = os.path.split(path)[0]
+    os.chdir(this_dir)
     cmd = "git rev-parse HEAD"
     cproc = subprocess.run(cmd, shell=True, check=True, text=True,
                            capture_output=True)
@@ -497,14 +519,14 @@ def configure_tensorflow(nogpu: bool, precision: str, seed: int):
     # Set the backend TensorFlow precision.
     tf.keras.backend.set_floatx(precision)
 
-    # Set the random number seed for reproducibility.
+    # Set the random number seed.
     tf.random.set_seed(seed)
 
 
 def disable_gpus():
-    """Tell TensorFlow not to use GPU.
+    """Tell TensorFlow to not use GPU.
 
-    Tell TensorFlow not to use GPU.
+    Tell TensorFlow to not use GPU.
 
     Parameters
     ----------
@@ -516,15 +538,10 @@ def disable_gpus():
 
     Raises
     ------
-    AssertionError : If this code cannot disable a GPU.
+    None`
     """
     # Disable all GPUS.
     tf.config.set_visible_devices([], "GPU")
-
-    # Make sure the GPU were disabled.
-    visible_devices = tf.config.get_visible_devices()
-    for device in visible_devices:
-        assert device.device_type != "GPU"
 
 
 # ----------------------------------------------------------------------------
@@ -532,14 +549,15 @@ def disable_gpus():
 # Neural network utilities
 
 
-def create_batches(X_train: np.ndarray, batch_size: int):
-    """Split the data into batches of tf.Variable.
+def create_tf_batches(X: np.ndarray,
+                   batch_size: int = DEFAULT_ARGUMENTS["batch_size"]):
+    """Split an array into a list of batches of tf.Variable.
 
-    Split the data into batches of tf.Variable.
+    Split an array into a list of batches of tf.Variable.
 
     Parameters
     ----------
-    X_train : np.ndarray, shape (n_train, p.n_dim)
+    X_train : np.ndarray, shape (n_train, n_columns)
         Array of training points.
     batch_size : int
         Nominal number of points in 1 batch.
@@ -554,17 +572,17 @@ def create_batches(X_train: np.ndarray, batch_size: int):
     None
     """
     training_batches = []
-    n_train = X_train.shape[0]
+    n = X.shape[0]
     if batch_size == -1:
-        Xb_tf = tf.Variable(X_train)
+        Xb_tf = tf.Variable(X)
         training_batches.append(Xb_tf)
     else:
-        n_batches = int(np.ceil(n_train/batch_size))
+        n_batches = int(np.ceil(n/batch_size))
         for ib in range(n_batches):
             i_start = ib*batch_size
             i_end = (ib + 1)*batch_size
-            i_end = min(i_end, n_train)
-            Xb_np = X_train[i_start:i_end, ...]
+            i_end = min(i_end, n)
+            Xb_np = X[i_start:i_end, ...]
             Xb_tf = tf.Variable(Xb_np)
             training_batches.append(Xb_tf)
 
@@ -578,7 +596,9 @@ U0_RANGE = [-0.1, 0.1]  # Hidden layer biases
 V0_RANGE = [-0.1, 0.1]  # Output layer weights
 
 
-def create_model(n_layers: int, n_hid: int, activation: str):
+def create_model(n_layers: int = DEFAULT_ARGUMENTS["n_layers"],
+                 n_hid: int = DEFAULT_ARGUMENTS["n_hid"],
+                 activation: str = DEFAULT_ARGUMENTS["activation"]):
     """Create a multi-layer neural network model.
 
     Create a fully-connected, n_layers-hidden-layer neural network with a
@@ -593,11 +613,11 @@ def create_model(n_layers: int, n_hid: int, activation: str):
 
     Parameters
     ----------
-    n_layers : int
+    n_layers : int, default DEFAULT_ARGUMENTS["n_layers"]
         Number of hidden layers to create.
-    n_hid : int
+    n_hid : int, default DEFAULT_ARGUMENTS["n_hid"]
         Number of nodes to use in each hidden layer.
-    activation : str
+    activation : str, default DEFAULT_ARGUMENTS["activation"]
         Name of activation function (from TensorFlow) to use in each hidden
         node.
 
@@ -630,8 +650,10 @@ def create_model(n_layers: int, n_hid: int, activation: str):
     return model
 
 
-def create_models(variable_names: list, n_layers: int, n_hid: int,
-                  activation: str, multi: bool):
+def create_models(variable_names: list,
+                  n_layers: int = DEFAULT_ARGUMENTS["n_layers"],
+                  n_hid: int = DEFAULT_ARGUMENTS["n_hid"],
+                  activation: str = DEFAULT_ARGUMENTS["activation"]):
     """Create untrained models.
 
     Create untrained models.
@@ -640,14 +662,13 @@ def create_models(variable_names: list, n_layers: int, n_hid: int,
     ----------
     variable_names : list of str
         List of variable names, one variable per model.
-    n_layers : int
+    n_layers : int, default DEFAULT_ARGUMENTS["n_layers"]
         Number of hidden layers to create.
-    n_hid : int
+    n_hid : int, default DEFAULT_ARGUMENTS["n_hid"]
         Number of nodes to use in each hidden layer.
-    activation : str
-        Name of activation function (from TensorFlow) to use.
-    multi : bool
-        True to create a single multi-output model.
+    activation : str, default DEFAULT_ARGUMENTS["activation"]
+        Name of activation function (from TensorFlow) to use in each hidden
+        node.
 
     Returns
     -------
@@ -659,74 +680,22 @@ def create_models(variable_names: list, n_layers: int, n_hid: int,
     None
     """
     models = []
-    if multi:
-        raise TypeError("--multi not supported!")
-        # model = create_multi_output_model(n_layers, n_hid, activation,
-        #                                   len(variable_names))
-        # models.append(model)
-    else:
-        for _ in variable_names:
-            model = create_model(n_layers, n_hid, activation)
-            models.append(model)
+    for _ in variable_names:
+        model = create_model(n_layers, n_hid, activation)
+        models.append(model)
 
     # Return the models.
     return models
 
 
-def create_multi_output_model(n_layers: int, n_hid: int, activation: str,
-                              n_out: bool):
-    """Create a multi-output, multi-layer neural network model.
-
-    Create a fully-connected, n_layers-layer neural network with multiple
-    n_out  outputs. Each layer will have n_hid hidden nodes. Each hidden node
-    has weights and a bias, and uses the specified activation function.
-
-    The number of inputs is determined when the network is first used.
-
-    Parameters
-    ----------
-    n_layers : int
-        Number of hidden layers to create.
-    n_hid : int
-        Number of nodes to use in each hidden layer.
-    activation : str
-        Name of activation function (from TensorFlow) to use.
-    n_out : int
-        Number of network outputs
-
-    Returns
-    -------
-    model : tf.keras.Sequential
-        The neural network.
-    """
-    layers = []
-    for _ in range(n_layers):
-        hidden_layer = tf.keras.layers.Dense(
-            units=n_hid, use_bias=True,
-            activation=tf.keras.activations.deserialize(activation),
-            kernel_initializer=tf.keras.initializers.RandomUniform(*W0_RANGE),
-            bias_initializer=tf.keras.initializers.RandomUniform(*U0_RANGE)
-        )
-        layers.append(hidden_layer)
-    output_layer = tf.keras.layers.Dense(
-        units=n_out,
-        activation=tf.keras.activations.linear,
-        kernel_initializer=tf.keras.initializers.RandomUniform(*V0_RANGE),
-        use_bias=False,
-    )
-    layers.append(output_layer)
-    model = tf.keras.Sequential(layers)
-    return model
-
-
-def create_optimizer(learning_rate: float):
+def create_optimizer(learning_rate: float = DEFAULT_ARGUMENTS["learning_rate"]):
     """Create the training optimizer.
 
     Create the training optimizer.
 
     Parameters
     ----------
-    learning_rate: float
+    learning_rate: float, default DEFAULT_ARGUMENTS["learning_rate"]
         Initial learning rate for optimizer.
 
     Returns
@@ -742,15 +711,20 @@ def create_optimizer(learning_rate: float):
     return optimizer
 
 
-def find_last_epoch(results_path: str):
+def find_last_epoch(results_path: str = ".", min_epoch: int = -1):
     """Find the last epoch for a model in the results directory.
 
-    Find the last epoch for a model in the results directory.
+    Find the last epoch for a model in the results directory. If min_epoch is
+    specified, find the epoch of the earliest saved model which is
+    >= min_epoch. If min_epoch is -1, or greater than all saved model epochs,
+    the highest model epoch is returned.
 
     Parameters
     ----------
-    results_path : str
+    results_path : str, default "."
         Path to results directory.
+    min_epoch : int, default -1
+        Find the model from the earliest epoch >= min_epoch.
 
     Returns
     -------
@@ -777,27 +751,31 @@ def find_last_epoch(results_path: str):
     # Return to the original directory.
     os.chdir(original_directory)
 
-    # Find the largest epoch number.
+    # Find the largest epoch number, or the earliest epoch >= min_epoch.
     epochs = [int(s) for s in epoch_directories]
-    last_epoch = max(epochs)
+    epochs.sort()
+    last_epoch = epochs[-1]
+    if min_epoch != -1:
+        for e in epochs:
+            if e >= min_epoch:
+                last_epoch = e
+                break
 
     # Return the largest epoch number.
     return last_epoch
 
 
-def load_models(model_directory: str, variable_names: list, multi: bool):
+def load_models(variable_names: list, model_directory: str = "."):
     """Load trained models.
 
     Load trained models.
 
     Parameters
     ----------
-    model_directory : str
-        Path to directory containing trained models.
     variable_names : list of str
         List of variable names, one variable per model.
-    multi : bool
-        True if a multi-output model is desired.
+    model_directory : str, default "."
+        Path to directory containing trained models.
 
     Returns
     -------
@@ -809,23 +787,17 @@ def load_models(model_directory: str, variable_names: list, multi: bool):
     None
     """
     models = []
-    if multi:
-        raise TypeError("--multi not supported!")
-        # path = os.path.join(model_directory, "model")
-        # model = tf.keras.models.load_model(path)
-        # models.append(model)
-    else:
-        for vname in variable_names:
-            path = os.path.join(model_directory, f"model_{vname}")
-            model = tf.keras.models.load_model(path)
-            models.append(model)
+    for vname in variable_names:
+        path = os.path.join(model_directory, f"model_{vname}")
+        model = tf.keras.models.load_model(path)
+        models.append(model)
 
     # Return the models.
     return models
 
 
-def save_models(models: list, model_directory: str, epoch: int,
-                variable_names: list, multi: bool):
+def save_models(models: list,  variable_names: list, epoch: int = 0,
+                model_directory: str = "."):
     """Save trained models.
 
     Save trained models.
@@ -834,14 +806,12 @@ def save_models(models: list, model_directory: str, epoch: int,
     ----------
     models : list of keras.src.engine.sequential.Sequential
         Models to save.
-    model_directory : str
-        Path to directory containing trained models.
-    epoch : int
-        Epochs used to train model.
     variable_names : list of str
         List of variable names, one variable per model.
-    multi : bool
-        True if a multi-output model is desired.
+    model_directory : str, default "."
+        Path to directory containing trained models.
+    epoch : int, default 0
+        Epochs used to train model.
 
     Returns
     -------
@@ -851,81 +821,17 @@ def save_models(models: list, model_directory: str, epoch: int,
     ------
     None
     """
-    if multi:
-        raise TypeError("--multi not supported!")
-        # path = os.path.join(
-        #     output_dir, "models", f"{epoch:06d}", "model_multi"
-        # )
-        # model = models[0]
-        # model.save(path)
-        # path = os.path.join(output_dir, "models", "model_multi.txt")
-        # old_stdout = sys.stdout
-        # with open(path, "w", encoding="utf-8") as f:
-        #     sys.stdout = f
-        #     model.summary()
-        # sys.stdout = old_stdout
-    else:
-        for (i, model) in enumerate(models):
-            variable_name = variable_names[i]
-            save_dir = os.path.join(model_directory, "models", f"{epoch:06d}")
-            path = os.path.join(save_dir, f"model_{variable_name}")
-            model.save(path)
-            path = os.path.join(save_dir, f"model_{variable_name}.txt")
-            old_stdout = sys.stdout
-            with open(path, "w", encoding="utf-8") as f:
-                sys.stdout = f
-                model.summary()
-            sys.stdout = old_stdout
-
-# # ----------------------------------------------------------------------------
-
-# # General PINN utilities
-
-
-# # def read_grid_description(data_file):
-# #     """Read grid description from a data file.
-
-# #     Read grid description from a data file. If the data is random, then return
-# #     None.
-
-# #     Parameters
-# #     ----------
-# #     data_file : str
-# #         Path to training data file
-
-# #     Returns
-# #     -------
-# #     xg : list of list of float
-# #         List of pairs of (min, max) for each grid dimension
-# #     ng : list of int
-# #         Number of grid points in each dimension
-
-# #     Raises
-# #     ------
-# #     None
-# #     """
-# #     # Read the grid description. Ignore if not a grid.
-# #     xg = None
-# #     ng = None
-# #     with open(data_file, "r") as f:
-# #         line = f.readline()
-# #         if line.startswith("# GRID"):
-# #             line = f.readline().rstrip()
-# #             line = line[2:]
-# #             f = line.split(" ")
-# #             xmin = f[::3]
-# #             xmax = f[1::3]
-# #             xn = f[2::3]
-# #             xg = []
-# #             ng = []
-# #             for (min, max, n) in zip(xmin, xmax, xn):
-# #                 xg.append([None, None])
-# #                 xg[-1][0] = float(min)
-# #                 xg[-1][1] = float(max)
-# #                 ng.append(int(n))
-# #         else:
-# #             pass
-# #     return xg, ng
+    for (i, model) in enumerate(models):
+        variable_name = variable_names[i]
+        save_dir = os.path.join(model_directory, "models", f"{epoch:06d}")
+        path = os.path.join(save_dir, f"model_{variable_name}")
+        model.save(path)
+        path = os.path.join(save_dir, f"model_{variable_name}.txt")
+        old_stdout = sys.stdout
+        with open(path, "w", encoding="utf-8") as f:
+            sys.stdout = f
+            model.summary()
+        sys.stdout = old_stdout
 
 
 if __name__ == "__main__":
