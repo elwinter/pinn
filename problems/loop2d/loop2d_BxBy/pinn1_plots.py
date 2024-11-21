@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 
-"""Create plots for pinn1 results for the loop2d_nPuxuyuzBxByBz problem.
+"""Create plots for pinn1 results for the loop2d_BxBy problem.
 
-Create plots for pinn1 results for the loop2d_nPuxuyuzBxByBz problem.
+Create plots for pinn1 results for the loop2d_BxBy problem.
 
 Note on notation: "PAE" -> predicted/analytical/error
 
@@ -34,7 +34,7 @@ from pinn import common
 
 # Program description
 DESCRIPTION = (
-    "Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem."
+    "Create plots for pinn1 results for loop2d_BxBy problem."
 )
 
 # Default values for command-line arguments.
@@ -48,7 +48,7 @@ DEFAULT_ARGUMENTS = {
 }
 
 # Name of problem
-PROBLEM_NAME = "loop2d_nPuxuyuzBxByBz"
+PROBLEM_NAME = "loop2d_BxBy"
 
 # Name of directory to hold output plots
 OUTPUT_DIR = "pinn1_plots"
