@@ -135,7 +135,7 @@ def make_pinn0_loss_plot(L: np.ndarray,  **kwargs):
     figsize = kwargs.get("figsize", None)
 
     # Create the figure and Axes.
-    fig, ax = plt.subplots(figsize=figsize)
+    fig, ax = plt.subplots(layout="constrained", figsize=figsize)
 
     # Plot the data.
     ax.semilogy(L, label="$L$")
@@ -150,23 +150,34 @@ def make_pinn0_loss_plot(L: np.ndarray,  **kwargs):
     return fig
 
 
-def make_PAE_plot(
-        Yp: np.ndarray, Ya: np.ndarray, Ye: np.ndarray,
-        X: np.ndarray, **kwargs):
-    """Make a plot of the predicted and analytical solution, and error.
+def make_PADE_plot(
+        xp: np.ndarray, yp: np.ndarray,
+        xa: np.ndarray, ya: np.ndarray,
+        xd: np.ndarray, yd: np.ndarray,
+        xe: np.ndarray, ye: np.ndarray,
+        **kwargs):
+    """Make a plot of the predicted and analytical solution, data, and error.
 
-    Make a plot of the predicted and analytical solution, and error.
+    Make a plot of the predicted and analytical solution, data, and error.
 
     Parameters
     ----------
-    Yp : np.ndarray, shape (n,)
+    xp : np.ndarray, shape (np,)
+        Independent variable for each predicted point.
+    yp : np.ndarray, shape (np,)
         Predicted solution at each point.
-    Ya : np.ndarray, shape (n,)
+    xa : np.ndarray, shape (na,)
+        Independent variable for each analytical point.
+    ya : np.ndarray, shape (na,)
         Analytical solution at each point.
-    Ye : np.ndarray, shape (n,)
-        Absolute error at each point.
-    X : np.ndarray, shape (n,)
-        Independent variable for each point.
+    xd : np.ndarray, shape (nd,)
+        Independent variable for each data point.
+    yd : np.ndarray, shape (nd,)
+        Data at each point.
+    xe : np.ndarray, shape (ne,)
+        Independent variable for each error point.
+    ye : np.ndarray, shape (ne,)
+        Error = predicted - analytical at each point.
     kwargs : dict
         dict of additional keyword arguments
 
@@ -193,12 +204,13 @@ def make_PAE_plot(
     fig, ax = plt.subplots(layout="constrained", figsize=figsize)
 
     # Plot the predicted and analytical solutions on the left y-axis.
-    ax.plot(X, Yp, label="Predicted", color=colors[0])
-    ax.plot(X, Ya, label="Analytical", color=colors[1])
+    ax.plot(xp, yp, label="Predicted", color=colors[0])
+    ax.plot(xa, ya, label="Analytical", color=colors[1])
+    ax.scatter(xd, yd, label="Data", color=colors[2], marker="o")
 
     # Plot the error on the right y-axis.
     ax2 = ax.twinx()
-    ax2.plot(X, Ye, label="Absolute error", color=colors[2])
+    ax2.plot(xe, ye, label="Absolute error", color=colors[3])
 
     # Combine the axes for the legend.
     lines_left, labels_left = ax.get_legend_handles_labels()
@@ -301,9 +313,9 @@ def pinn0_plots(args: dict):
     if debug:
         print(f"n_data = {n_data}")
 
-    # Extract individual columns.
-    Xd = XY_data[:, 0]
-    Yd = XY_data[:, 1]
+    # Extract independent and dependent data values.
+    Xd = XY_data[:, 0:p.n_dim]
+    Yd = XY_data[:, p.n_dim:]
     if debug:
         print(f"Xd = {Xd}")
         print(f"Yd = {Yd}")
@@ -334,7 +346,7 @@ def pinn0_plots(args: dict):
     # Compute the predicted and analytical solutions, and error.
     if verbose:
         print("Computing predicted and analytical values, and error.")
-    Yp = [model(Xd).numpy().reshape(n_data,) for model in models]
+    Yp = [model(Xd).numpy() for model in models]
     Ya = [f(Xd) for f in p.Y_analytical]
     Ye = [pr - an for (pr, an) in zip(Yp, Ya)]
 
@@ -349,8 +361,6 @@ def pinn0_plots(args: dict):
 
     # Plot the loss history for each model.
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
-        if verbose:
-            print(f"Creating loss plot for {variable_name}.")
 
         # Create the figure.
         if verbose:
@@ -388,13 +398,13 @@ def pinn0_plots(args: dict):
 
     # ------------------------------------------------------------------------
 
-    # Plot the predicted and analytical solutions, and the error, for each
+    # Plot the predicted and analytical solutions, data, and error, for each
     # model.
 
     # Make a plot for each model.
     for (iv, variable_name) in enumerate(p.dependent_variable_names):
         if verbose:
-            print("Creating predicted/analytical/error plot for "
+            print("Creating predicted/analytical/data/error plot for "
                   f"{variable_name}.")
 
         # Create the figure.
@@ -405,8 +415,16 @@ def pinn0_plots(args: dict):
         )
         xlabel = p.independent_variable_labels[p.ix]
         ylabel = variable_label
-        fig = make_PAE_plot(
-            Yp[iv], Ya[iv], Ye[iv], Xd,
+        xp = Xd[:, p.ix]
+        yp = Yp[iv].reshape((len(xp,)))
+        xa = Xd[:, p.ix]
+        ya = Ya[iv].reshape((len(xa,)))
+        xd = Xd[:, p.ix]
+        yd = Yd[:, iv]
+        xe = Xd[:, p.ix]
+        ye = Ye[iv].reshape((len(xe,)))
+        fig = make_PADE_plot(
+            xp, yp, xa, ya, xd, yd, xe, ye,
             title=title, xlabel=xlabel, ylabel=ylabel
         )
 
