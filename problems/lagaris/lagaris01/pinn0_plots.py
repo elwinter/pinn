@@ -314,7 +314,7 @@ def pinn0_plots(args: dict):
         print(f"n_data = {n_data}")
 
     # Extract independent and dependent data values.
-    Xd = XY_data[:, 0:p.n_dim]
+    Xd = XY_data[:, :p.n_dim]
     Yd = XY_data[:, p.n_dim:]
     if debug:
         print(f"Xd = {Xd}")
@@ -346,9 +346,9 @@ def pinn0_plots(args: dict):
     # Compute the predicted and analytical solutions, and error.
     if verbose:
         print("Computing predicted and analytical values, and error.")
-    Yp = [model(Xd).numpy() for model in models]
-    Ya = [f(Xd) for f in p.Y_analytical]
-    Ye = [pr - an for (pr, an) in zip(Yp, Ya)]
+    Yp = np.hstack([model(Xd).numpy() for model in models])
+    Ya = np.hstack([f(Xd) for f in p.Y_analytical])
+    Ye = Yp - Ya
 
     # ------------------------------------------------------------------------
 
@@ -415,16 +415,9 @@ def pinn0_plots(args: dict):
         )
         xlabel = p.independent_variable_labels[p.ix]
         ylabel = variable_label
-        xp = Xd[:, p.ix]
-        yp = Yp[iv][:, 0]
-        xa = Xd[:, p.ix]
-        ya = Ya[iv][:, 0]
-        xd = Xd[:, p.ix]
-        yd = Yd[:, iv]
-        xe = Xd[:, p.ix]
-        ye = Ye[iv][:, 0]
         fig = make_PADE_plot(
-            xp, yp, xa, ya, xd, yd, xe, ye,
+            Xd[:, p.ix], Yp[:, iv], Xd[:, p.ix], Ya[:, iv],
+            Xd[:, p.ix], Yd[:, iv], Xd[:, p.ix], Ye[:, iv],
             title=title, xlabel=xlabel, ylabel=ylabel
         )
 
