@@ -410,19 +410,19 @@ def pinn0_plots(args: dict):
         # Create the figure.
         variable_label = p.dependent_variable_labels[iv]
         title = (
-            f"pinn0 predicted, analytical, error for {PROBLEM_NAME} "
+            f"pinn0 predicted, analytical,data, and error for {PROBLEM_NAME} "
             f"{variable_label}"
         )
         xlabel = p.independent_variable_labels[p.ix]
         ylabel = variable_label
         xp = Xd[:, p.ix]
-        yp = Yp[iv].reshape((len(xp,)))
+        yp = Yp[iv][:, 0]
         xa = Xd[:, p.ix]
-        ya = Ya[iv].reshape((len(xa,)))
+        ya = Ya[iv][:, 0]
         xd = Xd[:, p.ix]
         yd = Yd[:, iv]
         xe = Xd[:, p.ix]
-        ye = Ye[iv].reshape((len(xe,)))
+        ye = Ye[iv][:, 0]
         fig = make_PADE_plot(
             xp, yp, xa, ya, xd, yd, xe, ye,
             title=title, xlabel=xlabel, ylabel=ylabel
