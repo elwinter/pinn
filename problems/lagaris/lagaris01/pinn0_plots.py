@@ -410,7 +410,7 @@ def pinn0_plots(args: dict):
         # Create the figure.
         variable_label = p.dependent_variable_labels[iv]
         title = (
-            f"pinn0 predicted, analytical,data, and error for {PROBLEM_NAME} "
+            f"pinn0 predicted, analytical, data, and error for {PROBLEM_NAME} "
             f"{variable_label}"
         )
         xlabel = p.independent_variable_labels[p.ix]
