@@ -10,7 +10,7 @@ This case deals with a line current in the +z direction (out of the
 screen), with a return current toward -z at r = 0.3. +x is to the right,
 +y is up.
 
-NOTE: This version of the code solves the equations for n, P, ux, uy,
+NOTE: This version of the code solves *only* the equations for n, P, ux, uy,
 uz, Bx, By, and Bz.
 
 NOTE: The functions in this module are defined using a combination of Numpy and
@@ -35,22 +35,6 @@ dependent variables:
     5: Bx (x-component of magnetic field)
     6: By (y-component of magnetic field)
     7: Bz (z-component of magnetic field)
-
-NOTE: These equations were last verified on 2023-04-29.
-
-NOTE: For all methods:
-
-X represents an a set of arbitrary evaluation points. It is a tf.Tensor with
-shape (n, n_dim), where n is the number of evaluation points, and n_dim is
-the number of dimensions (independent variables) in the problem.
-
-Y represents a set of dependent variables at each point in X. This variable is
-a list of n_var tf.Tensor, each shape (n, 1), where n_var is the number of
-dependent variables.
-
-del_Y contains the first derivatives of each dependent variable with respect
-to each independent variable, at each point in X. It is a list of n_var
-tf.Tensor, each shape (n, n_dim).
 
 Author
 ------
@@ -102,39 +86,31 @@ iBz = dependent_variable_index["Bz"]
 
 # Labels for dependent variables (may use LaTex) - use for plots.
 dependent_variable_labels = [
-    "$n$", "$P$", "$u_x$", "$u_y$", "$u_z$", "$B_x$", "$B_y$", "$B_z$"
+    "$n$", "$P$",
+    "$u_x$", "$u_y$", "$u_z$",
+    "$B_x$", "$B_y$", "$B_z$"
 ]
 
 # Number of dependent variables.
 n_var = len(dependent_variable_names)
 
 
-# Normalized physical constants.
-μ0 = 1.0  # Permeability of free space
-m = 1.0   # Particle mass
-
-# Current parameters
+# Plasma parameters
 A = 1e-3   # Magnitude of magnetic vector potential.
 R0 = 0.3   # Radius of current cylinder.
-
-# Plasma parameters
-m = 1.0    # Plasma article mass
-ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
 n0 = 1.0   # Number density
 P0 = 1.0   # Pressure
-u0z = 0.0  # x-component of velocity
-B0x = 0.0  # y-component of magnetic field
-B0y = 0.0  # z-component of magnetic field
+u0z = 0.0  # z-component of velocity
 B0z = 0.0  # z-component of magnetic field
-I = 1e-3   # Normalized current
-C1 = μ0*I/(2*np.pi)  # Leading constant in analytical solutions for Bx, By.
+ɣ = 5/3    # Adiabatic index = (N + 2)/N, N = # DOF=3, not 2.
+μ0 = 1.0  # Normalized vacuum permeability
+m = 1.0    # Plasma article mass
 
 # Define the constant fluid flow field.
-θ = 60.0  # Angle in degrees clockwise from +y axis
-u0 = 1.0  # Flow speed
-u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
-u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
-
+θ = 60.0
+u0 = 1.0
+u0x = u0*np.sin(np.radians(θ))
+u0y = u0*np.cos(np.radians(θ))
 
 
 # NOTE: In the functions defined below for the differential equations, the
@@ -465,7 +441,8 @@ def pde_uz(X, Y, del_Y):
 
     # G is a Tensor of shape (n, 1).
     G = (
-        n*(duz_dt + ux*duz_dx + uy*duz_dy) - (Bx*dBz_dx + By*dBz_dy)/(m*μ0)
+        n*(duz_dt + ux*duz_dx + uy*duz_dy) +
+        (-Bx*dBz_dx - By*dBz_dy)/(m*μ0)
     )
     return G
 
@@ -640,10 +617,7 @@ def pde_Bz(X, Y, del_Y):
     dBz_dy = tf.reshape(del_Bz[:, iy], (nX, 1))
 
     # G is a Tensor of shape (n, 1).
-    G = (
-        dBz_dt + ux*dBz_dx + uy*dBz_dy + Bz*(dux_dx + duy_dy) -
-        Bx*duz_dx - By*duz_dy
-    )
+    G = dBz_dt + ux*dBz_dx + uy*dBz_dy + Bz*(dux_dx + duy_dy) - Bx*duz_dx - By*duz_dy
     return G
 
 
@@ -865,7 +839,7 @@ def Bz_analytical(t, x, y):
 
 # Gather the analytical solutions in a list.
 # Use same order as dependent_variable_names.
-analytical_solutions = [
+Y_analytical = [
     n_analytical,
     P_analytical,
     ux_analytical,
@@ -909,6 +883,68 @@ def dBx_dx_analytical(t, x, y):
     dBx_dx = np.zeros(t.shape[0])
     dBx_dx[w] = A*xp[w]*yp[w]/r[w]**3
     return dBx_dx
+
+
+def dBx_dy_analytical(t, x, y):
+    """Analytical solution for dBx/dy of the magnetic field.
+
+    Compute the analytical solution for dBx/dy of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    dBx_dy : np.array of float, shape (n,)
+        Value of dBx/dy for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    w = np.where(r < R0)
+    dBx_dy = np.zeros(t.shape[0])
+    dBx_dy[w] = A*xp[w]**2/r[w]**3
+    return dBx_dy
+
+
+def dBy_dx_analytical(t, x, y):
+    """Analytical solution for dBy/dx of the magnetic field.
+
+    Compute the analytical solution for dBy/dx of the magnetic field.
+    (xp, yp) are the coordinates (x, y) translated back to the initial frame
+    for field computation, since the analytical solution is a simple linear
+    translation of the initial conditions.
+
+    Parameters
+    ----------
+    t : np.array of float, shape (n,)
+        Value of t for each evaluation point.
+    x : np.array of float, shape (n,)
+        Value of x for each evaluation point.
+    y : np.array of float, shape (n,)
+        Value of y for each evaluation point.
+
+    Returns
+    -------
+    dBy_dx : np.array of float, shape (n,)
+        Value of dBy/dx for each evaluation point.
+    """
+    xp = x - u0x*t
+    yp = y - u0y*t
+    r = np.sqrt(xp**2 + yp**2)
+    w = np.where(r < R0)
+    dBy_dx = np.zeros(t.shape[0])
+    dBy_dx[w] = A*yp[w]**2/r[w]**3
+    return dBy_dx
 
 
 def dBy_dy_analytical(t, x, y):
