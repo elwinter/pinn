@@ -45,6 +45,7 @@ DEFAULT_ARGUMENTS = {
     "debug": common.DEFAULT_ARGUMENTS["debug"],
     "image_format": "png",
     "min_epoch": -1,
+    "usetex": False,
     "verbose": common.DEFAULT_ARGUMENTS["verbose"],
     "results_path": None,
 }
@@ -87,6 +88,10 @@ def create_command_line_parser():
         "--min_epoch", type=int,
         default=DEFAULT_ARGUMENTS["min_epoch"],
         help="Epoch for model to use (-1 for last) (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--usetex", action="store_true",
+        help="Use LaTeX in plots (default: %(default)s)"
     )
     parser.add_argument(
         "results_path",
@@ -358,6 +363,7 @@ def pinn1_plots(args: dict):
     debug = args["debug"]
     image_format = args["image_format"]
     min_epoch = args["min_epoch"]
+    usetex = args["usetex"]
     verbose = args["verbose"]
     results_path = args["results_path"]
 
@@ -705,7 +711,7 @@ def pinn1_plots(args: dict):
     dBy_dyp = dYtp_dXts[p.iBy][:, p.iy]
     dBy_dye = dBy_dyp - dBy_dya
     divBp = dBx_dxp**2 + dBy_dyp**2
-    divBa = dBx_dxa**2 + dBy_dya**2
+    divBa = np.zeros_like(divBp)
     divBe = divBp - divBa
     if debug:
         print(f"dBx_dxp = {dBx_dxp}")
@@ -757,54 +763,54 @@ def pinn1_plots(args: dict):
     # Create the plots in a memory buffer.
     mpl.use("Agg")
 
-    # ------------------------------------------------------------------------
+    # # ------------------------------------------------------------------------
 
-    # Plot loss histories.
+    # # Plot loss histories.
 
-    # Plot the per-model losses.
-    if verbose:
-        print("Creating per-model loss plots.")
+    # # Plot the per-model losses.
+    # if verbose:
+    #     print("Creating per-model loss plots.")
 
-    # Plot losses for each model.
-    for iv in range(p.n_var):
+    # # Plot losses for each model.
+    # for iv in range(p.n_var):
 
-        # Extract the data.
-        variable_name = p.dependent_variable_names[iv]
-        variable_label = p.dependent_variable_labels[iv]
+    #     # Extract the data.
+    #     variable_name = p.dependent_variable_names[iv]
+    #     variable_label = p.dependent_variable_labels[iv]
 
-        # Create the figure.
-        title = f"{variable_label} residual, data, and weighted loss"
-        fig = make_pinn1_loss_plot(
-            Lres[:, iv], Ldat[:, iv], L[:, iv], title=title
-        )
+    #     # Create the figure.
+    #     title = f"{variable_label} residual, data, and weighted loss"
+    #     fig = make_pinn1_loss_plot(
+    #         Lres[:, iv], Ldat[:, iv], L[:, iv], title=title
+    #     )
 
-        # Save the plot to a file.
-        path = os.path.join(output_dir, f"L_{variable_name}.{image_format}")
-        if verbose:
-            print(f"Saving {path}.")
-        plt.savefig(path)
+    #     # Save the plot to a file.
+    #     path = os.path.join(output_dir, f"L_{variable_name}.{image_format}")
+    #     if verbose:
+    #         print(f"Saving {path}.")
+    #     plt.savefig(path)
 
-        # Close the figure.
-        plt.close(fig)
+    #     # Close the figure.
+    #     plt.close(fig)
 
-        # End of variable loop.
+    #     # End of variable loop.
 
-    # Plot the aggregate losses.
-    if verbose:
-        print("Creating aggregate loss plot.")
-    title = "Total residual, data, and weighted loss"
-    fig = make_pinn1_loss_plot(
-        Lres[:, -1], Ldat[:, -1], L[:, -1], title=title
-    )
+    # # Plot the aggregate losses.
+    # if verbose:
+    #     print("Creating aggregate loss plot.")
+    # title = "Total residual, data, and weighted loss"
+    # fig = make_pinn1_loss_plot(
+    #     Lres[:, -1], Ldat[:, -1], L[:, -1], title=title
+    # )
 
-    # Save the plot to a file.
-    path = os.path.join(output_dir, f"L.{image_format}")
-    if verbose:
-        print(f"Saving {path}.")
-    plt.savefig(path)
+    # # Save the plot to a file.
+    # path = os.path.join(output_dir, f"L.{image_format}")
+    # if verbose:
+    #     print(f"Saving {path}.")
+    # plt.savefig(path)
 
-    # Close the figure.
-    plt.close(fig)
+    # # Close the figure.
+    # plt.close(fig)
 
     # ------------------------------------------------------------------------
 
@@ -822,6 +828,11 @@ def pinn1_plots(args: dict):
     xlabel = p.independent_variable_labels[p.ix]
     ylabel = p.independent_variable_labels[p.iy]
 
+    # Use LaTex in plots (not available on mollie).
+    plt.rcParams.update({
+        "text.usetex": usetex,
+    })
+
     # Specify value limits for pcolormesh() for each model.
     vmin = {
         'n': 0.99,
@@ -832,6 +843,7 @@ def pinn1_plots(args: dict):
         'Bx': -5e-3,
         'By': -5e-3,
         'Bz': -1e-3,
+        'divB': -1e-3,
     }
     vmax = {
         'n': 1.01,
@@ -842,6 +854,7 @@ def pinn1_plots(args: dict):
         'Bx': 5e-3,
         'By': 5e-3,
         'Bz': 1e-3,
+        'divB': 1e-3,
     }
     evmin = {
         'n': -5e-3,
@@ -852,6 +865,7 @@ def pinn1_plots(args: dict):
         'Bx': -1e-4,
         'By': -1e-4,
         'Bz': -1e-4,
+        'divB': -1e-3,
     }
     evmax = {
         'n': 5e-3,
@@ -862,139 +876,140 @@ def pinn1_plots(args: dict):
         'Bx': 1e-4,
         'By': 1e-4,
         'Bz': 1e-4,
+        'divB': 1e-3,
     }
 
-    # ------------------------------------------------------------------------
+    # # ------------------------------------------------------------------------
 
-    # Make a movie of the predicted and analytical solutions, and the error,
-    # (PAE plots) for each model.
+    # # Make a movie of the predicted and analytical solutions, and the error,
+    # # (PAE plots) for each model.
 
-    # Make a plot for each model.
-    for iv in range(p.n_var):
+    # # Make a plot for each model.
+    # for iv in range(p.n_var):
 
-        # Extract the variable name and label.
-        variable_name = p.dependent_variable_names[iv]
-        variable_label = p.dependent_variable_labels[iv]
+    #     # Extract the variable name and label.
+    #     variable_name = p.dependent_variable_names[iv]
+    #     variable_label = p.dependent_variable_labels[iv]
 
-        if verbose:
-            print("Creating predicted/analytical/error (PAE) movie for "
-                  f"{variable_name}.")
+    #     if verbose:
+    #         print("Creating predicted/analytical/error (PAE) movie for "
+    #               f"{variable_name}.")
 
-        # Create the directory for the frames for this variable.
-        frame_dir = os.path.join(output_dir, f"frames_{variable_name}")
-        os.mkdir(frame_dir)
+    #     # Create the directory for the frames for this variable.
+    #     frame_dir = os.path.join(output_dir, f"frames_{variable_name}")
+    #     os.mkdir(frame_dir)
 
-        # Create the frames.
-        if verbose:
-            print(f"Creating frames for {variable_name}.")
-        for i_frame in range(n_frames):
-            if verbose:
-                print(f"Creating {variable_name} frame {i_frame}.")
+    #     # Create the frames.
+    #     if verbose:
+    #         print(f"Creating frames for {variable_name}.")
+    #     for i_frame in range(n_frames):
+    #         if verbose:
+    #             print(f"Creating {variable_name} frame {i_frame}.")
 
-            # Extract the time of the frame.
-            t = X_train[i_frame*nxy, 0]
+    #         # Extract the time of the frame.
+    #         t = X_train[i_frame*nxy, 0]
 
-            # Extract the data for the frame.
-            i1 = i_frame*nxy
-            i2 = (i_frame + 1)*nxy
-            # NOTE: Needs same reshape().T used by grid points.
-            # X = X_train[i1:i2, p.ix].reshape(ny, nx).T
-            # Y = X_train[i1:i2, p.iy].reshape(ny, nx).T
-            Zp = Ytp[i1:i2, iv].reshape(ny, nx).T
-            Za = Yta[i1:i2, iv].reshape(ny, nx).T
-            Ze = Yte[i1:i2, iv].reshape(ny, nx).T
+    #         # Extract the data for the frame.
+    #         i1 = i_frame*nxy
+    #         i2 = (i_frame + 1)*nxy
+    #         # NOTE: Needs same reshape().T used by grid points.
+    #         # X = X_train[i1:i2, p.ix].reshape(ny, nx).T
+    #         # Y = X_train[i1:i2, p.iy].reshape(ny, nx).T
+    #         Zp = Ytp[i1:i2, iv].reshape(ny, nx).T
+    #         Za = Yta[i1:i2, iv].reshape(ny, nx).T
+    #         Ze = Yte[i1:i2, iv].reshape(ny, nx).T
 
-            # Compute the frame title.
-            title = f"{variable_label} at t = {t:0.3E}"
-            fig = make_PAE_plot(
-                Zp, Za, Ze, Xg, Yg,
-                title=title, xlabel=xlabel, ylabel=ylabel, figsize=figsize,
-                pvmin=vmin[variable_name], pvmax=vmax[variable_name],
-                avmin=vmin[variable_name], avmax=vmax[variable_name],
-                evmin=evmin[variable_name], evmax=evmax[variable_name]
-            )
+    #         # Compute the frame title.
+    #         title = f"{variable_label} at t = {t:0.3E}"
+    #         fig = make_PAE_plot(
+    #             Zp, Za, Ze, Xg, Yg,
+    #             title=title, xlabel=xlabel, ylabel=ylabel, figsize=figsize,
+    #             pvmin=vmin[variable_name], pvmax=vmax[variable_name],
+    #             avmin=vmin[variable_name], avmax=vmax[variable_name],
+    #             evmin=evmin[variable_name], evmax=evmax[variable_name]
+    #         )
 
-            # Save the plot to a file.
-            path = os.path.join(
-                frame_dir, f"{variable_name}-{i_frame:06d}.{image_format}")
-            if verbose:
-                print(f"Saving {path}.")
-            plt.savefig(path)
+    #         # Save the plot to a file.
+    #         path = os.path.join(
+    #             frame_dir, f"{variable_name}-{i_frame:06d}.{image_format}")
+    #         if verbose:
+    #             print(f"Saving {path}.")
+    #         plt.savefig(path)
 
-            # Close the figure.
-            plt.close(fig)
+    #         # Close the figure.
+    #         plt.close(fig)
 
-            # End of frame loop.
+    #         # End of frame loop.
 
-        # Assemble the frames into a movie.
-        if verbose:
-            print(f"Assembling frames for {variable_name}.")
-        frame_pattern = os.path.join(
-            frame_dir, f"{variable_name}-%06d.{image_format}"
-        )
-        movie_file = os.path.join(output_dir, f"{variable_name}.mp4")
-        assemble_movie(movie_file, frame_pattern, frame_rate)
+    #     # Assemble the frames into a movie.
+    #     if verbose:
+    #         print(f"Assembling frames for {variable_name}.")
+    #     frame_pattern = os.path.join(
+    #         frame_dir, f"{variable_name}-%06d.{image_format}"
+    #     )
+    #     movie_file = os.path.join(output_dir, f"{variable_name}.mp4")
+    #     assemble_movie(movie_file, frame_pattern, frame_rate)
 
-        # End of variable loop.
+    #     # End of variable loop.
 
-    # ------------------------------------------------------------------------
+    # # ------------------------------------------------------------------------
 
-    # Make a movie of the predicted and analytical magnetic field vectors, and
-    # the error.
-    if verbose:
-        print("Creating predicted/analytical/error movie for xy-magnetic "
-              "field.")
+    # # Make a movie of the predicted and analytical magnetic field vectors, and
+    # # the error.
+    # if verbose:
+    #     print("Creating predicted/analytical/error movie for xy-magnetic "
+    #           "field.")
 
-    # Create the directory for the frames.
-    frame_dir = os.path.join(output_dir, "frames_BxBy")
-    os.mkdir(frame_dir)
+    # # Create the directory for the frames.
+    # frame_dir = os.path.join(output_dir, "frames_BxBy")
+    # os.mkdir(frame_dir)
 
-    # Create the frames.
-    if verbose:
-        print("Creating frames for magnetic field vector movie.")
-    for i_frame in range(n_frames):
-        if verbose:
-            print(f"Creating BxBy frame {i_frame}.")
+    # # Create the frames.
+    # if verbose:
+    #     print("Creating frames for magnetic field vector movie.")
+    # for i_frame in range(n_frames):
+    #     if verbose:
+    #         print(f"Creating BxBy frame {i_frame}.")
 
-        # Extract the time of the frame.
-        t = X_train[i_frame*nxy, p.it]
+    #     # Extract the time of the frame.
+    #     t = X_train[i_frame*nxy, p.it]
 
-        # Extract the data for the frame.
-        i1 = i_frame*nxy
-        i2 = (i_frame + 1)*nxy
-        # NOTE: Needs same reshape().T used by grid points,.
-        Bxp = Ytp[i1:i2, p.iBx].reshape(ny, nx).T
-        Byp = Ytp[i1:i2, p.iBy].reshape(ny, nx).T
-        Bxa = Yta[i1:i2, p.iBx].reshape(ny, nx).T
-        Bya = Yta[i1:i2, p.iBy].reshape(ny, nx).T
-        Bxe = Bxp - Bxa
-        Bye = Byp - Bya
+    #     # Extract the data for the frame.
+    #     i1 = i_frame*nxy
+    #     i2 = (i_frame + 1)*nxy
+    #     # NOTE: Needs same reshape().T used by grid points,.
+    #     Bxp = Ytp[i1:i2, p.iBx].reshape(ny, nx).T
+    #     Byp = Ytp[i1:i2, p.iBy].reshape(ny, nx).T
+    #     Bxa = Yta[i1:i2, p.iBx].reshape(ny, nx).T
+    #     Bya = Yta[i1:i2, p.iBy].reshape(ny, nx).T
+    #     Bxe = Bxp - Bxa
+    #     Bye = Byp - Bya
 
-        # Compute the frame title.
-        title = f"Magnetic field at t = {t:0.3E}"
+    #     # Compute the frame title.
+    #     title = f"Magnetic field at t = {t:0.3E}"
 
-        # Plot the magnetic field vectors.
-        fig = make_PAE_B_plot(Bxp, Byp, Bxa, Bya, Bxe, Bye, Xg, Yg,
-                              title=title, figsize=figsize)
+    #     # Plot the magnetic field vectors.
+    #     fig = make_PAE_B_plot(Bxp, Byp, Bxa, Bya, Bxe, Bye, Xg, Yg,
+    #                           title=title, figsize=figsize)
 
-        # Save the plot to a file.
-        path = os.path.join(
-            frame_dir, f"BxBy-{i_frame:06d}.{image_format}")
-        if verbose:
-            print(f"Saving {path}.")
-        plt.savefig(path)
+    #     # Save the plot to a file.
+    #     path = os.path.join(
+    #         frame_dir, f"BxBy-{i_frame:06d}.{image_format}")
+    #     if verbose:
+    #         print(f"Saving {path}.")
+    #     plt.savefig(path)
 
-        # Close the figure.
-        plt.close(fig)
+    #     # Close the figure.
+    #     plt.close(fig)
 
-        # End of frame loop.
+    #     # End of frame loop.
 
-    # Assemble the frames into a movie.
-    if verbose:
-        print("Assembling frames for BxBy.")
-    frame_pattern = os.path.join(frame_dir, f"BxBy-%06d.{image_format}")
-    movie_file = os.path.join(output_dir, "BxBy.mp4")
-    assemble_movie(movie_file, frame_pattern, frame_rate)
+    # # Assemble the frames into a movie.
+    # if verbose:
+    #     print("Assembling frames for BxBy.")
+    # frame_pattern = os.path.join(frame_dir, f"BxBy-%06d.{image_format}")
+    # movie_file = os.path.join(output_dir, "BxBy.mp4")
+    # assemble_movie(movie_file, frame_pattern, frame_rate)
 
     # ------------------------------------------------------------------------
 
@@ -1005,7 +1020,8 @@ def pinn1_plots(args: dict):
               "divergence.")
 
     # Create the directory for the frames.
-    frame_dir = os.path.join(output_dir, "frames_divB")
+    variable_name = "divB"
+    frame_dir = os.path.join(output_dir, f"frames_{variable_name}")
     os.mkdir(frame_dir)
 
     # Create the frames.
@@ -1026,19 +1042,24 @@ def pinn1_plots(args: dict):
         Za = divBa[i1:i2].reshape(ny, nx).T
         Ze = divBe[i1:i2].reshape(ny, nx).T
 
-        # Compute the integrated magnetic divergence and mean.
-        total = np.sum(Zp)
-        mean = total/nxy
-
         # Compute the frame title.
-        title = f"Magnetic divergence at t = {t:0.3E} (mean = {mean:.3E})"
+        if usetex:
+            variable_label = r"$\nabla \cdot \mathbf B$"
+        else:
+            variable_label = "divB"
+        title = f"{variable_label} at t = {t:0.3E}"
 
         # Plot the magnetic field vectors.
-        fig = make_PAE_plot(Zp, Za, Ze, Xg, Yg, title=title, figsize=figsize)
+        fig = make_PAE_plot(
+            Zp, Za, Ze, Xg, Yg, title=title, figsize=figsize,
+            pvmin=vmin[variable_name], pvmax=vmax[variable_name],
+            avmin=vmin[variable_name], avmax=vmax[variable_name],
+            evmin=evmin[variable_name], evmax=evmax[variable_name]
+        )
 
         # Save the plot to a file.
         path = os.path.join(
-            frame_dir, f"divB-{i_frame:06d}.{image_format}")
+            frame_dir, f"{variable_name}-{i_frame:06d}.{image_format}")
         if verbose:
             print(f"Saving {path}.")
         plt.savefig(path)
@@ -1055,125 +1076,125 @@ def pinn1_plots(args: dict):
     movie_file = os.path.join(output_dir, "divB.mp4")
     assemble_movie(movie_file, frame_pattern, frame_rate)
 
-    # ------------------------------------------------------------------------
+    # # ------------------------------------------------------------------------
 
-    # Make a movie of the predicted and analytical magnetic pressure, and
-    # the error.
-    if verbose:
-        print("Creating predicted/analytical/error movie for magnetic "
-              "pressure.")
+    # # Make a movie of the predicted and analytical magnetic pressure, and
+    # # the error.
+    # if verbose:
+    #     print("Creating predicted/analytical/error movie for magnetic "
+    #           "pressure.")
 
-    # Create the directory for the frames.
-    frame_dir = os.path.join(output_dir, "frames_PB")
-    os.mkdir(frame_dir)
+    # # Create the directory for the frames.
+    # frame_dir = os.path.join(output_dir, "frames_PB")
+    # os.mkdir(frame_dir)
 
-    # Create the frames.
-    if verbose:
-        print("Creating frames for magnetic pressure movie.")
-    for i_frame in range(n_frames):
-        if verbose:
-            print(f"Creating PB frame {i_frame}.")
+    # # Create the frames.
+    # if verbose:
+    #     print("Creating frames for magnetic pressure movie.")
+    # for i_frame in range(n_frames):
+    #     if verbose:
+    #         print(f"Creating PB frame {i_frame}.")
 
-        # Extract the time of the frame.
-        t = X_train[i_frame*nxy, p.it]
+    #     # Extract the time of the frame.
+    #     t = X_train[i_frame*nxy, p.it]
 
-        # Extract the data for the frame.
-        i1 = i_frame*nxy
-        i2 = (i_frame + 1)*nxy
-        # NOTE: Needs same reshape().T used by grid points,.
-        Zp = PBp[i1:i2].reshape(ny, nx).T
-        Za = PBa[i1:i2].reshape(ny, nx).T
-        Ze = PBe[i1:i2].reshape(ny, nx).T
+    #     # Extract the data for the frame.
+    #     i1 = i_frame*nxy
+    #     i2 = (i_frame + 1)*nxy
+    #     # NOTE: Needs same reshape().T used by grid points,.
+    #     Zp = PBp[i1:i2].reshape(ny, nx).T
+    #     Za = PBa[i1:i2].reshape(ny, nx).T
+    #     Ze = PBe[i1:i2].reshape(ny, nx).T
 
-        # Compute the integrated magnetic pressure (total magnetic energy)
-        # and mean
-        total = np.sum(Zp)
-        mean = total/nxy
+    #     # Compute the integrated magnetic pressure (total magnetic energy)
+    #     # and mean
+    #     total = np.sum(Zp)
+    #     mean = total/nxy
 
-        # Compute the frame title.
-        title = f"Magnetic pressure at t = {t:0.3E} (mean = {mean:.3E})"
+    #     # Compute the frame title.
+    #     title = f"Magnetic pressure at t = {t:0.3E} (mean = {mean:.3E})"
 
-        # Plot the magnetic field vectors.
-        fig = make_PAE_plot(Zp, Za, Ze, Xg, Yg, title=title, figsize=figsize)
+    #     # Plot the magnetic field vectors.
+    #     fig = make_PAE_plot(Zp, Za, Ze, Xg, Yg, title=title, figsize=figsize)
 
-        # Save the plot to a file.
-        path = os.path.join(
-            frame_dir, f"PB-{i_frame:06d}.{image_format}")
-        if verbose:
-            print(f"Saving {path}.")
-        plt.savefig(path)
+    #     # Save the plot to a file.
+    #     path = os.path.join(
+    #         frame_dir, f"PB-{i_frame:06d}.{image_format}")
+    #     if verbose:
+    #         print(f"Saving {path}.")
+    #     plt.savefig(path)
 
-        # Close the figure.
-        plt.close(fig)
+    #     # Close the figure.
+    #     plt.close(fig)
 
-        # End of frame loop.
+    #     # End of frame loop.
 
-    # Assemble the frames into a movie.
-    if verbose:
-        print("Assembling frames for PB.")
-    frame_pattern = os.path.join(frame_dir, f"PB-%06d.{image_format}")
-    movie_file = os.path.join(output_dir, "PB.mp4")
-    assemble_movie(movie_file, frame_pattern, frame_rate)
+    # # Assemble the frames into a movie.
+    # if verbose:
+    #     print("Assembling frames for PB.")
+    # frame_pattern = os.path.join(frame_dir, f"PB-%06d.{image_format}")
+    # movie_file = os.path.join(output_dir, "PB.mp4")
+    # assemble_movie(movie_file, frame_pattern, frame_rate)
 
-    # ------------------------------------------------------------------------
+    # # ------------------------------------------------------------------------
 
-    # Make a movie of the predicted and analytical z-current density, and
-    # the error.
-    if verbose:
-        print("Creating predicted/analytical/error movie for z-current "
-              "density.")
+    # # Make a movie of the predicted and analytical z-current density, and
+    # # the error.
+    # if verbose:
+    #     print("Creating predicted/analytical/error movie for z-current "
+    #           "density.")
 
-    # Create the directory for the frames.
-    frame_dir = os.path.join(output_dir, "frames_Jz")
-    os.mkdir(frame_dir)
+    # # Create the directory for the frames.
+    # frame_dir = os.path.join(output_dir, "frames_Jz")
+    # os.mkdir(frame_dir)
 
-    # Create the frames.
-    if verbose:
-        print("Creating frames for Jz movie.")
-    for i_frame in range(n_frames):
-        if verbose:
-            print(f"Creating Jz frame {i_frame}.")
+    # # Create the frames.
+    # if verbose:
+    #     print("Creating frames for Jz movie.")
+    # for i_frame in range(n_frames):
+    #     if verbose:
+    #         print(f"Creating Jz frame {i_frame}.")
 
-        # Extract the time of the frame.
-        t = X_train[i_frame*nxy, p.it]
+    #     # Extract the time of the frame.
+    #     t = X_train[i_frame*nxy, p.it]
 
-        # Extract the data for the frame.
-        i1 = i_frame*nxy
-        i2 = (i_frame + 1)*nxy
-        # NOTE: Needs same reshape().T used by grid points,.
-        Zp = Jzp[i1:i2].reshape(ny, nx).T
-        Za = Jza[i1:i2].reshape(ny, nx).T
-        Ze = Jze[i1:i2].reshape(ny, nx).T
+    #     # Extract the data for the frame.
+    #     i1 = i_frame*nxy
+    #     i2 = (i_frame + 1)*nxy
+    #     # NOTE: Needs same reshape().T used by grid points,.
+    #     Zp = Jzp[i1:i2].reshape(ny, nx).T
+    #     Za = Jza[i1:i2].reshape(ny, nx).T
+    #     Ze = Jze[i1:i2].reshape(ny, nx).T
 
-        # Compute the integrated current density (should be 0).
-        total = np.sum(Zp)*dxy
-        # Iza = np.sum(Za)*dxy
-        # Ize = np.sum(Ze)*dxy
+    #     # Compute the integrated current density (should be 0).
+    #     total = np.sum(Zp)*dxy
+    #     # Iza = np.sum(Za)*dxy
+    #     # Ize = np.sum(Ze)*dxy
 
-        # Compute the frame title.
-        title = f"z-current density at t = {t:0.3E} (Iz = {total:.3E})"
+    #     # Compute the frame title.
+    #     title = f"z-current density at t = {t:0.3E} (Iz = {total:.3E})"
 
-        # Plot the z-current density.
-        fig = make_PAE_plot(Zp, Za, Ze, Xg, Yg, title=title, figsize=figsize)
+    #     # Plot the z-current density.
+    #     fig = make_PAE_plot(Zp, Za, Ze, Xg, Yg, title=title, figsize=figsize)
 
-        # Save the plot to a file.
-        path = os.path.join(
-            frame_dir, f"Jz-{i_frame:06d}.{image_format}")
-        if verbose:
-            print(f"Saving {path}.")
-        plt.savefig(path)
+    #     # Save the plot to a file.
+    #     path = os.path.join(
+    #         frame_dir, f"Jz-{i_frame:06d}.{image_format}")
+    #     if verbose:
+    #         print(f"Saving {path}.")
+    #     plt.savefig(path)
 
-        # Close the figure.
-        plt.close(fig)
+    #     # Close the figure.
+    #     plt.close(fig)
 
-        # End of frame loop.
+    #     # End of frame loop.
 
-    # Assemble the frames into a movie.
-    if verbose:
-        print("Assembling frames for Jz.")
-    frame_pattern = os.path.join(frame_dir, f"Jz-%06d.{image_format}")
-    movie_file = os.path.join(output_dir, "Jz.mp4")
-    assemble_movie(movie_file, frame_pattern, frame_rate)
+    # # Assemble the frames into a movie.
+    # if verbose:
+    #     print("Assembling frames for Jz.")
+    # frame_pattern = os.path.join(frame_dir, f"Jz-%06d.{image_format}")
+    # movie_file = os.path.join(output_dir, "Jz.mp4")
+    # assemble_movie(movie_file, frame_pattern, frame_rate)
 
 
 def main():
