@@ -20,6 +20,7 @@ import glob
 import importlib
 import os
 import platform
+import shutil
 import subprocess
 import sys
 
@@ -832,6 +833,40 @@ def save_models(models: list,  variable_names: list, epoch: int = 0,
             sys.stdout = f
             model.summary()
         sys.stdout = old_stdout
+
+
+# ----------------------------------------------------------------------------
+
+# General-purpose utilities
+
+
+def create_directory(path: str, clobber: bool = False):
+    """Create a directory, optionally clobbering if it exists.
+
+    Create a directory, and any required parent directories. If the directory
+    exists and clobber is True, delete the existing directory before creating
+    the new one. If the directory exists and clobber is False, raise an exception.
+
+
+    Parameters
+    ----------
+    clobber : bool, default False
+        True to delete existing directory of same name.
+
+    Returns
+    -------
+    path : str
+        Path to new directory.
+
+    Raises
+    ------
+    FileExistsError
+        If the requested path exists and clobber is False.
+    """
+    if os.path.isdir(path) and clobber:
+        shutil.rmtree(path)
+    os.mkdir(path)
+    return path
 
 
 if __name__ == "__main__":

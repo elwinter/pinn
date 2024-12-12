@@ -406,39 +406,24 @@ def pinn1_plots(args: dict):
     # Loss (residual)
     if verbose:
         print("Loading residual loss data.")
-    nL = 200000
-    Lres = np.hstack(
-        [np.reshape(np.loadtxt(os.path.join(results_path, f"L_res_{vname}.dat")), (nL, 1))
-         for vname in p.dependent_variable_names]
-    )
+    path = os.path.join(results_path, "L_res.dat")
+    Lres = np.loadtxt(path)
     if debug:
-        print(f"Lres = f{Lres}")
+        print(f"Lres = {Lres}")
 
     # Loss (data)
     if verbose:
         print("Loading data loss data.")
-    Ldat = np.hstack(
-        [np.reshape(np.loadtxt(os.path.join(results_path, f"L_data_{vname}.dat")), (nL, 1))
-         for vname in p.dependent_variable_names]
-    )
+    path = os.path.join(results_path, "L_dat.dat")
+    Ldat = np.loadtxt(path)
     if debug:
-        print(f"Ldat = f{Ldat}")
-
-    # Loss (weighted)
-    if verbose:
-        print("Loading weighted loss data.")
-    Lmod = np.hstack(
-        [np.reshape(np.loadtxt(os.path.join(results_path, f"L_{vname}.dat")), (nL, 1))
-         for vname in p.dependent_variable_names]
-    )
-    if debug:
-        print(f"Lmod = f{Lmod}")
+        print(f"Ldat = {Ldat}")
 
     # Loss (aggregate)
     if verbose:
         print("Loading loss data.")
     path = os.path.join(results_path, "L.dat")
-    L = np.reshape(np.loadtxt(path), (nL, 1))
+    L = np.loadtxt(path)
     if debug:
         print(f"L = {L}")
 
@@ -489,10 +474,9 @@ def pinn1_plots(args: dict):
         print(f"n_train = {n_train}")
 
     # Extract grid counts.
-    # nt = column_descriptions_train["t"]["n"]
-    # nx = column_descriptions_train["x"]["n"]
-    # ny = column_descriptions_train["y"]["n"]
-    nt = nx = ny = 50
+    nt = column_descriptions_train["t"]["n"]
+    nx = column_descriptions_train["x"]["n"]
+    ny = column_descriptions_train["y"]["n"]
     nxy = nx*ny
     if debug:
         print(f"nt = {nt}")
@@ -647,7 +631,7 @@ def pinn1_plots(args: dict):
         # Create the figure.
         title = f"{variable_label} residual, data, and weighted loss"
         fig = make_pinn1_loss_plot(
-            Lres[:, iv], Ldat[:, iv], Lmod[:, iv], title=title
+            Lres[:, iv], Ldat[:, iv], L[:, iv], title=title
         )
 
         # Save the plot to a file.
@@ -661,7 +645,7 @@ def pinn1_plots(args: dict):
 
         # End of variable loop.
 
-    # Create the aggregate loss plot.
+    # Create the figure.
     if verbose:
         print("Creating aggregate loss plot.")
     title = "Total residual, data, and weighted loss"
@@ -722,7 +706,7 @@ def pinn1_plots(args: dict):
             # Extract the time of the frame.
             t = X_train[i_frame*nxy, 0]
 
-            # Extract the data for the frame.
+    #         # Extract the data for the frame.
             i1 = i_frame*nxy
             i2 = (i_frame + 1)*nxy
             # NOTE: Needs same reshape().T used by grid points,.
@@ -751,14 +735,14 @@ def pinn1_plots(args: dict):
 
             # End of frame loop.
 
-    #     # Assemble the frames into a movie.
-    #     if verbose:
-    #         print(f"Assembling frames for {variable_name}.")
-    #     frame_pattern = os.path.join(
-    #         frame_dir, f"{variable_name}-%06d.{image_format}"
-    #     )
-    #     movie_file = os.path.join(output_dir, f"{variable_name}.mp4")
-    #     assemble_movie(movie_file, frame_pattern, frame_rate)
+        # Assemble the frames into a movie.
+        if verbose:
+            print(f"Assembling frames for {variable_name}.")
+        frame_pattern = os.path.join(
+            frame_dir, f"{variable_name}-%06d.{image_format}"
+        )
+        movie_file = os.path.join(output_dir, f"{variable_name}.mp4")
+        assemble_movie(movie_file, frame_pattern, frame_rate)
 
         # End of variable loop.
 
@@ -814,12 +798,12 @@ def pinn1_plots(args: dict):
 
         # End of frame loop.
 
-    # # Assemble the frames into a movie.
-    # if verbose:
-    #     print("Assembling frames for BxBy.")
-    # frame_pattern = os.path.join(frame_dir, f"BxBy-%06d.{image_format}")
-    # movie_file = os.path.join(output_dir, "BxBy.mp4")
-    # assemble_movie(movie_file, frame_pattern, frame_rate)
+    # Assemble the frames into a movie.
+    if verbose:
+        print("Assembling frames for BxBy.")
+    frame_pattern = os.path.join(frame_dir, f"BxBy-%06d.{image_format}")
+    movie_file = os.path.join(output_dir, "BxBy.mp4")
+    assemble_movie(movie_file, frame_pattern, frame_rate)
 
     # ------------------------------------------------------------------------
 
@@ -869,12 +853,12 @@ def pinn1_plots(args: dict):
 
         # End of frame loop.
 
-    # # Assemble the frames into a movie.
-    # if verbose:
-    #     print("Assembling frames for divB.")
-    # frame_pattern = os.path.join(frame_dir, f"divB-%06d.{image_format}")
-    # movie_file = os.path.join(output_dir, "divB.mp4")
-    # assemble_movie(movie_file, frame_pattern, frame_rate)
+    # Assemble the frames into a movie.
+    if verbose:
+        print("Assembling frames for divB.")
+    frame_pattern = os.path.join(frame_dir, f"divB-%06d.{image_format}")
+    movie_file = os.path.join(output_dir, "divB.mp4")
+    assemble_movie(movie_file, frame_pattern, frame_rate)
 
     # ------------------------------------------------------------------------
 
@@ -924,12 +908,12 @@ def pinn1_plots(args: dict):
 
         # End of frame loop.
 
-    # # Assemble the frames into a movie.
-    # if verbose:
-    #     print("Assembling frames for PB.")
-    # frame_pattern = os.path.join(frame_dir, f"PB-%06d.{image_format}")
-    # movie_file = os.path.join(output_dir, "PB.mp4")
-    # assemble_movie(movie_file, frame_pattern, frame_rate)
+    # Assemble the frames into a movie.
+    if verbose:
+        print("Assembling frames for PB.")
+    frame_pattern = os.path.join(frame_dir, f"PB-%06d.{image_format}")
+    movie_file = os.path.join(output_dir, "PB.mp4")
+    assemble_movie(movie_file, frame_pattern, frame_rate)
 
 
 def main():

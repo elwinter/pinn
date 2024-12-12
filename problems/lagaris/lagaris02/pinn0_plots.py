@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create plots for pinn0 results for the lagaris01 problem.
+"""Create plots for pinn0 results for the lagaris02 problem.
 
-Create plots for pinn0 results for the lagaris01 problem.
+Create plots for pinn0 results for the lagaris02 problem.
 
 Author
 ------
@@ -29,7 +29,7 @@ from pinn import common
 # Program constants
 
 # Program description
-DESCRIPTION = "Create plots for pinn0 results for the lagaris01 problem."
+DESCRIPTION = "Create plots for pinn0 results for the lagaris02 problem."
 
 # Default values for command-line arguments.
 DEFAULT_ARGUMENTS = {
@@ -41,7 +41,7 @@ DEFAULT_ARGUMENTS = {
 }
 
 # Name of problem
-PROBLEM_NAME = "lagaris01"
+PROBLEM_NAME = "lagaris02"
 
 # Name of directory to hold output plots
 OUTPUT_DIR = "pinn0_plots"
@@ -80,33 +80,6 @@ def create_command_line_parser():
         help="Path to directory containing results to plot."
     )
     return parser
-
-
-def create_output_directory(clobber: bool = False):
-    """Create the output directory for the plots.
-
-    Create the output directory for the plots. The name of the output
-    directory is "pinn0_plots".
-
-    Parameters
-    ----------
-    clobber : bool, default False
-        True to delete existing directory of same name.
-
-    Returns
-    -------
-    output_dir : str
-        Path to output directory.
-
-    Raises
-    ------
-    None
-    """
-    output_dir = "pinn0_plots"
-    if os.path.isdir(output_dir) and clobber:
-        shutil.rmtree(output_dir)
-    os.mkdir(output_dir)
-    return output_dir
 
 
 def make_pinn0_loss_plot(L: np.ndarray,  **kwargs):
@@ -265,8 +238,8 @@ def pinn0_plots(args: dict):
 
     # Compute the path to the output directory, then create it.
     if verbose:
-        print(f"Creating output directory {OUTPUT_DIR}.")
-    output_dir = common.create_directory(OUTPUT_DIR, clobber)
+        print("Creating output directory.")
+    output_dir = create_output_directory(clobber)
     if debug:
         print(f"output_dir = {output_dir}")
 
