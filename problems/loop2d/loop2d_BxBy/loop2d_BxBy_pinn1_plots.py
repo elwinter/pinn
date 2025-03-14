@@ -251,7 +251,11 @@ def main():
     else:
         B0x_pred = models[p.iBx](txy0).numpy().reshape(n_start)
         B0y_pred = models[p.iBy](txy0).numpy().reshape(n_start)
-    title = "Magnetic field at t = 0"
+    B0x_err = B0x_pred - B0x_act
+    B0y_err = B0y_pred - B0y_act
+    B0x_rms = np.sqrt(np.sum(B0x_err**2)/n_start)
+    B0y_rms = np.sqrt(np.sum(B0y_err**2)/n_start)
+    title = f"Magnetic field at t = 0, (Bx, By)_rms = ({B0x_rms:.2e}, {B0y_rms:.2e})"
     pinn.standard_plots.plot_actual_predicted_B(
         x0, y0, B0x_act, B0y_act, B0x_pred, B0y_pred, title=title
     )
@@ -263,88 +267,88 @@ def main():
 
     # ------------------------------------------------------------------------
 
-    # Make a movie for each predicted variable. Include the analytical solution
-    # and the error.
+    # # Make a movie for each predicted variable. Include the analytical solution
+    # # and the error.
 
-    # Compute the heat map tick locations and labels.
-    HEATMAP_N_X_TICKS = 5
-    heatmap_x_tick_pos = np.linspace(0, nx - 1, HEATMAP_N_X_TICKS)
-    heatmap_x_tick_labels = ["%.1f" % (xmin + x/(nx - 1)*(xmax - xmin)) for x in heatmap_x_tick_pos]
-    HEATMAP_N_Y_TICKS = 5
-    heatmap_y_tick_pos = np.linspace(0, ny - 1, HEATMAP_N_Y_TICKS)
-    heatmap_y_tick_labels = ["%.1f" % (ymin + y/(ny - 1)*(ymax - ymin)) for y in heatmap_y_tick_pos]
-    heatmap_y_tick_labels = list(reversed(heatmap_y_tick_labels))
+    # # Compute the heat map tick locations and labels.
+    # HEATMAP_N_X_TICKS = 5
+    # heatmap_x_tick_pos = np.linspace(0, nx - 1, HEATMAP_N_X_TICKS)
+    # heatmap_x_tick_labels = ["%.1f" % (xmin + x/(nx - 1)*(xmax - xmin)) for x in heatmap_x_tick_pos]
+    # HEATMAP_N_Y_TICKS = 5
+    # heatmap_y_tick_pos = np.linspace(0, ny - 1, HEATMAP_N_Y_TICKS)
+    # heatmap_y_tick_labels = ["%.1f" % (ymin + y/(ny - 1)*(ymax - ymin)) for y in heatmap_y_tick_pos]
+    # heatmap_y_tick_labels = list(reversed(heatmap_y_tick_labels))
 
-    # Plot parameters.
-    plot_min = {
-        "Bx": -5e-3,
-        "By": -5e-3,
-    }
-    plot_max = {
-        "Bx": 5e-3,
-        "By": 5e-3,
-    }
-    plot_err_min = {
-        "Bx": -1e-3,
-        "By": -1e-3,
-    }
-    plot_err_max = {
-        "Bx": 1e-3,
-        "By": 1e-3,
-    }
+    # # Plot parameters.
+    # plot_min = {
+    #     "Bx": -5e-3,
+    #     "By": -5e-3,
+    # }
+    # plot_max = {
+    #     "Bx": 5e-3,
+    #     "By": 5e-3,
+    # }
+    # plot_err_min = {
+    #     "Bx": -1e-3,
+    #     "By": -1e-3,
+    # }
+    # plot_err_max = {
+    #     "Bx": 1e-3,
+    #     "By": 1e-3,
+    # }
 
-    # Create and save each frame.
-    for (iv, variable_name) in enumerate(p.dependent_variable_names):
-        if verbose:
-            print(f"Creating movie for {variable_name}.")
-        xlabel = p.independent_variable_labels[p.ix]
-        ylabel = p.independent_variable_labels[p.iy]
-        frame_dir = os.path.join(output_path, f"frames_{variable_name}")
-        os.mkdir(frame_dir)
-        if multi:
-            model = models[0]
-            Z_trained = model(X_train).numpy()[:, iv].reshape(nt, nx, ny)
-        else:
-            model = models[iv]
-            Z_trained = model(X_train).numpy().reshape(nt, nx, ny)
-        Z_analytical = p.analytical_solutions[iv](
-            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]).reshape(nt, nx, ny)
-        Z_error = Z_trained - Z_analytical
-        frames = []
-        for it in range(nt):
-            i0 = it*nx*ny
-            i1 = i0 + nx*ny
-            X = X_train[i0:i1, p.ix]
-            Y = X_train[i0:i1, p.iy]
-            # To get the proper orientation, reshape, transpose, flip.
-            Zt = np.flip(Z_trained[it, :].T, axis=0)
-            Za = np.flip(Z_analytical[it, :].T, axis=0)
-            Ze = np.flip(Z_error[it, :].T, axis=0)
-            pinn.standard_plots.plot_actual_predicted_error(
-                X, Y, Za, Zt, Ze,
-                title=f"{p.dependent_variable_names[iv]}",
-                vmin=plot_min[variable_name], vmax=plot_max[variable_name],
-                err_vmin=plot_err_min[variable_name], err_vmax=plot_err_max[variable_name],
-                x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-                y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-            )
-            path = os.path.join(frame_dir, f"{variable_name}-{it:06}.png")
-            if verbose:
-                print(f"Saving {path}.")
-            plt.savefig(path)
-            frames.append(path)
-            plt.close()
+    # # Create and save each frame.
+    # for (iv, variable_name) in enumerate(p.dependent_variable_names):
+    #     if verbose:
+    #         print(f"Creating movie for {variable_name}.")
+    #     xlabel = p.independent_variable_labels[p.ix]
+    #     ylabel = p.independent_variable_labels[p.iy]
+    #     frame_dir = os.path.join(output_path, f"frames_{variable_name}")
+    #     os.mkdir(frame_dir)
+    #     if multi:
+    #         model = models[0]
+    #         Z_trained = model(X_train).numpy()[:, iv].reshape(nt, nx, ny)
+    #     else:
+    #         model = models[iv]
+    #         Z_trained = model(X_train).numpy().reshape(nt, nx, ny)
+    #     Z_analytical = p.analytical_solutions[iv](
+    #         X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]).reshape(nt, nx, ny)
+    #     Z_error = Z_trained - Z_analytical
+    #     frames = []
+    #     for it in range(nt):
+    #         i0 = it*nx*ny
+    #         i1 = i0 + nx*ny
+    #         X = X_train[i0:i1, p.ix]
+    #         Y = X_train[i0:i1, p.iy]
+    #         # To get the proper orientation, reshape, transpose, flip.
+    #         Zt = np.flip(Z_trained[it, :].T, axis=0)
+    #         Za = np.flip(Z_analytical[it, :].T, axis=0)
+    #         Ze = np.flip(Z_error[it, :].T, axis=0)
+    #         pinn.standard_plots.plot_actual_predicted_error(
+    #             X, Y, Za, Zt, Ze,
+    #             title=f"{p.dependent_variable_names[iv]}",
+    #             vmin=plot_min[variable_name], vmax=plot_max[variable_name],
+    #             err_vmin=plot_err_min[variable_name], err_vmax=plot_err_max[variable_name],
+    #             x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
+    #             y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
+    #         )
+    #         path = os.path.join(frame_dir, f"{variable_name}-{it:06}.png")
+    #         if verbose:
+    #             print(f"Saving {path}.")
+    #         plt.savefig(path)
+    #         frames.append(path)
+    #         plt.close()
 
-        # Assemble the frames into a movie.
-        frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
-        movie_file = os.path.join(output_path, f"{variable_name}.mp4")
-        args = [
-            "ffmpeg", "-r", "10", "-s", "1920x1080",
-            "-i", frame_pattern,
-            "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-            movie_file
-        ]
-        subprocess.run(args)
+    #     # Assemble the frames into a movie.
+    #     frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
+    #     movie_file = os.path.join(output_path, f"{variable_name}.mp4")
+    #     args = [
+    #         "ffmpeg", "-r", "10", "-s", "1920x1080",
+    #         "-i", frame_pattern,
+    #         "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
+    #         movie_file
+    #     ]
+    #     subprocess.run(args)
 
     # # ------------------------------------------------------------------------
 
