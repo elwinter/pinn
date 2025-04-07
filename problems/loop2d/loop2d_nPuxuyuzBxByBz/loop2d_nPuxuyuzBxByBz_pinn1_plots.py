@@ -39,6 +39,7 @@ DESCRIPTION = (
 DEFAULT_ARGUMENTS = {
     "clobber": False,
     "debug": False,
+    "epoch": -1,
     "verbose": False,
 }
 
@@ -85,6 +86,12 @@ def create_command_line_parser():
         default=DEFAULT_ARGUMENTS["debug"],
         action="store_true",
         help="Print debugging output (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--epoch",
+        type=int,
+        default=DEFAULT_ARGUMENTS["epoch"],
+        help="Model epoch to use (default: %(default)s)."
     )
     parser.add_argument(
         "--verbose", "-v",
@@ -345,13 +352,16 @@ def pinn1_plots(**kwargs) -> int:
         print(f"(xmin, xmax, nx) = ({xmin}, {xmax}, {nx})")
         print(f"(ymin, ymax, ny) = ({ymin}, {ymax}, {ny})")
 
-    # Find the epoch of the last trained model.
-    last_epoch = pinn.common.find_last_epoch(results_path)
+    # Determine the epoch of the trained model to use.
+    if args["epoch"] == -1:
+        epoch = pinn.common.find_last_epoch(results_path)
+    else:
+        epoch = args["epoch"]
 
     # Load the trained model for each variable.
     models = []
     for variable_name in p.dependent_variable_names:
-        path = os.path.join(results_path, "models", f"{last_epoch:06d}",
+        path = os.path.join(results_path, "models", f"{epoch:06d}",
                             f"model_{variable_name}")
         model = tf.keras.models.load_model(path)
         models.append(model)
@@ -374,7 +384,7 @@ def pinn1_plots(**kwargs) -> int:
         os.mkdir(pae_path)
 
         # Compute the PAE values.
-        predicted = model(X_train).numpy().reshape(nt, nx, ny)
+        predicted = models[iv](X_train).numpy().reshape(nt, nx, ny)
         analytical = p.analytical_solutions[iv](
             X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
         ).reshape(nt, nx, ny)
