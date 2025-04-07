@@ -136,3 +136,6 @@ dmypy.json
 
 # Emacs backup files.
 *~
+
+# Plot files
+pinn1_plots/
