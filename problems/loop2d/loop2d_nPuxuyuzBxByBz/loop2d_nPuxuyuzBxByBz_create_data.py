@@ -110,6 +110,76 @@ def main():
             Bz = p.B0z
             print(tg[0], x, y, n, P, ux, uy, uz, Bx, By, Bz)
 
+    # Create the boundary conditions at each time.
+    for t in tg[1:]:
+        # x = -1|1
+        x = xg[0]
+        for y in yg:
+            r = np.sqrt(x**2 + y**2)
+            n = p.n0
+            P = p.P0
+            ux = p.u0x
+            uy = p.u0y
+            uz = p.u0z
+            if r < p.R0:
+                Bx = -p.A*y/r
+                By = p.A*x/r
+            else:
+                Bx = p.B0x
+                By = p.B0y
+            Bz = p.B0z
+            print(t, x, y, n, P, ux, uy, uz, Bx, By, Bz)
+        x = xg[-1]
+        for y in yg:
+            r = np.sqrt(x**2 + y**2)
+            n = p.n0
+            P = p.P0
+            ux = p.u0x
+            uy = p.u0y
+            uz = p.u0z
+            if r < p.R0:
+                Bx = -p.A*y/r
+                By = p.A*x/r
+            else:
+                Bx = p.B0x
+                By = p.B0y
+            Bz = p.B0z
+            print(t, x, y, n, P, ux, uy, uz, Bx, By, Bz)
+        # y = -1|1
+        y = yg[0]
+        for x in xg[1:-1]:
+            r = np.sqrt(x**2 + y**2)
+            n = p.n0
+            P = p.P0
+            ux = p.u0x
+            uy = p.u0y
+            uz = p.u0z
+            if r < p.R0:
+                Bx = -p.A*y/r
+                By = p.A*x/r
+            else:
+                Bx = p.B0x
+                By = p.B0y
+            Bz = p.B0z
+            print(t, x, y, n, P, ux, uy, uz, Bx, By, Bz)
+        y = yg[-1]
+        for x in xg[1:-1]:
+            r = np.sqrt(x**2 + y**2)
+            n = p.n0
+            P = p.P0
+            ux = p.u0x
+            uy = p.u0y
+            uz = p.u0z
+            if r < p.R0:
+                Bx = -p.A*y/r
+                By = p.A*x/r
+            else:
+                Bx = p.B0x
+                By = p.B0y
+            Bz = p.B0z
+            print(t, x, y, n, P, ux, uy, uz, Bx, By, Bz)
+
+
 if __name__ == "__main__":
     """Begin main program."""
     main()
