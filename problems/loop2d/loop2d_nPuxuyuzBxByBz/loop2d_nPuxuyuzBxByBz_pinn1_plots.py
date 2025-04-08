@@ -222,6 +222,7 @@ def create_PA_BxBy_plot(X: np.ndarray, Y: np.ndarray,
                         Px: np.ndarray, Py: np.ndarray,
                         Ax: np.ndarray, Ay: np.ndarray) -> mpl.pyplot.Figure:
     """Create a plot of predicted and analytical magnetic field.
+
     Create a plot of predicted and analytical magnetic field.
 
     Parameters
@@ -269,6 +270,36 @@ def create_PA_BxBy_plot(X: np.ndarray, Y: np.ndarray,
 
     # Return the figure.
     return fig
+
+
+def assemble_movie(frame_pattern: str, movie_file: str) -> None:
+    """Assemble a movie from individual frames.
+
+    Assemble a movie from individual frames.
+
+    Parameters
+    ----------
+    frame_pattern : str
+        Glob pattern for frame files.
+    movie_file : str
+        Path to movie file to create.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    None
+    """
+    # Assemble the frames into a movie.
+    args = [
+        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
+        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
+        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
+        movie_file
+    ]
+    subprocess.run(args, check=True)
 
 
 def pinn1_plots(**kwargs) -> int:
@@ -476,14 +507,8 @@ def pinn1_plots(**kwargs) -> int:
 
         # Assemble the frames into a movie.
         frame_pattern = os.path.join(pae_path, f"PAE_{variable_name}_%04d.png")
-        movie_file = os.path.join(pae_path, f"{variable_name}.mp4")
-        args = [
-            "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
-            "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
-            "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
-            movie_file
-        ]
-        subprocess.run(args, check=True)
+        movie_file = os.path.join(pae_path, f"PAE_{variable_name}.mp4")
+        assemble_movie(frame_pattern, movie_file)
 
     # ------------------------------------------------------------------------
 
@@ -536,13 +561,7 @@ def pinn1_plots(**kwargs) -> int:
     # Assemble the frames into a movie.
     frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
     movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
-    args = [
-        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
-        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
-        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
-        movie_file
-    ]
-    subprocess.run(args, check=True)
+    assemble_movie(frame_pattern, movie_file)
 
     # ------------------------------------------------------------------------
 
@@ -579,7 +598,7 @@ def pinn1_plots(**kwargs) -> int:
 
         # Create the plot.
         fig = create_PAE_plot(X, Y, P, A, E)
-        fig.suptitle("Magnetic field intensity, t = {t:.2E} predicted, "
+        fig.suptitle(f"Magnetic field intensity, t = {t:.2E} predicted, "
                      "analytical, and error")
 
         # Save the plot to a PNG file.
@@ -590,13 +609,7 @@ def pinn1_plots(**kwargs) -> int:
     # Assemble the frames into a movie.
     frame_pattern = os.path.join(pae_path, "PAE_B_%04d.png")
     movie_file = os.path.join(pae_path, "PAE_B.mp4")
-    args = [
-        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
-        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
-        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
-        movie_file
-    ]
-    subprocess.run(args, check=True)
+    assemble_movie(frame_pattern, movie_file)
 
     # ------------------------------------------------------------------------
 
@@ -633,7 +646,7 @@ def pinn1_plots(**kwargs) -> int:
 
         # Create the plot.
         fig = create_PAE_plot(X, Y, P, A, E)
-        fig.suptitle("Magnetic field energy, t = {t:.2E} predicted, "
+        fig.suptitle(f"Magnetic field energy, t = {t:.2E} predicted, "
                      "analytical, and error")
 
         # Save the plot to a PNG file.
@@ -643,14 +656,8 @@ def pinn1_plots(**kwargs) -> int:
 
     # Assemble the frames into a movie.
     frame_pattern = os.path.join(pae_path, "PAE_Eb_%04d.png")
-    movie_file = os.path.join(pae_path, "PAE_B.mp4")
-    args = [
-        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
-        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
-        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
-        movie_file
-    ]
-    subprocess.run(args, check=True)
+    movie_file = os.path.join(pae_path, "PAE_Eb.mp4")
+    assemble_movie(frame_pattern, movie_file)
 
     # ------------------------------------------------------------------------
 
@@ -694,7 +701,7 @@ def pinn1_plots(**kwargs) -> int:
 
         # Create the plot.
         fig = create_PAE_plot(X, Y, P, A, E)
-        fig.suptitle("Magnetic field divergence, t = {t:.2E} predicted, "
+        fig.suptitle(f"Magnetic field divergence, t = {t:.2E} predicted, "
                      "analytical, and error")
 
         # Save the plot to a PNG file.
@@ -705,69 +712,7 @@ def pinn1_plots(**kwargs) -> int:
     # Assemble the frames into a movie.
     frame_pattern = os.path.join(pae_path, "PAE_divB_%04d.png")
     movie_file = os.path.join(pae_path, "PAE_divB.mp4")
-    args = [
-        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
-        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
-        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
-        movie_file
-    ]
-    subprocess.run(args, check=True)
-
-#     # # Plot parameters.
-#     # plot_min = {
-#     #     "divB": -1e-3,
-#     # }
-#     # plot_max = {
-#     #     "divB": 1e-3,
-#     # }
-#     # plot_err_min = {
-#     #     "divB": -1e-3,
-#     # }
-#     # plot_err_max = {
-#     #     "divB": 1e-3,
-#     # }
-
-#     # if verbose:
-#     #     print("Creating movie for magnetic field divergence.")
-#     # frame_dir = os.path.join(output_path, "frames_divB")
-#     # os.mkdir(frame_dir)
-#     # frames = []
-#     # for it in range(nt):
-#     #     i0 = it*nx*ny
-#     #     i1 = i0 + nx*ny
-#     #     txy = tf.Variable(X_train[i0:i1, :])
-#     #     t = X_train[i0:i1, p.it]
-#     #     x = X_train[i0:i1, p.ix]
-#     #     y = X_train[i0:i1, p.iy]
-#     #     dBx_dx_act = p.dBx_dx_analytical(t, x, y)
-#     #     dBy_dy_act = p.dBy_dy_analytical(t, x, y)
-#     #     divB_act = dBx_dx_act + dBy_dy_act
-#     #     divB_act = divB_act.reshape(nx, ny)
-#     #     divB_act = np.flip(divB_act.T, axis=0)
-#     #     with tf.GradientTape(persistent=True) as tape1:
-#     #         Bx_pred = models[p.iBx](txy)
-#     #         By_pred = models[p.iBy](txy)
-#     #     dBx_dx_pred = tape1.gradient(Bx_pred, txy)[:, p.ix].numpy()
-#     #     dBy_dy_pred = tape1.gradient(Bx_pred, txy)[:, p.iy].numpy()
-#     #     divB_pred = dBx_dx_pred + dBy_dy_pred
-#     #     divB_pred = divB_pred.reshape(nx, ny)
-#     #     divB_pred = np.flip(divB_pred.T, axis=0)
-#     #     divB_err = divB_pred - divB_act
-#     #     title = f"Magnetic field divergence at t = {t[0]:.3e}"
-#     #     pinn.standard_plots.plot_actual_predicted_error(
-#     #         x, y, divB_act, divB_pred, divB_err,
-#     #         title=title,
-#     #         vmin=plot_min['divB'], vmax=plot_max['divB'],
-#     #         err_vmin=plot_err_min['divB'], err_vmax=plot_err_max['divB'],
-#     #         x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     #         y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-#     #     )
-#     #     path = os.path.join(frame_dir, f"divB-{it:06}.png")
-#     #     if verbose:
-#     #         print(f"Saving {path}.")
-#     #     plt.savefig(path)
-#     #     frames.append(path)
-#     #     plt.close()
+    assemble_movie(frame_pattern, movie_file)
 
     # ------------------------------------------------------------------------
 
