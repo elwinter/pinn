@@ -154,9 +154,9 @@ def create_loss_plot(L_res: np.ndarray, L_dat: np.ndarray,
 def create_PAE_plot(X: np.ndarray, Y: np.ndarray,
                     P: np.ndarray, A: np.ndarray,
                     E: np.ndarray) -> mpl.pyplot.Figure:
-    """Create a plot of predicted, ana;ytical, and error values.
+    """Create a plot of predicted, analytical, and error values.
 
-    Create a plot of predicted, ana;ytical, and error values.
+    Create a plot of predicted, analytical, and error values.
 
     Parameters
     ----------
@@ -185,35 +185,87 @@ def create_PAE_plot(X: np.ndarray, Y: np.ndarray,
         nrows=1, ncols=3, sharey=True,
         figsize=[18.0, 6.0]
         )
-    axp, axa, axe = axs
 
     # Predicted
-    pcmp = axp.pcolormesh(X, Y, P)
+    pcmp = axs[0].pcolormesh(X, Y, P)
     axs[0].set_aspect("equal")
     axs[0].set_title("Predicted")
     axs[0].set_xlabel("x")
     axs[0].set_ylabel("y")
     axs[0].grid(True)
-    fig.colorbar(pcmp, ax=axp, orientation="horizontal")
+    fig.colorbar(pcmp, ax=axs[0], orientation="horizontal")
 
     # Analytical
-    pcma = axa.pcolormesh(X, Y, A)
+    pcma = axs[1].pcolormesh(X, Y, A)
     axs[1].set_aspect("equal")
     axs[1].set_title("Analytical")
     axs[1].set_xlabel("x")
     axs[1].grid(True)
-    fig.colorbar(pcma, ax=axa, orientation="horizontal")
+    fig.colorbar(pcma, ax=axs[1], orientation="horizontal")
 
     # Error
-    pcme = axe.pcolormesh(X, Y, E)
+    pcme = axs[2].pcolormesh(X, Y, E)
     axs[2].set_aspect("equal")
     axs[2].set_title("Error")
     axs[2].set_xlabel("x")
     axs[2].grid(True)
-    fig.colorbar(pcme, ax=axe, orientation="horizontal")
+    fig.colorbar(pcme, ax=axs[2], orientation="horizontal")
 
     # Decorate the figure.
     fig.suptitle("Predicted, analytical, and error")
+
+    # Return the figure.
+    return fig
+
+
+def create_PA_BxBy_plot(X: np.ndarray, Y: np.ndarray,
+                        Px: np.ndarray, Py: np.ndarray,
+                        Ax: np.ndarray, Ay: np.ndarray) -> mpl.pyplot.Figure:
+    """Create a plot of predicted and analytical magnetic field.
+    Create a plot of predicted and analytical magnetic field.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (ny, nx)
+        X values
+    Y : np.ndarray, shape (ny, nx)
+        Y values
+    Px : np.ndarray, shape (ny, nx)
+        Predicted Bx values
+    Py : np.ndarray, shape (ny, nx)
+        Predicted By values
+    Ax : np.ndarray, shape (ny, nx)
+        Analytical Bx values
+    Ay : np.ndarray, shape (ny, nx)
+        Analytical By values
+
+    Returns
+    -------
+    fig : mpl.pyplot.Figure
+        Figure object for current plot
+
+    Raises
+    ------
+    None
+    """
+    # Create the figure.
+    fig, axs = plt.subplots(
+        nrows=1, ncols=2, sharey=True,
+        figsize=[12.0, 6.0]
+        )
+
+    # Predicted
+    axs[0].quiver(X, Y, Px, Py)
+    axs[0].set_title("Predicted")
+    axs[0].set_aspect("equal")
+
+    # Analytical
+    axs[1].quiver(X, Y, Ax, Ay)
+    axs[1].set_title("Analytical")
+    axs[1].set_aspect("equal")
+
+    # Decorate the figure.
+    fig.suptitle("Predicted and analytical magnetic field")
 
     # Return the figure.
     return fig
@@ -400,6 +452,9 @@ def pinn1_plots(**kwargs) -> int:
             i0 = it*nx*ny
             i1 = i0 + nx*ny
 
+            # Fetch the frame time.
+            t = X_train[i0, p.it]
+
             # Extract the X and Y values for this time.
             X = X_train[i0:i1, p.ix].reshape(nx, ny).T
             Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
@@ -411,16 +466,16 @@ def pinn1_plots(**kwargs) -> int:
 
             # Create the plot.
             fig = create_PAE_plot(X, Y, P, A, E)
-            fig.suptitle(f"{variable_label} predicted, analytical, and error")
+            fig.suptitle(f"{variable_label}, t = {t:.2E} predicted, "
+                         "analytical, and error")
 
             # Save the plot to a PNG file.
-            path = os.path.join(pae_path, f"PAE_{it:04d}_{variable_name}.png")
+            path = os.path.join(pae_path, f"PAE_{variable_name}_{it:04d}.png")
             fig.savefig(path)
             plt.close(fig)
 
         # Assemble the frames into a movie.
-        # frame_pattern = os.path.join(pae_path, f"{variable_name}-%06d.png")
-        frame_pattern = os.path.join(pae_path, f"PAE_%04d_{variable_name}.png")
+        frame_pattern = os.path.join(pae_path, f"PAE_{variable_name}_%04d.png")
         movie_file = os.path.join(pae_path, f"{variable_name}.mp4")
         args = [
             "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
@@ -434,111 +489,229 @@ def pinn1_plots(**kwargs) -> int:
 
     # Make a movie of the magnetic field vectors.
 
-#     # if verbose:
-#     #     print("Creating movie for magnetic field.")
-#     # frame_dir = os.path.join(output_path, "frames_BxBy")
-#     # os.mkdir(frame_dir)
-#     # frames = []
-#     # for it in range(nt):
-#     #     i0 = it*n_start
-#     #     i1 = i0 + n_start
-#     #     txy = tf.Variable(X_train[i0:i1, :])
-#     #     t = X_train[i0:i1, p.it]
-#     #     x = X_train[i0:i1, p.ix]
-#     #     y = X_train[i0:i1, p.iy]
-#     #     Bx_act = p.Bx_analytical(t, x, y)
-#     #     By_act = p.By_analytical(t, x, y)
-#     #     Bx_pred = models[p.iBx](txy).numpy().reshape(n_start)
-#     #     By_pred = models[p.iBy](txy).numpy().reshape(n_start)
-#     #     title = f"Magnetic field at t = {t[0]:.3e}"
-#     #     pinn.standard_plots.plot_actual_predicted_B(
-#     #         x, y, Bx_act, By_act, Bx_pred, By_pred, title=title
-#     #     )
-#     #     path = os.path.join(frame_dir, f"BxBy-{it:06}.png")
-#     #     if verbose:
-#     #         print(f"Saving {path}.")
-#     #     plt.savefig(path)
-#     #     frames.append(path)
-#     #     plt.close()
+    if verbose:
+        print("Creating movie for magnetic field.")
+    pa_path = os.path.join(output_path, "PA_BxBy")
+    os.mkdir(pa_path)
 
-#     # # Assemble the frames into a movie.
-#     # frame_pattern = os.path.join(frame_dir, f"BxBy-%06d.png")
-#     # movie_file = os.path.join(output_path, "BxBy.mp4")
-#     # args = [
-#     #     "ffmpeg", "-r", "10", "-s", "1920x1080",
-#     #     "-i", frame_pattern,
-#     #     "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-#     #     movie_file
-#     # ]
-#     # subprocess.run(args)
+    # Compute the predicted and analytical magnetic field components.
+    Bxp = models[p.iBx](X_train).numpy().reshape(nt, nx, ny)
+    Byp = models[p.iBy](X_train).numpy().reshape(nt, nx, ny)
+    Bxa = p.analytical_solutions[p.iBx](
+            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+        ).reshape(nt, nx, ny)
+    Bya = p.analytical_solutions[p.iBy](
+            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+        ).reshape(nt, nx, ny)
+
+    # Plot the field at each time.
+    for it in range(nt):
+
+        # Compute the starting and ending index for this time.
+        i0 = it*nx*ny
+        i1 = i0 + nx*ny
+
+        # Fetch the frame time.
+        t = X_train[i0, p.it]
+
+        # Extract the X and Y values for this time.
+        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
+        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+
+        # To get the proper orientation, reshape, transpose.
+        Px = Bxp[it, :].T
+        Py = Byp[it, :].T
+        Ax = Bxa[it, :].T
+        Ay = Bya[it, :].T
+
+        # Create the plot.
+        fig = create_PA_BxBy_plot(X, Y, Px, Py, Ax, Ay)
+        fig.suptitle(f"Magnetic field, t = {t:.2E} predicted, analytical")
+
+        # Save the plot to a PNG file.
+        path = os.path.join(pa_path, f"PA_BxBy_{it:04d}.png")
+        fig.savefig(path)
+        plt.close(fig)
+
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
+    movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
+    args = [
+        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
+        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
+        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
+        movie_file
+    ]
+    subprocess.run(args, check=True)
 
     # ------------------------------------------------------------------------
 
     # Make a movie of the magnetic field intensity.
 
-#     # # Plot parameters.
-#     # plot_min = {
-#     #     "B": 0.0,
-#     # }
-#     # plot_max = {
-#     #     "B": 5e-3,
-#     # }
-#     # plot_err_min = {
-#     #     "B": -1e-3,
-#     # }
-#     # plot_err_max = {
-#     #     "B": 1e-3,
-#     # }
+    if verbose:
+        print("Creating movie for magnetic field intensity.")
+    pae_path = os.path.join(output_path, "PAE_B")
+    os.mkdir(pae_path)
 
-#     # if verbose:
-#     #     print("Creating movie for magnetic field intensity.")
-#     # frame_dir = os.path.join(output_path, "frames_B")
-#     # os.mkdir(frame_dir)
-#     # frames = []
-#     # for it in range(nt):
-#     #     i0 = it*nx*ny
-#     #     i1 = i0 + nx*ny
-#     #     txy = tf.Variable(X_train[i0:i1, :])
-#     #     t = X_train[i0:i1, p.it]
-#     #     x = X_train[i0:i1, p.ix]
-#     #     y = X_train[i0:i1, p.iy]
-#     #     Bx_act = p.Bx_analytical(t, x, y)
-#     #     By_act = p.By_analytical(t, x, y)
-#     #     B_act = np.flip(np.sqrt(Bx_act**2 + By_act**2).reshape(nx, ny).T, axis=0)
-#     #     Bx_pred = models[p.iBx](txy).numpy()
-#     #     By_pred = models[p.iBy](txy).numpy()
-#     #     B_pred = np.flip(np.sqrt(Bx_pred**2 + By_pred**2).reshape(nx, ny).T, axis=0)
-#     #     B_err = B_pred - B_act
-#     #     title = f"Magnetic field intensity at t = {t[0]:.3e}"
-#     #     pinn.standard_plots.plot_actual_predicted_error(
-#     #         x, y, B_act, B_pred, B_err,
-#     #         title=title,
-#     #         vmin=plot_min['B'], vmax=plot_max['B'],
-#     #         err_vmin=plot_err_min['B'], err_vmax=plot_err_max['B'],
-#     #         x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-#     #         y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-#     #     )
-#     #     path = os.path.join(frame_dir, f"B-{it:06}.png")
-#     #     if verbose:
-#     #         print(f"Saving {path}.")
-#     #     plt.savefig(path)
-#     #     frames.append(path)
-#     #     plt.close()
+    # Compute the predicted and analytical magnetic field intensity, and error.
+    Bp = np.sqrt(Bxp**2 + Byp**2)
+    Ba = np.sqrt(Bxa**2 + Bya**2)
+    Be = Bp - Ba
 
-#     # # Assemble the frames into a movie.
-#     # frame_pattern = os.path.join(frame_dir, f"B-%06d.png")
-#     # movie_file = os.path.join(output_path, "B.mp4")
-#     # args = [
-#     #     "ffmpeg", "-r", "10", "-s", "1920x1080",
-#     #     "-i", frame_pattern,
-#     #     "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-#     #     movie_file
-#     # ]
-#     # subprocess.run(args)
+    # Plot the field at each time.
+    for it in range(nt):
+
+        # Compute the starting and ending index for this time.
+        i0 = it*nx*ny
+        i1 = i0 + nx*ny
+
+        # Fetch the frame time.
+        t = X_train[i0, p.it]
+
+        # Extract the X and Y values for this time.
+        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
+        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+
+        # To get the proper orientation, reshape, transpose.
+        P = Bp[it, :].T
+        A = Ba[it, :].T
+        E = Be[it, :].T
+
+        # Create the plot.
+        fig = create_PAE_plot(X, Y, P, A, E)
+        fig.suptitle("Magnetic field intensity, t = {t:.2E} predicted, "
+                     "analytical, and error")
+
+        # Save the plot to a PNG file.
+        path = os.path.join(pae_path, f"PAE_B_{it:04d}.png")
+        fig.savefig(path)
+        plt.close(fig)
+
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(pae_path, "PAE_B_%04d.png")
+    movie_file = os.path.join(pae_path, "PAE_B.mp4")
+    args = [
+        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
+        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
+        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
+        movie_file
+    ]
+    subprocess.run(args, check=True)
+
+    # ------------------------------------------------------------------------
+
+    # Make a movie of the magnetic energy.
+
+    if verbose:
+        print("Creating movie for magnetic field energy.")
+    pae_path = os.path.join(output_path, "PAE_Eb")
+    os.mkdir(pae_path)
+
+    # Compute the predicted and analytical magnetic field energy, and error.
+    Ebp = Bxp**2 + Byp**2
+    Eba = Bxa**2 + Bya**2
+    Ebe = Ebp - Eba
+
+    # Plot the field at each time.
+    for it in range(nt):
+
+        # Compute the starting and ending index for this time.
+        i0 = it*nx*ny
+        i1 = i0 + nx*ny
+
+        # Fetch the frame time.
+        t = X_train[i0, p.it]
+
+        # Extract the X and Y values for this time.
+        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
+        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+
+        # To get the proper orientation, reshape, transpose.
+        P = Ebp[it, :].T
+        A = Eba[it, :].T
+        E = Ebe[it, :].T
+
+        # Create the plot.
+        fig = create_PAE_plot(X, Y, P, A, E)
+        fig.suptitle("Magnetic field energy, t = {t:.2E} predicted, "
+                     "analytical, and error")
+
+        # Save the plot to a PNG file.
+        path = os.path.join(pae_path, f"PAE_Eb_{it:04d}.png")
+        fig.savefig(path)
+        plt.close(fig)
+
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(pae_path, "PAE_Eb_%04d.png")
+    movie_file = os.path.join(pae_path, "PAE_B.mp4")
+    args = [
+        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
+        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
+        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
+        movie_file
+    ]
+    subprocess.run(args, check=True)
 
     # ------------------------------------------------------------------------
 
     # Make a movie of the magnetic field divergence.
+
+    if verbose:
+        print("Creating movie for magnetic field divergence.")
+    pae_path = os.path.join(output_path, "PAE_divB")
+    os.mkdir(pae_path)
+
+    # Compute the predicted and analytical magnetic field divergence, and
+    # error.
+    txyv = tf.Variable(X_train)
+    with tf.GradientTape(persistent=True) as tape1:
+        Bxp = models[p.iBx](txyv)
+        Byp = models[p.iBy](txyv)
+    dBxp_dx = tape1.gradient(Bxp, txyv)[:, p.ix].numpy()
+    dByp_dy = tape1.gradient(Byp, txyv)[:, p.iy].numpy()
+    divBp = dBxp_dx + dByp_dy
+    divBa = np.zeros(divBp.shape)
+    divBe = divBp - divBa
+
+    # Plot the field at each time.
+    for it in range(nt):
+
+        # Compute the starting and ending index for this time.
+        i0 = it*nx*ny
+        i1 = i0 + nx*ny
+
+        # Fetch the frame time.
+        t = X_train[i0, p.it]
+
+        # Extract the X and Y values for this time.
+        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
+        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+
+        # To get the proper orientation, reshape, transpose.
+        P = divBp[i0:i1].reshape(nx, ny).T
+        A = divBa[i0:i1].reshape(nx, ny).T
+        E = divBe[i0:i1].reshape(nx, ny).T
+
+        # Create the plot.
+        fig = create_PAE_plot(X, Y, P, A, E)
+        fig.suptitle("Magnetic field divergence, t = {t:.2E} predicted, "
+                     "analytical, and error")
+
+        # Save the plot to a PNG file.
+        path = os.path.join(pae_path, f"PAE_divB_{it:04d}.png")
+        fig.savefig(path)
+        plt.close(fig)
+
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(pae_path, "PAE_divB_%04d.png")
+    movie_file = os.path.join(pae_path, "PAE_divB.mp4")
+    args = [
+        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
+        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
+        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
+        movie_file
+    ]
+    subprocess.run(args, check=True)
 
 #     # # Plot parameters.
 #     # plot_min = {
@@ -595,21 +768,6 @@ def pinn1_plots(**kwargs) -> int:
 #     #     plt.savefig(path)
 #     #     frames.append(path)
 #     #     plt.close()
-
-#     # # Assemble the frames into a movie.
-#     # frame_pattern = os.path.join(frame_dir, f"divB-%06d.png")
-#     # movie_file = os.path.join(output_path, "divB.mp4")
-#     # args = [
-#     #     "ffmpeg", "-r", "10", "-s", "1920x1080",
-#     #     "-i", frame_pattern,
-#     #     "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-#     #     movie_file
-#     # ]
-#     # subprocess.run(args)
-
-    # ------------------------------------------------------------------------
-
-    # Make a movie of the magnetic energy.
 
     # ------------------------------------------------------------------------
 
