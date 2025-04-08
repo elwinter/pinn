@@ -299,7 +299,7 @@ def assemble_movie(frame_pattern: str, movie_file: str) -> None:
         "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
         movie_file
     ]
-    subprocess.run(args, check=True)
+    subprocess.run(args, check=True, capture_output=True)
 
 
 def pinn1_plots(**kwargs) -> int:
@@ -355,66 +355,7 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # Create the plots in a memory buffer.
-    mpl.use("Agg")
-
-    # ------------------------------------------------------------------------
-
-    # Plot the total residual, data, and weighted loss histories.
-
-    # Load the data.
-    if verbose:
-        print("Loading aggregate loss data.")
-    path = os.path.join(results_path, "L_res.dat")
-    L_res = np.loadtxt(path)
-    path = os.path.join(results_path, "L_data.dat")
-    L_dat = np.loadtxt(path)
-    path = os.path.join(results_path, "L.dat")
-    L = np.loadtxt(path)
-
-    # Create the plot.
-    if verbose:
-        print("Creating aggregate loss plot.")
-    fig = create_loss_plot(L_res, L_dat, L)
-    ax = fig.get_axes()[0]
-    ax.set_title("Aggregate residual, data, and weighted loss")
-
-    # Save the plot to a PNG file.
-    path = os.path.join(output_path, "L.png")
-    if verbose:
-        print(f"Saving {path}.")
-    fig.savefig(path)
-
-    # ------------------------------------------------------------------------
-
-    # Plot the per-model residual, data, and weighted loss histories.
-
-    # Plot for each model.
-    for iv in range(p.n_var):
-        variable_name = p.dependent_variable_names[iv]
-        if verbose:
-            print(f"Creating loss plot for {variable_name}.")
-
-        # Load the data.
-        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
-        L_res = np.loadtxt(path)
-        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
-        L_dat = np.loadtxt(path)
-        path = os.path.join(results_path, f"L_{variable_name}.dat")
-        L = np.loadtxt(path)
-
-        # Create the plot.
-        variable_label = p.dependent_variable_labels[iv]
-        fig = create_loss_plot(L_res, L_dat, L)
-        ax = fig.get_axes()[0]
-        ax.set_title(f"{variable_label} residual, data, and weighted loss")
-
-        # Save the plot to a PNG file.
-        path = os.path.join(output_path, f"L_{variable_name}.png")
-        fig.savefig(path)
-        plt.close(fig)
-
-    # ------------------------------------------------------------------------
+    # Load all data.
 
     # Load the training points and description.
     path = os.path.join(results_path, "X_train.dat")
@@ -452,21 +393,75 @@ def pinn1_plots(**kwargs) -> int:
         model = tf.keras.models.load_model(path)
         models.append(model)
 
+    # Load the data.
+    path = os.path.join(results_path, "L_res.dat")
+    L_res = np.loadtxt(path)
+    path = os.path.join(results_path, "L_data.dat")
+    L_dat = np.loadtxt(path)
+    path = os.path.join(results_path, "L.dat")
+    L = np.loadtxt(path)
+
+    # ------------------------------------------------------------------------
+
+    # Compute derived values.
+
+    # ------------------------------------------------------------------------
+
+    # Create the plots in a memory buffer.
+    mpl.use("Agg")
+
+    # ------------------------------------------------------------------------
+
+    # Plot the aggregate residual, data, and weighted loss histories.
+    if verbose:
+        print("Creating aggregate loss plot.")
+    fig = create_loss_plot(L_res, L_dat, L)
+    ax = fig.get_axes()[0]
+    ax.set_title("Aggregate residual, data, and weighted loss")
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "L.png")
+    fig.savefig(path)
+
+    # ------------------------------------------------------------------------
+
+    # Plot the per-model residual, data, and weighted loss histories.
+    for iv in range(p.n_var):
+        variable_name = p.dependent_variable_names[iv]
+        if verbose:
+            print(f"Creating loss plot for {variable_name}.")
+
+        # Load the data.
+        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
+        L_res = np.loadtxt(path)
+        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
+        L_dat = np.loadtxt(path)
+        path = os.path.join(results_path, f"L_{variable_name}.dat")
+        L = np.loadtxt(path)
+
+        # Create the plot.
+        variable_label = p.dependent_variable_labels[iv]
+        fig = create_loss_plot(L_res, L_dat, L)
+        ax = fig.get_axes()[0]
+        ax.set_title(f"{variable_label} residual, data, and weighted loss")
+
+        # Save the plot to a PNG file.
+        path = os.path.join(output_path, f"L_{variable_name}.png")
+        fig.savefig(path)
+        plt.close(fig)
+
     # ------------------------------------------------------------------------
 
     # Plot the predicted, analytical, and error values for each model as a
     # function of time, at the training points.
-
-    # Plot for each model.
     for iv in range(p.n_var):
         variable_name = p.dependent_variable_names[iv]
         variable_label = p.dependent_variable_labels[iv]
         if verbose:
-            print(f"Creating training point PAE plots for {variable_name}.")
+            print(f"Creating PAE movie for {variable_name}.")
 
         # Create a directory for the PAE plots for this variable.
         pae_path = os.path.join(output_path, f"PAE_{variable_name}")
-        print(f"pae_path = {pae_path}")
         os.mkdir(pae_path)
 
         # Compute the PAE values.
@@ -512,10 +507,9 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # Make a movie of the magnetic field vectors.
-
+    # Make a PA movie of the magnetic field vectors.
     if verbose:
-        print("Creating movie for magnetic field.")
+        print("Creating PA movie for magnetic field.")
     pa_path = os.path.join(output_path, "PA_BxBy")
     os.mkdir(pa_path)
 
@@ -565,10 +559,9 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # Make a movie of the magnetic field intensity.
-
+    # Make a PAE movie of the magnetic field intensity.
     if verbose:
-        print("Creating movie for magnetic field intensity.")
+        print("Creating PAE movie for magnetic field intensity.")
     pae_path = os.path.join(output_path, "PAE_B")
     os.mkdir(pae_path)
 
@@ -613,10 +606,9 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # Make a movie of the magnetic energy.
-
+    # Make a PAE movie of the magnetic energy.
     if verbose:
-        print("Creating movie for magnetic field energy.")
+        print("Creating PAE movie for magnetic field energy.")
     pae_path = os.path.join(output_path, "PAE_Eb")
     os.mkdir(pae_path)
 
@@ -661,10 +653,9 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # Make a movie of the magnetic field divergence.
-
+    # Make a PAE movie of the magnetic field divergence.
     if verbose:
-        print("Creating movie for magnetic field divergence.")
+        print("Creating PAE movie for magnetic field divergence.")
     pae_path = os.path.join(output_path, "PAE_divB")
     os.mkdir(pae_path)
 
