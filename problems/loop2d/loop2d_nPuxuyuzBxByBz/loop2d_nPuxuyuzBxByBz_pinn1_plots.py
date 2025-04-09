@@ -41,6 +41,7 @@ DEFAULT_ARGUMENTS = {
     "clobber": False,
     "debug": False,
     "epoch": -1,
+    "usetex": False,
     "verbose": False,
 }
 
@@ -94,6 +95,12 @@ def create_command_line_parser():
         type=int,
         default=DEFAULT_ARGUMENTS["epoch"],
         help="Model epoch to use (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--usetex",
+        default=DEFAULT_ARGUMENTS["usetex"],
+        action="store_true",
+        help="Use LaTeX in plots (default: %(default)s)"
     )
     parser.add_argument(
         "--verbose", "-v",
@@ -393,7 +400,7 @@ def pinn1_plots(**kwargs) -> int:
         model = tf.keras.models.load_model(path)
         models.append(model)
 
-    # Load the data.
+    # Load the aggregate loss histories.
     path = os.path.join(results_path, "L_res.dat")
     L_res = np.loadtxt(path)
     path = os.path.join(results_path, "L_data.dat")
@@ -401,14 +408,92 @@ def pinn1_plots(**kwargs) -> int:
     path = os.path.join(results_path, "L.dat")
     L = np.loadtxt(path)
 
+    # Load the per-model residual, data, and weighted loss histories.
+    Lm_res = []
+    Lm_dat = []
+    Lm = []
+    for iv in range(p.n_var):
+        variable_name = p.dependent_variable_names[iv]
+        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
+        Lm_res.append(np.loadtxt(path))
+        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
+        Lm_dat.append(np.loadtxt(path))
+        path = os.path.join(results_path, f"L_{variable_name}.dat")
+        Lm.append(np.loadtxt(path))
+
     # ------------------------------------------------------------------------
 
     # Compute derived values.
+
+    # Extract the T, X, and Y values for the training points.
+    T = X_train[:, p.it].reshape(nt, nx, ny)
+    X = X_train[:, p.ix].reshape(nt, nx, ny)
+    Y = X_train[:, p.iy].reshape(nt, nx, ny)
+
+    # Compute predicted, analytical, and error values for each model at each
+    # training point. All are shape (nt, nx, ny).
+    predicted = {}
+    analytical = {}
+    error = {}
+    for iv in range(p.n_var):
+        variable_name = p.dependent_variable_names[iv]
+        _p = models[iv](X_train).numpy().reshape(nt, nx, ny)
+        predicted[variable_name] = _p
+        _a = p.analytical_solutions[iv](T, X, Y)
+        analytical[variable_name] = _a
+        _e = _p - _a
+        error[variable_name] = _e
+
+    # Magnetic energy
+    _p = predicted["Bx"]**2 + predicted["By"]**2
+    predicted["Eb"] = _p
+    _a = analytical["Bx"]**2 + analytical["By"]**2
+    analytical["Eb"] = _a
+    _e = _p - _a
+    error["Eb"] = _e
+
+    # Magnetic field magnitude
+    _p = np.sqrt(predicted["Eb"])
+    predicted["B"] = _p
+    _a = np.sqrt(analytical["Eb"])
+    analytical["B"] = _a
+    _e = _p - _a
+    error["B"] = _e
+
+    # Compute predicted, analytical, and error values for required derivatives
+    # at each training point.
+    txyv = tf.Variable(X_train)
+    with tf.GradientTape(persistent=True) as tape1:
+        Bxp = models[p.iBx](txyv)
+        Byp = models[p.iBy](txyv)
+    dBxp_dx = tape1.gradient(Bxp, txyv)[:, p.ix].numpy().reshape(nt, nx, ny)
+    dByp_dy = tape1.gradient(Byp, txyv)[:, p.iy].numpy().reshape(nt, nx, ny)
+    _p = dBxp_dx + dByp_dy
+    predicted["divB"] = _p
+    _a = np.zeros(_p.shape)
+    analytical["divB"] = _a
+    _e = _p - _a
+    error["divB"] = _e
+
+    # Compute RMS error values at each training time, and overall values.
+    rms = {}
+    RMS = {}
+    iv = 0
+    for (vname, _e) in error.items():
+        _rms = np.sqrt(np.sum(_e**2)/_e.size)
+        RMS[vname] = _rms
+        rms[vname] = np.zeros(_e.shape[0])
+        for it in range(_e.shape[0]):
+            _rms = np.sqrt(np.sum(_e[it]**2)/_e[it].size)
+            rms[vname][it] = _rms
 
     # ------------------------------------------------------------------------
 
     # Create the plots in a memory buffer.
     mpl.use("Agg")
+
+    # Use LaTex in plots if requested.
+    plt.rcParams.update({"text.usetex": args["usetex"]})
 
     # ------------------------------------------------------------------------
 
@@ -428,20 +513,12 @@ def pinn1_plots(**kwargs) -> int:
     # Plot the per-model residual, data, and weighted loss histories.
     for iv in range(p.n_var):
         variable_name = p.dependent_variable_names[iv]
+        variable_label = p.dependent_variable_labels[iv]
         if verbose:
-            print(f"Creating loss plot for {variable_name}.")
-
-        # Load the data.
-        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
-        L_res = np.loadtxt(path)
-        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
-        L_dat = np.loadtxt(path)
-        path = os.path.join(results_path, f"L_{variable_name}.dat")
-        L = np.loadtxt(path)
+            print(f"Creating {variable_name} loss plot.")
 
         # Create the plot.
-        variable_label = p.dependent_variable_labels[iv]
-        fig = create_loss_plot(L_res, L_dat, L)
+        fig = create_loss_plot(Lm_res[iv], Lm_dat[iv], Lm[iv])
         ax = fig.get_axes()[0]
         ax.set_title(f"{variable_label} residual, data, and weighted loss")
 
@@ -452,11 +529,16 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # Plot the predicted, analytical, and error values for each model as a
-    # function of time, at the training points.
-    for iv in range(p.n_var):
-        variable_name = p.dependent_variable_names[iv]
-        variable_label = p.dependent_variable_labels[iv]
+    variable_names = p.dependent_variable_names + ["Eb", "B", "divB"]
+    variable_labels = (
+        p.dependent_variable_labels + ["$E_b$", "B", "divB"]
+    )
+    n_var = len(variable_names)
+
+    # Create the predicted, analytical, and error movie for each variable.
+    for iv in range(n_var):
+        variable_name = variable_names[iv]
+        variable_label = variable_labels[iv]
         if verbose:
             print(f"Creating PAE movie for {variable_name}.")
 
@@ -464,36 +546,28 @@ def pinn1_plots(**kwargs) -> int:
         pae_path = os.path.join(output_path, f"PAE_{variable_name}")
         os.mkdir(pae_path)
 
-        # Compute the PAE values.
-        predicted = models[iv](X_train).numpy().reshape(nt, nx, ny)
-        analytical = p.analytical_solutions[iv](
-            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
-        ).reshape(nt, nx, ny)
-        error = predicted - analytical
-
         # Plot for each training grid time.
         for it in range(nt):
 
-            # Compute the starting and ending index for this time.
-            i0 = it*nx*ny
-            i1 = i0 + nx*ny
-
-            # Fetch the frame time.
-            t = X_train[i0, p.it]
-
-            # Extract the X and Y values for this time.
-            X = X_train[i0:i1, p.ix].reshape(nx, ny).T
-            Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+            # Fetch the frame time and grid coordinates.
+            t = T[it, 0, 0]
+            _X = X[it].T
+            _Y = Y[it].T
 
             # To get the proper orientation, reshape, transpose.
-            P = predicted[it, :].T
-            A = analytical[it, :].T
-            E = error[it, :].T
+            P = predicted[variable_name][it].T
+            A = analytical[variable_name][it].T
+            E = error[variable_name][it].T
 
             # Create the plot.
-            fig = create_PAE_plot(X, Y, P, A, E)
+            fig = create_PAE_plot(_X, _Y, P, A, E)
+
+            # Tweak the frame title and error plot title.
             fig.suptitle(f"{variable_label}, t = {t:.2E} predicted, "
-                         "analytical, and error")
+                         "analytical, and error "
+                         f"(overall RMS={RMS[variable_name]:.2E})")
+            fig.axes[2].set_title("Error (RMS = "
+                                  f"{rms[variable_name][it]:.2E})")
 
             # Save the plot to a PNG file.
             path = os.path.join(pae_path, f"PAE_{variable_name}_{it:04d}.png")
@@ -507,203 +581,55 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # Make a PA movie of the magnetic field vectors.
-    if verbose:
-        print("Creating PA movie for magnetic field.")
-    pa_path = os.path.join(output_path, "PA_BxBy")
-    os.mkdir(pa_path)
+    # # Make a PA movie of the magnetic field vectors.
+    # if verbose:
+    #     print("Creating PA movie for magnetic field.")
+    # pa_path = os.path.join(output_path, "PA_BxBy")
+    # os.mkdir(pa_path)
 
-    # Compute the predicted and analytical magnetic field components.
-    Bxp = models[p.iBx](X_train).numpy().reshape(nt, nx, ny)
-    Byp = models[p.iBy](X_train).numpy().reshape(nt, nx, ny)
-    Bxa = p.analytical_solutions[p.iBx](
-            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
-        ).reshape(nt, nx, ny)
-    Bya = p.analytical_solutions[p.iBy](
-            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
-        ).reshape(nt, nx, ny)
+    # # Compute the predicted and analytical magnetic field components.
+    # Bxp = models[p.iBx](X_train).numpy().reshape(nt, nx, ny)
+    # Byp = models[p.iBy](X_train).numpy().reshape(nt, nx, ny)
+    # Bxa = p.analytical_solutions[p.iBx](
+    #         X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+    #     ).reshape(nt, nx, ny)
+    # Bya = p.analytical_solutions[p.iBy](
+    #         X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+    #     ).reshape(nt, nx, ny)
 
-    # Plot the field at each time.
-    for it in range(nt):
+    # # Plot the field at each time.
+    # for it in range(nt):
 
-        # Compute the starting and ending index for this time.
-        i0 = it*nx*ny
-        i1 = i0 + nx*ny
+    #     # Compute the starting and ending index for this time.
+    #     i0 = it*nx*ny
+    #     i1 = i0 + nx*ny
 
-        # Fetch the frame time.
-        t = X_train[i0, p.it]
+    #     # Fetch the frame time.
+    #     t = X_train[i0, p.it]
 
-        # Extract the X and Y values for this time.
-        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
-        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+    #     # Extract the X and Y values for this time.
+    #     X = X_train[i0:i1, p.ix].reshape(nx, ny).T
+    #     Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
 
-        # To get the proper orientation, reshape, transpose.
-        Px = Bxp[it, :].T
-        Py = Byp[it, :].T
-        Ax = Bxa[it, :].T
-        Ay = Bya[it, :].T
+    #     # To get the proper orientation, reshape, transpose.
+    #     Px = Bxp[it, :].T
+    #     Py = Byp[it, :].T
+    #     Ax = Bxa[it, :].T
+    #     Ay = Bya[it, :].T
 
-        # Create the plot.
-        fig = create_PA_BxBy_plot(X, Y, Px, Py, Ax, Ay)
-        fig.suptitle(f"Magnetic field, t = {t:.2E} predicted, analytical")
+    #     # Create the plot.
+    #     fig = create_PA_BxBy_plot(X, Y, Px, Py, Ax, Ay)
+    #     fig.suptitle(f"Magnetic field, t = {t:.2E} predicted, analytical")
 
-        # Save the plot to a PNG file.
-        path = os.path.join(pa_path, f"PA_BxBy_{it:04d}.png")
-        fig.savefig(path)
-        plt.close(fig)
+    #     # Save the plot to a PNG file.
+    #     path = os.path.join(pa_path, f"PA_BxBy_{it:04d}.png")
+    #     fig.savefig(path)
+    #     plt.close(fig)
 
-    # Assemble the frames into a movie.
-    frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
-    movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
-    assemble_movie(frame_pattern, movie_file)
-
-    # ------------------------------------------------------------------------
-
-    # Make a PAE movie of the magnetic field intensity.
-    if verbose:
-        print("Creating PAE movie for magnetic field intensity.")
-    pae_path = os.path.join(output_path, "PAE_B")
-    os.mkdir(pae_path)
-
-    # Compute the predicted and analytical magnetic field intensity, and error.
-    Bp = np.sqrt(Bxp**2 + Byp**2)
-    Ba = np.sqrt(Bxa**2 + Bya**2)
-    Be = Bp - Ba
-
-    # Plot the field at each time.
-    for it in range(nt):
-
-        # Compute the starting and ending index for this time.
-        i0 = it*nx*ny
-        i1 = i0 + nx*ny
-
-        # Fetch the frame time.
-        t = X_train[i0, p.it]
-
-        # Extract the X and Y values for this time.
-        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
-        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
-
-        # To get the proper orientation, reshape, transpose.
-        P = Bp[it, :].T
-        A = Ba[it, :].T
-        E = Be[it, :].T
-
-        # Create the plot.
-        fig = create_PAE_plot(X, Y, P, A, E)
-        fig.suptitle(f"Magnetic field intensity, t = {t:.2E} predicted, "
-                     "analytical, and error")
-
-        # Save the plot to a PNG file.
-        path = os.path.join(pae_path, f"PAE_B_{it:04d}.png")
-        fig.savefig(path)
-        plt.close(fig)
-
-    # Assemble the frames into a movie.
-    frame_pattern = os.path.join(pae_path, "PAE_B_%04d.png")
-    movie_file = os.path.join(pae_path, "PAE_B.mp4")
-    assemble_movie(frame_pattern, movie_file)
-
-    # ------------------------------------------------------------------------
-
-    # Make a PAE movie of the magnetic energy.
-    if verbose:
-        print("Creating PAE movie for magnetic field energy.")
-    pae_path = os.path.join(output_path, "PAE_Eb")
-    os.mkdir(pae_path)
-
-    # Compute the predicted and analytical magnetic field energy, and error.
-    Ebp = Bxp**2 + Byp**2
-    Eba = Bxa**2 + Bya**2
-    Ebe = Ebp - Eba
-
-    # Plot the field at each time.
-    for it in range(nt):
-
-        # Compute the starting and ending index for this time.
-        i0 = it*nx*ny
-        i1 = i0 + nx*ny
-
-        # Fetch the frame time.
-        t = X_train[i0, p.it]
-
-        # Extract the X and Y values for this time.
-        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
-        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
-
-        # To get the proper orientation, reshape, transpose.
-        P = Ebp[it, :].T
-        A = Eba[it, :].T
-        E = Ebe[it, :].T
-
-        # Create the plot.
-        fig = create_PAE_plot(X, Y, P, A, E)
-        fig.suptitle(f"Magnetic field energy, t = {t:.2E} predicted, "
-                     "analytical, and error")
-
-        # Save the plot to a PNG file.
-        path = os.path.join(pae_path, f"PAE_Eb_{it:04d}.png")
-        fig.savefig(path)
-        plt.close(fig)
-
-    # Assemble the frames into a movie.
-    frame_pattern = os.path.join(pae_path, "PAE_Eb_%04d.png")
-    movie_file = os.path.join(pae_path, "PAE_Eb.mp4")
-    assemble_movie(frame_pattern, movie_file)
-
-    # ------------------------------------------------------------------------
-
-    # Make a PAE movie of the magnetic field divergence.
-    if verbose:
-        print("Creating PAE movie for magnetic field divergence.")
-    pae_path = os.path.join(output_path, "PAE_divB")
-    os.mkdir(pae_path)
-
-    # Compute the predicted and analytical magnetic field divergence, and
-    # error.
-    txyv = tf.Variable(X_train)
-    with tf.GradientTape(persistent=True) as tape1:
-        Bxp = models[p.iBx](txyv)
-        Byp = models[p.iBy](txyv)
-    dBxp_dx = tape1.gradient(Bxp, txyv)[:, p.ix].numpy()
-    dByp_dy = tape1.gradient(Byp, txyv)[:, p.iy].numpy()
-    divBp = dBxp_dx + dByp_dy
-    divBa = np.zeros(divBp.shape)
-    divBe = divBp - divBa
-
-    # Plot the field at each time.
-    for it in range(nt):
-
-        # Compute the starting and ending index for this time.
-        i0 = it*nx*ny
-        i1 = i0 + nx*ny
-
-        # Fetch the frame time.
-        t = X_train[i0, p.it]
-
-        # Extract the X and Y values for this time.
-        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
-        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
-
-        # To get the proper orientation, reshape, transpose.
-        P = divBp[i0:i1].reshape(nx, ny).T
-        A = divBa[i0:i1].reshape(nx, ny).T
-        E = divBe[i0:i1].reshape(nx, ny).T
-
-        # Create the plot.
-        fig = create_PAE_plot(X, Y, P, A, E)
-        fig.suptitle(f"Magnetic field divergence, t = {t:.2E} predicted, "
-                     "analytical, and error")
-
-        # Save the plot to a PNG file.
-        path = os.path.join(pae_path, f"PAE_divB_{it:04d}.png")
-        fig.savefig(path)
-        plt.close(fig)
-
-    # Assemble the frames into a movie.
-    frame_pattern = os.path.join(pae_path, "PAE_divB_%04d.png")
-    movie_file = os.path.join(pae_path, "PAE_divB.mp4")
-    assemble_movie(frame_pattern, movie_file)
+    # # Assemble the frames into a movie.
+    # frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
+    # movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
+    # assemble_movie(frame_pattern, movie_file)
 
     # ------------------------------------------------------------------------
 
