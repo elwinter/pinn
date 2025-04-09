@@ -563,8 +563,9 @@ def pinn1_plots(**kwargs) -> int:
 
     # Compute integrated magnetic energy over time.
     Ebtot = np.zeros(predicted["Eb"].shape[0])
-    for it in range(len(Ebtot)):
-        _Ebtot = np.sum(predicted["Eb"][it])
+    for it in range(predicted["Eb"].shape[0]):
+        _Eb = predicted["Eb"][it]
+        _Ebtot = np.sum(_Eb)
         Ebtot[it] = _Ebtot
 
     # ------------------------------------------------------------------------
@@ -595,7 +596,7 @@ def pinn1_plots(**kwargs) -> int:
         variable_name = p.dependent_variable_names[iv]
         variable_label = p.dependent_variable_labels[iv]
         if verbose:
-            print(f"Creating {variable_name} loss plot.")
+            print(f"Creating loss plot for {variable_name}.")
 
         # Create the plot.
         fig = create_loss_plot(Lm_res[iv], Lm_dat[iv], Lm[iv])
@@ -716,6 +717,8 @@ def pinn1_plots(**kwargs) -> int:
     # Plot the RMS error as a function of time for each variable.
     t = T[:, 0, 0]
     for (iv, vname) in enumerate(variable_names):
+        if verbose:
+            print(f"Creating RMS error plot for {vname}.")
 
         # Create the plot.
         fig = create_rms_error_plot(t, rms[vname])
@@ -732,6 +735,8 @@ def pinn1_plots(**kwargs) -> int:
     # ------------------------------------------------------------------------
 
     # Plot the total magnetic energy as a function of time.
+    if verbose:
+        print("Creating total magnetic energy plot.")
 
     # Create the plot.
     fig = create_total_magnetic_energy_plot(t, Ebtot)
