@@ -668,19 +668,21 @@ def n_analytical(t, x, y):
 
     Compute the analytical solution for the number density.
 
+    All input arrays must have the same shape.
+
     Parameters
     ----------
-    t : np.array of float, shape (n,)
+    t : np.array of float
         Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
+    x : np.array of float
         Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
+    y : np.array of float
         Value of y for each evaluation point.
 
     Returns
     -------
-    n : np.array of float, shape (n,)
-        Value of n for each evaluation point.
+    n : np.array of float
+        Value of n for each evaluation point, same shape as input arrays.
     """
     n = np.full(t.shape, n0)
     return n
@@ -691,19 +693,21 @@ def P_analytical(t, x, y):
 
     Compute the analytical solution for the pressure.
 
+    All input arrays must have the same shape.
+
     Parameters
     ----------
-    t : np.array of float, shape (n,)
+    t : np.array of float
         Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
+    x : np.array of float
         Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
+    y : np.array of float
         Value of y for each evaluation point.
 
     Returns
     -------
-    P : np.array of float, shape (n,)
-        Value of P for each evaluation point.
+    P : np.array of float
+        Value of P for each evaluation point, same shape as input arrays.
     """
     P = np.full(t.shape, P0)
     return P
@@ -714,19 +718,21 @@ def ux_analytical(t, x, y):
 
     Compute the analytical solution for the x-velocity.
 
+    All input arrays must have the same shape.
+
     Parameters
     ----------
-    t : np.array of float, shape (n,)
+    t : np.array of float
         Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
+    x : np.array of float
         Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
+    y : np.array of float
         Value of y for each evaluation point.
 
     Returns
     -------
-    ux : np.array of float, shape (n,)
-        Value of ux for each evaluation point.
+    ux : np.array of float
+        Value of ux for each evaluation point, same shape as input arrays.
     """
     ux = np.full(t.shape, u0x)
     return ux
@@ -737,19 +743,21 @@ def uy_analytical(t, x, y):
 
     Compute the analytical solution for the y-velocity.
 
+    All input arrays must have the same shape.
+
     Parameters
     ----------
-    t : np.array of float, shape (n,)
+    t : np.array of float
         Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
+    x : np.array of float
         Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
+    y : np.array of float
         Value of y for each evaluation point.
 
     Returns
     -------
-    uy : np.array of float, shape (n,)
-        Value of uy for each evaluation point.
+    uy : np.array of float
+        Value of uy for each evaluation point, same shape as input arrays.
     """
     uy = np.full(t.shape, u0y)
     return uy
@@ -760,19 +768,21 @@ def uz_analytical(t, x, y):
 
     Compute the analytical solution for the z-velocity.
 
+    All input arrays must have the same shape.
+
     Parameters
     ----------
-    t : np.array of float, shape (n,)
+    t : np.array of float
         Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
+    x : np.array of float
         Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
+    y : np.array of float
         Value of y for each evaluation point.
 
     Returns
     -------
-    uz : np.array of float, shape (n,)
-        Value of uz for each evaluation point.
+    uz : np.array of float
+        Value of uz for each evaluation point, same shape as input arrays.
     """
     uz = np.full(t.shape, u0z)
     return uz
@@ -786,25 +796,27 @@ def Bx_analytical(t, x, y):
     for field computation, since the analytical solution is a simple linear
     translation of the initial conditions.
 
+    All input arrays must have the same shape.
+
     Parameters
     ----------
-    t : np.array of float, shape (n,)
+    t : np.array of float
         Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
+    x : np.array of float
         Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
+    y : np.array of float
         Value of y for each evaluation point.
 
     Returns
     -------
-    Bx : np.array of float, shape (n,)
-        Value of Bx for each evaluation point.
+    Bx : np.array of float
+        Value of Bx for each evaluation point, same shape as input arrays.
     """
     xp = x - u0x*t
     yp = y - u0y*t
     r = np.sqrt(xp**2 + yp**2)
     w = np.where(r < R0)
-    Bx = np.zeros(t.shape[0])
+    Bx = np.zeros(t.shape)
     Bx[w] = -A*yp[w]/r[w]
     return Bx
 
@@ -817,25 +829,27 @@ def By_analytical(t, x, y):
     for field computation, since the analytical solution is a simple linear
     translation of the initial conditions.
 
+    All input arrays must have the same shape.
+
     Parameters
     ----------
-    t : np.array of float, shape (n,)
+    t : np.array of float
         Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
+    x : np.array of float
         Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
+    y : np.array of float
         Value of y for each evaluation point.
 
     Returns
     -------
-    By : np.array of float, shape (n,)
-        Value of By for each evaluation point.
+    By : np.array of float
+        Value of By for each evaluation point, same shape as input arrays.
     """
     xp = x - u0x*t
     yp = y - u0y*t
     r = np.sqrt(xp**2 + yp**2)
     w = np.where(r < R0)
-    By = np.zeros(t.shape[0])
+    By = np.zeros(t.shape)
     By[w] = A*xp[w]/r[w]
     return By
 
@@ -845,19 +859,21 @@ def Bz_analytical(t, x, y):
 
     Compute the analytical solution for the z-component of the magnetic field.
 
+    All input arrays must have the same shape.
+
     Parameters
     ----------
-    t : np.array of float, shape (n,)
+    t : np.array of float
         Value of t for each evaluation point.
-    x : np.array of float, shape (n,)
+    x : np.array of float
         Value of x for each evaluation point.
-    y : np.array of float, shape (n,)
+    y : np.array of float
         Value of y for each evaluation point.
 
     Returns
     -------
-    Bz : np.array of float, shape (n,)
-        Value of Bz for each evaluation point.
+    Bz : np.array of float
+        Value of Bz for each evaluation point, same shape as input arrays.
     """
     Bz = np.full(t.shape, B0z)
     return Bz
