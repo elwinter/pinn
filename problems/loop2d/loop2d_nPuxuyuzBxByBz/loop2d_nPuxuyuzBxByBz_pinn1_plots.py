@@ -581,55 +581,55 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # # Make a PA movie of the magnetic field vectors.
-    # if verbose:
-    #     print("Creating PA movie for magnetic field.")
-    # pa_path = os.path.join(output_path, "PA_BxBy")
-    # os.mkdir(pa_path)
+    # Make a PA movie of the magnetic field vectors.
+    if verbose:
+        print("Creating PA movie for magnetic field.")
+    pa_path = os.path.join(output_path, "PA_BxBy")
+    os.mkdir(pa_path)
 
-    # # Compute the predicted and analytical magnetic field components.
-    # Bxp = models[p.iBx](X_train).numpy().reshape(nt, nx, ny)
-    # Byp = models[p.iBy](X_train).numpy().reshape(nt, nx, ny)
-    # Bxa = p.analytical_solutions[p.iBx](
-    #         X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
-    #     ).reshape(nt, nx, ny)
-    # Bya = p.analytical_solutions[p.iBy](
-    #         X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
-    #     ).reshape(nt, nx, ny)
+    # Compute the predicted and analytical magnetic field components.
+    Bxp = models[p.iBx](X_train).numpy().reshape(nt, nx, ny)
+    Byp = models[p.iBy](X_train).numpy().reshape(nt, nx, ny)
+    Bxa = p.analytical_solutions[p.iBx](
+            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+        ).reshape(nt, nx, ny)
+    Bya = p.analytical_solutions[p.iBy](
+            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+        ).reshape(nt, nx, ny)
 
-    # # Plot the field at each time.
-    # for it in range(nt):
+    # Plot the field at each time.
+    for it in range(nt):
 
-    #     # Compute the starting and ending index for this time.
-    #     i0 = it*nx*ny
-    #     i1 = i0 + nx*ny
+        # Compute the starting and ending index for this time.
+        i0 = it*nx*ny
+        i1 = i0 + nx*ny
 
-    #     # Fetch the frame time.
-    #     t = X_train[i0, p.it]
+        # Fetch the frame time.
+        t = X_train[i0, p.it]
 
-    #     # Extract the X and Y values for this time.
-    #     X = X_train[i0:i1, p.ix].reshape(nx, ny).T
-    #     Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+        # Extract the X and Y values for this time.
+        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
+        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
 
-    #     # To get the proper orientation, reshape, transpose.
-    #     Px = Bxp[it, :].T
-    #     Py = Byp[it, :].T
-    #     Ax = Bxa[it, :].T
-    #     Ay = Bya[it, :].T
+        # To get the proper orientation, reshape, transpose.
+        Px = Bxp[it, :].T
+        Py = Byp[it, :].T
+        Ax = Bxa[it, :].T
+        Ay = Bya[it, :].T
 
-    #     # Create the plot.
-    #     fig = create_PA_BxBy_plot(X, Y, Px, Py, Ax, Ay)
-    #     fig.suptitle(f"Magnetic field, t = {t:.2E} predicted, analytical")
+        # Create the plot.
+        fig = create_PA_BxBy_plot(X, Y, Px, Py, Ax, Ay)
+        fig.suptitle(f"Magnetic field, t = {t:.2E} predicted, analytical")
 
-    #     # Save the plot to a PNG file.
-    #     path = os.path.join(pa_path, f"PA_BxBy_{it:04d}.png")
-    #     fig.savefig(path)
-    #     plt.close(fig)
+        # Save the plot to a PNG file.
+        path = os.path.join(pa_path, f"PA_BxBy_{it:04d}.png")
+        fig.savefig(path)
+        plt.close(fig)
 
-    # # Assemble the frames into a movie.
-    # frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
-    # movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
-    # assemble_movie(frame_pattern, movie_file)
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
+    movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
+    assemble_movie(frame_pattern, movie_file)
 
     # ------------------------------------------------------------------------
 
