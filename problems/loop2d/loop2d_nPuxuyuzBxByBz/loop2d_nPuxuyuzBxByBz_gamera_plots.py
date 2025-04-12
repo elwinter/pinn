@@ -1,534 +1,791 @@
 #!/usr/bin/env python
 
-"""Create plots for gamera results for loop2d_nPuxuyuzBxByBz problem.
+"""Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem.
 
-Create plots for gamera results for loop2d_nPuxuyuzBxByBz problem.
+Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem.
 
 Author
 ------
 Eric Winter (eric.winter62@gmail.com)
 """
 
-# # Import standard modules.
-# import argparse
-# from importlib import import_module
-# import os
-# import subprocess
-# import sys
+# Import standard modules.
+import argparse
+import copy
+import importlib
+import os
+import shutil
+import subprocess
+import sys
 
-# # Import supplemental modules.
-# import matplotlib as mpl
-# import matplotlib.pyplot as plt
-# import numpy as np
-# import tensorflow as tf
+# Import supplemental modules.
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
 
-# # Import project modules.
-# import pinn.common
+# Import project modules.
+import pinn.common
 # import pinn.standard_plots
 
 
-# # Program constants
+# Program constants
 
-# # Program description
-# DESCRIPTION = "Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem."
+# Program description
+DESCRIPTION = (
+    "Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem."
+)
 
-# # Name of directory to hold output plots
-# OUTPUT_DIR = "pinn1_plots"
+# Default values for command-line arguments.
+DEFAULT_ARGUMENTS = {
+    "clobber": False,
+    "debug": False,
+    "epoch": -1,
+    "usetex": False,
+    "verbose": False,
+}
 
-# # Name of problem
-# PROBLEM_NAME = "loop2d_nPuxuyuzBxByBz"
+# Name of problem
+PROBLEM_NAME = "loop2d_nPuxuyuzBxByBz"
 
-# # Plot limits for dependent variables.
-# ylim = {}
-# ylim["L"] = [1e-12, 10]
-# ylim["Bx"] = [-1.0, 1.0]
-# ylim["By"] = [-1.0, 1.0]
+# Name of directory to hold output plots
+OUTPUT_DIR = "pinn1_plots"
 
-
-# def create_command_line_argument_parser():
-#     """Create the command-line argument parser.
-
-#     Create the command-line argument parser.
-
-#     Parameters
-#     ----------
-#     None
-
-#     Returns
-#     -------
-#     parser : argparse.ArgumentParser
-#         Parser for command-line arguments.
-
-#     Raises
-#     ------
-#     None
-#     """
-#     parser = argparse.ArgumentParser(DESCRIPTION)
-#     parser.add_argument(
-#         "--debug", "-d", action="store_true",
-#         help="Print debugging output (default: %(default)s)."
-#     )
-#     parser.add_argument(
-#         "--multi", action="store_true",
-#         help="Use a single multi-output network (default: %(default)s)"
-#     )
-#     parser.add_argument(
-#         "--verbose", "-v", action="store_true",
-#         help="Print verbose output (default: %(default)s)."
-#     )
-#     parser.add_argument(
-#         "results_path",
-#         help="Path to directory containing results to plot."
-#     )
-#     return parser
+# Movie parameters
+FRAME_RATE = "10"  # Frames per second
+FRAME_SIZE = "1920x1080"
+VIDEO_CODEC = "libx264"
+CONSTANT_RATE_FACTOR = "25"
+PIXEL_FORMAT = "yuv420p"
 
 
-# def main():
-#     """Main program."""
-#     # Set up the command-line parser.
-#     parser = create_command_line_argument_parser()
+def create_command_line_parser():
+    """Create the command-line parser.
 
-#     # Parse the command-line arguments.
-#     args = parser.parse_args()
-#     debug = args.debug
-#     multi = args.multi
-#     verbose = args.verbose
-#     results_path = args.results_path
-#     if debug:
-#         print(f"args = {args}", flush=True)
+    Create the command-line parser.
 
-#     # Add the run results directory to the module search path.
-#     sys.path.append(results_path)
+    Parameters
+    ----------
+    None
 
-#     # Import the problem definition from the run results directory.
-#     p = import_module(PROBLEM_NAME)
+    Returns
+    -------
+    parser : argparse.ArgumentParser
+        Parser for command-line arguments.
 
-#     # Compute the path to the output directory. Then create it if needed.
-#     output_path = OUTPUT_DIR
-#     os.mkdir(output_path)
+    Raises
+    ------
+    None
+    """
+    parser = argparse.ArgumentParser(DESCRIPTION)
+    parser.add_argument(
+        "--clobber",
+        default=DEFAULT_ARGUMENTS["clobber"],
+        action="store_true",
+        help="Overwrite existing plots (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--debug", "-d",
+        default=DEFAULT_ARGUMENTS["debug"],
+        action="store_true",
+        help="Print debugging output (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--epoch",
+        type=int,
+        default=DEFAULT_ARGUMENTS["epoch"],
+        help="Model epoch to use (default: %(default)s)."
+    )
+    parser.add_argument(
+        "--usetex",
+        default=DEFAULT_ARGUMENTS["usetex"],
+        action="store_true",
+        help="Use LaTeX in plots (default: %(default)s)"
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        default=DEFAULT_ARGUMENTS["verbose"],
+        action="store_true",
+        help="Print verbose output (default: %(default)s)."
+    )
+    parser.add_argument(
+        "results_path",
+        help="Path to directory containing results to plot."
+    )
+    return parser
 
-#     # Create the plots in a memory buffer.
-#     mpl.use("Agg")
 
-    # # -------------------------------------------------------------------------
+def create_loss_plot(L_res: np.ndarray, L_dat: np.ndarray,
+                     L: np.ndarray) -> mpl.pyplot.Figure:
+    """Create a plot of residual, model, and weighted loss.
 
-    # # Plot the total residual, data, and weighted loss histories.
-    # # Also plot the constraint loss, if available.
+    Create a plot of residual, model, and weighted loss.
 
-    # # Load the data.
-    # path = os.path.join(results_path, "L_res.dat")
-    # L_res = np.loadtxt(path)
-    # path = os.path.join(results_path, "L_constraint.dat")
-    # use_constraints = False
-    # L_constraint = None
-    # if os.path.exists(path):
-    #     use_constraints = True
-    #     L_constraint = np.loadtxt(path)
-    # path = os.path.join(results_path, "L_data.dat")
-    # L_dat = np.loadtxt(path)
-    # path = os.path.join(results_path, "L.dat")
-    # L = np.loadtxt(path)
+    Parameters
+    ----------
+    L_res : np.ndarray, shape (n_epochs,)
+        Residual loss values
+    L_dat : np.ndarray, shape (n_epochs,)
+        Data loss values
+    L : np.ndarray, shape (n_epochs,)
+        Weighted loss values
 
-    # # Create the plot.
-    # plt.clf()
-    # plt.semilogy(L_res, label="$L_{res}$")
-    # if use_constraints:
-    #     plt.semilogy(L_constraint, label="$L_{constraint}$")
-    # plt.semilogy(L_dat, label="$L_{dat}$")
-    # plt.semilogy(L, label="$L$")
-    # plt.xlabel("Epoch")
-    # plt.ylabel("Loss")
-    # plt.ylim(ylim["L"])
-    # plt.legend()
-    # if use_constraints:
-    #     plt.title(f"Total residual, constraint, data, and weighted loss")
-    # else:
-    #     plt.title(f"Total residual, data, and weighted loss")
-    # plt.grid()
+    Returns
+    -------
+    fig : mpl.pyplot.Figure
+        Figure object for current plot
 
-    # # Save the plot to a PNG file.
-    # path = os.path.join(output_path, "L.png")
-    # if verbose:
-    #     print(f"Saving {path}.")
-    # plt.savefig(path)
-    # plt.close()
+    Raises
+    ------
+    None
+    """
+    # Create the figure.
+    fig = plt.figure()
 
-    # # ------------------------------------------------------------------------
+    # Plot the residual, data, and weighted losses.
+    plt.semilogy(L_res, label="$L_{res}$")
+    plt.semilogy(L_dat, label="$L_{dat}$")
+    plt.semilogy(L, label="$L$")
 
-    # # Plot the per-model residual, data, and weighted loss histories.
+    # Decorate the plot.
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.title("Residual, data, and weighted loss")
+    plt.grid()
 
-    # # Plot for each model.
-    # for iv in range(p.n_var):
+    # Return the figure.
+    return fig
 
-    #     # Load the data.
-    #     variable_name = p.dependent_variable_names[iv]
-    #     variable_label = p.dependent_variable_labels[iv]
-    #     path = os.path.join(results_path, f"L_res_{variable_name}.dat")
-    #     L_res = np.loadtxt(path)
-    #     path = os.path.join(results_path, f"L_data_{variable_name}.dat")
-    #     L_dat = np.loadtxt(path)
-    #     path = os.path.join(results_path, f"L_{variable_name}.dat")
-    #     L = np.loadtxt(path)
 
-    #     # Create the plot.
-    #     plt.semilogy(L_res, label="$L_{res}$")
-    #     plt.semilogy(L_dat, label="$L_{dat}$")
-    #     plt.semilogy(L, label="$L$")
-    #     plt.xlabel("Epoch")
-    #     plt.ylabel("Loss")
-    #     plt.ylim(ylim["L"])
-    #     plt.legend()
-    #     plt.title(f"Residual, data, and weighted loss for {variable_label}")
-    #     plt.grid()
+def create_PAE_plot(X: np.ndarray, Y: np.ndarray,
+                    P: np.ndarray, A: np.ndarray,
+                    E: np.ndarray) -> mpl.pyplot.Figure:
+    """Create a plot of predicted, analytical, and error values.
 
-    #     # Save the plot.
-    #     path = os.path.join(output_path, f"L_{variable_name}.png")
-    #     if verbose:
-    #         print(f"Saving {path}.")
-    #     plt.savefig(path)
-    #     plt.close()
+    Create a plot of predicted, analytical, and error values.
 
-    # # ------------------------------------------------------------------------
+    Parameters
+    ----------
+    X : np.ndarray, shape (ny, nx)
+        X values
+    Y : np.ndarray, shape (ny, nx)
+        Y values
+    P : np.ndarray, shape (ny, nx)
+        Predicted values
+    A : np.ndarray, shape (ny, nx)
+        Analytical values
+    E : np.ndarray, shape (ny, nx)
+        Error values
 
-    # # Load the training points.
-    # path = os.path.join(results_path, "X_train.dat")
-    # X_train = np.loadtxt(path)
+    Returns
+    -------
+    fig : mpl.pyplot.Figure
+        Figure object for current plot
 
-    # # Read the data description from the training points header.
-    # with open(path, "r") as f:
-    #     line = f.readline()  # Skip 1st line
-    #     line = f.readline()  # Grid description on this line
-    #     line = line[2:]
-    #     fields = line.split(" ")
-    #     tmin = float(fields[0])
-    #     tmax = float(fields[1])
-    #     nt = int(fields[2])
-    #     xmin = float(fields[3])
-    #     xmax = float(fields[4])
-    #     nx = int(fields[5])
-    #     ymin = float(fields[6])
-    #     ymax = float(fields[7])
-    #     ny = int(fields[8])
+    Raises
+    ------
+    None
+    """
+    # Create the figure.
+    fig, axs = plt.subplots(
+        nrows=1, ncols=3, sharey=True,
+        figsize=[18.0, 6.0]
+        )
 
-    # # Load the additional data (boundary and initial conditions).
-    # path = os.path.join(results_path, "XY_data.dat")
-    # XY_data = np.loadtxt(path)
+    # Predicted
+    pcmp = axs[0].pcolormesh(X, Y, P)
+    axs[0].set_aspect("equal")
+    axs[0].set_title("Predicted")
+    axs[0].set_xlabel("x")
+    axs[0].set_ylabel("y")
+    axs[0].grid(True)
+    fig.colorbar(pcmp, ax=axs[0], orientation="horizontal")
 
-    # # Find the epoch of the last trained model.
-    # last_epoch = pinn.common.find_last_epoch(results_path)
-    # last_epoch = 25000
+    # Analytical
+    pcma = axs[1].pcolormesh(X, Y, A)
+    axs[1].set_aspect("equal")
+    axs[1].set_title("Analytical")
+    axs[1].set_xlabel("x")
+    axs[1].grid(True)
+    fig.colorbar(pcma, ax=axs[1], orientation="horizontal")
 
-    # # Load the trained model for each variable.
-    # models = []
-    # if multi:
-    #     path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-    #                         "model_multi")
-    #     model = tf.keras.models.load_model(path)
-    #     models.append(model)
-    # else:
-    #     for variable_name in p.dependent_variable_names:
-    #         path = os.path.join(results_path, "models", f"{last_epoch:06d}",
-    #                             f"model_{variable_name}")
-    #         model = tf.keras.models.load_model(path)
-    #         models.append(model)
+    # Error
+    pcme = axs[2].pcolormesh(X, Y, E)
+    axs[2].set_aspect("equal")
+    axs[2].set_title("Error")
+    axs[2].set_xlabel("x")
+    axs[2].grid(True)
+    fig.colorbar(pcme, ax=axs[2], orientation="horizontal")
 
-    # # ------------------------------------------------------------------------
+    # Decorate the figure.
+    fig.suptitle("Predicted, analytical, and error")
 
-    # # Plot the initial conditions as supplied to the models.
+    # Return the figure.
+    return fig
 
-    # # Extract the coordinates of the training points at the initial time.
-    # n_start = nx*ny
-    # txy0 = tf.Variable(XY_data[:n_start, :p.n_dim])
-    # x0 = txy0[:, p.ix].numpy()
-    # y0 = txy0[:, p.iy].numpy()
 
-    # # Plot the actual and predicted initial magnetic field vectors.
-    # B0x_act = XY_data[:n_start, p.n_dim + p.iBx].reshape(n_start)
-    # B0y_act = XY_data[:n_start, p.n_dim + p.iBy].reshape(n_start)
-    # if multi:
-    #     pred = model(txy0).numpy()
-    #     B0x_pred = pred[:, p.iBx].reshape(n_start)
-    #     B0y_pred = pred[:, p.iBy].reshape(n_start)
-    # else:
-    #     B0x_pred = models[p.iBx](txy0).numpy().reshape(n_start)
-    #     B0y_pred = models[p.iBy](txy0).numpy().reshape(n_start)
-    # B0x_err = B0x_pred - B0x_act
-    # B0y_err = B0y_pred - B0y_act
-    # B0x_rms = np.sqrt(np.sum(B0x_err**2)/n_start)
-    # B0y_rms = np.sqrt(np.sum(B0y_err**2)/n_start)
-    # title = f"Magnetic field at t = 0, (Bx, By)_rms = ({B0x_rms:.2e}, {B0y_rms:.2e})"
-    # pinn.standard_plots.plot_actual_predicted_B(
-    #     x0, y0, B0x_act, B0y_act, B0x_pred, B0y_pred, title=title
-    # )
-    # path = os.path.join(output_path, "B0_act_pred.png")
-    # if verbose:
-    #     print(f"Saving {path}.")
-    # plt.savefig(path)
-    # plt.close()
+def create_PA_BxBy_plot(X: np.ndarray, Y: np.ndarray,
+                        Px: np.ndarray, Py: np.ndarray,
+                        Ax: np.ndarray, Ay: np.ndarray) -> mpl.pyplot.Figure:
+    """Create a plot of predicted and analytical magnetic field.
+
+    Create a plot of predicted and analytical magnetic field.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (ny, nx)
+        X values
+    Y : np.ndarray, shape (ny, nx)
+        Y values
+    Px : np.ndarray, shape (ny, nx)
+        Predicted Bx values
+    Py : np.ndarray, shape (ny, nx)
+        Predicted By values
+    Ax : np.ndarray, shape (ny, nx)
+        Analytical Bx values
+    Ay : np.ndarray, shape (ny, nx)
+        Analytical By values
+
+    Returns
+    -------
+    fig : mpl.pyplot.Figure
+        Figure object for current plot
+
+    Raises
+    ------
+    None
+    """
+    # Create the figure.
+    fig, axs = plt.subplots(
+        nrows=1, ncols=2, sharey=True,
+        figsize=[12.0, 6.0]
+        )
+
+    # Predicted
+    axs[0].quiver(X, Y, Px, Py)
+    axs[0].set_title("Predicted")
+    axs[0].set_aspect("equal")
+
+    # Analytical
+    axs[1].quiver(X, Y, Ax, Ay)
+    axs[1].set_title("Analytical")
+    axs[1].set_aspect("equal")
+
+    # Decorate the figure.
+    fig.suptitle("Predicted and analytical magnetic field")
+
+    # Return the figure.
+    return fig
+
+
+def create_rms_error_plot(t: np.ndarray, rms: np.ndarray
+                          ) -> mpl.pyplot.Figure:
+    """Create a plot of RMS error over time.
+
+    Create a plot of RMS error over time.
+
+    Parameters
+    ----------
+    t : np.ndarray, shape (nt,)
+        Time values
+    rms : np.ndarray, shape (nt,)
+        RMS error values
+
+    Returns
+    -------
+    fig : mpl.pyplot.Figure
+        Figure object for current plot
+
+    Raises
+    ------
+    None
+    """
+    # Create the figure.
+    fig, ax = plt.subplots()
+
+    # Plot the RMS error over time.
+    ax.plot(t, rms)
+
+    # Decorate the figure.
+    ax.set_title("RMS Error")
+    ax.set_xlabel("t")
+    ax.set_ylabel("RMS error")
+
+    # Return the figure.
+    return fig
+
+
+def create_total_magnetic_energy_plot(
+        t: np.ndarray, Ebtot: np.ndarray) -> mpl.pyplot.Figure:
+    """Create a plot of total magnetic energy over time.
+
+    Create a plot of total magnetic energy over time.
+
+    Parameters
+    ----------
+    t : np.ndarray, shape (nt,)
+        Time values
+    Ebtot : np.ndarray, shape (nt,)
+        Total magnetic energy values
+
+    Returns
+    -------
+    fig : mpl.pyplot.Figure
+        Figure object for current plot
+
+    Raises
+    ------
+    None
+    """
+    # Create the figure.
+    fig, ax = plt.subplots()
+
+    # Plot the total magnetic energy over time.
+    ax.plot(t, Ebtot)
+
+    # Decorate the figure.
+    ax.set_title("Total Magnetic Energy")
+    ax.set_xlabel("t")
+    ax.set_ylabel("$E_{btot}$")
+
+    # Return the figure.
+    return fig
+
+
+def assemble_movie(frame_pattern: str, movie_file: str) -> None:
+    """Assemble a movie from individual frames.
+
+    Assemble a movie from individual frames.
+
+    Parameters
+    ----------
+    frame_pattern : str
+        Glob pattern for frame files.
+    movie_file : str
+        Path to movie file to create.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    None
+    """
+    # Assemble the frames into a movie.
+    args = [
+        "ffmpeg", "-r", FRAME_RATE, "-s", FRAME_SIZE,
+        "-i", frame_pattern, "-vcodec", VIDEO_CODEC,
+        "-crf", CONSTANT_RATE_FACTOR, "-pix_fmt", PIXEL_FORMAT,
+        movie_file
+    ]
+    subprocess.run(args, check=True, capture_output=True)
+
+
+def pinn1_plots(**kwargs) -> int:
+    """Create pinn1 plots for the loop2d_nPuxuyuzBxByBz problem.
+
+    Create pinn1 plots for the loop2d_nPuxuyuzBxByBz problem.
+
+    Parameters
+    ----------
+    kwargs : dict
+        Dictionary of keyword arguments.
+
+    Returns
+    -------
+    int 0 on success, otherwise Exception is raised by called code.
+
+    Raises
+    ------
+    None
+    """
+    # Set defaults for command-line options, then update with values passed
+    # from the caller.
+    args = copy.deepcopy(DEFAULT_ARGUMENTS)
+    args.update(kwargs)
+
+    # Local convenience variables.
+    debug = args["debug"]
+    verbose = args["verbose"]
+    results_path = args["results_path"]
+    if debug:
+        print(f"debug = {debug}")
+        print(f"verbose = {verbose}")
+        print(f"results_path = {results_path}")
 
     # ------------------------------------------------------------------------
 
-    # # Make a movie for each predicted variable. Include the analytical solution
-    # # and the error.
+    # Add the run results directory to the module search path.
+    sys.path.append(results_path)
 
-    # # Compute the heat map tick locations and labels.
-    # HEATMAP_N_X_TICKS = 5
-    # heatmap_x_tick_pos = np.linspace(0, nx - 1, HEATMAP_N_X_TICKS)
-    # heatmap_x_tick_labels = ["%.1f" % (xmin + x/(nx - 1)*(xmax - xmin)) for x in heatmap_x_tick_pos]
-    # HEATMAP_N_Y_TICKS = 5
-    # heatmap_y_tick_pos = np.linspace(0, ny - 1, HEATMAP_N_Y_TICKS)
-    # heatmap_y_tick_labels = ["%.1f" % (ymin + y/(ny - 1)*(ymax - ymin)) for y in heatmap_y_tick_pos]
-    # heatmap_y_tick_labels = list(reversed(heatmap_y_tick_labels))
+    # Import the problem definition from the run results directory.
+    p = importlib.import_module(PROBLEM_NAME)
 
-    # # Plot parameters.
-    # plot_min = {
-    #     "Bx": -5e-3,
-    #     "By": -5e-3,
-    # }
-    # plot_max = {
-    #     "Bx": 5e-3,
-    #     "By": 5e-3,
-    # }
-    # plot_err_min = {
-    #     "Bx": -1e-3,
-    #     "By": -1e-3,
-    # }
-    # plot_err_max = {
-    #     "Bx": 1e-3,
-    #     "By": 1e-3,
-    # }
+    # Compute the path to the output directory to hold the plots. Then create
+    # it if needed. Exception will be raised if directory exists and clobber
+    # is not set.
+    output_path = OUTPUT_DIR
+    if os.path.isdir(output_path):
+        if args["clobber"]:
+            if verbose:
+                print(f"Deleting existing output directory {output_path}.")
+            shutil.rmtree(output_path)
+    os.mkdir(output_path)
 
-    # # Create and save each frame.
-    # for (iv, variable_name) in enumerate(p.dependent_variable_names):
-    #     if verbose:
-    #         print(f"Creating movie for {variable_name}.")
-    #     xlabel = p.independent_variable_labels[p.ix]
-    #     ylabel = p.independent_variable_labels[p.iy]
-    #     frame_dir = os.path.join(output_path, f"frames_{variable_name}")
-    #     os.mkdir(frame_dir)
-    #     if multi:
-    #         model = models[0]
-    #         Z_trained = model(X_train).numpy()[:, iv].reshape(nt, nx, ny)
-    #     else:
-    #         model = models[iv]
-    #         Z_trained = model(X_train).numpy().reshape(nt, nx, ny)
-    #     Z_analytical = p.analytical_solutions[iv](
-    #         X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]).reshape(nt, nx, ny)
-    #     Z_error = Z_trained - Z_analytical
-    #     frames = []
-    #     for it in range(nt):
-    #         i0 = it*nx*ny
-    #         i1 = i0 + nx*ny
-    #         X = X_train[i0:i1, p.ix]
-    #         Y = X_train[i0:i1, p.iy]
-    #         # To get the proper orientation, reshape, transpose, flip.
-    #         Zt = np.flip(Z_trained[it, :].T, axis=0)
-    #         Za = np.flip(Z_analytical[it, :].T, axis=0)
-    #         Ze = np.flip(Z_error[it, :].T, axis=0)
-    #         pinn.standard_plots.plot_actual_predicted_error(
-    #             X, Y, Za, Zt, Ze,
-    #             title=f"{p.dependent_variable_names[iv]}",
-    #             vmin=plot_min[variable_name], vmax=plot_max[variable_name],
-    #             err_vmin=plot_err_min[variable_name], err_vmax=plot_err_max[variable_name],
-    #             x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-    #             y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-    #         )
-    #         path = os.path.join(frame_dir, f"{variable_name}-{it:06}.png")
-    #         if verbose:
-    #             print(f"Saving {path}.")
-    #         plt.savefig(path)
-    #         frames.append(path)
-    #         plt.close()
+    # ------------------------------------------------------------------------
 
-    #     # Assemble the frames into a movie.
-    #     frame_pattern = os.path.join(frame_dir, f"{variable_name}-%06d.png")
-    #     movie_file = os.path.join(output_path, f"{variable_name}.mp4")
-    #     args = [
-    #         "ffmpeg", "-r", "10", "-s", "1920x1080",
-    #         "-i", frame_pattern,
-    #         "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-    #         movie_file
-    #     ]
-    #     subprocess.run(args)
+    # Load all data.
 
-    # # ------------------------------------------------------------------------
+    # Load the training points and description.
+    path = os.path.join(results_path, "X_train.dat")
+    X_train = np.loadtxt(path)
+    with open(path, "r", encoding="utf-8") as f:
+        line = f.readline()  # Skip 1st line - contains "# GRID"
+        line = f.readline()  # Grid description on this line
+        line = line[2:]
+        fields = line.split(" ")
+        tmin = float(fields[0])
+        tmax = float(fields[1])
+        nt = int(fields[2])
+        xmin = float(fields[3])
+        xmax = float(fields[4])
+        nx = int(fields[5])
+        ymin = float(fields[6])
+        ymax = float(fields[7])
+        ny = int(fields[8])
+    if debug:
+        print(f"(tmin, tmax, nt) = ({tmin}, {tmax}, {nt})")
+        print(f"(xmin, xmax, nx) = ({xmin}, {xmax}, {nx})")
+        print(f"(ymin, ymax, ny) = ({ymin}, {ymax}, {ny})")
 
-    # # Make a movie of a quiver plot of the trained and analytical solutions.
+    # Determine the epoch of the trained model to use.
+    if args["epoch"] == -1:
+        epoch = pinn.common.find_last_epoch(results_path)
+    else:
+        epoch = args["epoch"]
 
-    # if verbose:
-    #     print("Creating movie for magnetic field.")
-    # frame_dir = os.path.join(output_path, "frames_BxBy")
-    # os.mkdir(frame_dir)
-    # frames = []
-    # for it in range(nt):
-    #     i0 = it*n_start
-    #     i1 = i0 + n_start
-    #     txy = tf.Variable(X_train[i0:i1, :])
-    #     t = X_train[i0:i1, p.it]
-    #     x = X_train[i0:i1, p.ix]
-    #     y = X_train[i0:i1, p.iy]
-    #     Bx_act = p.Bx_analytical(t, x, y)
-    #     By_act = p.By_analytical(t, x, y)
-    #     Bx_pred = models[p.iBx](txy).numpy().reshape(n_start)
-    #     By_pred = models[p.iBy](txy).numpy().reshape(n_start)
-    #     title = f"Magnetic field at t = {t[0]:.3e}"
-    #     pinn.standard_plots.plot_actual_predicted_B(
-    #         x, y, Bx_act, By_act, Bx_pred, By_pred, title=title
-    #     )
-    #     path = os.path.join(frame_dir, f"BxBy-{it:06}.png")
-    #     if verbose:
-    #         print(f"Saving {path}.")
-    #     plt.savefig(path)
-    #     frames.append(path)
-    #     plt.close()
+    # Load the trained model for each variable.
+    models = []
+    for variable_name in p.dependent_variable_names:
+        path = os.path.join(results_path, "models", f"{epoch:06d}",
+                            f"model_{variable_name}")
+        model = tf.keras.models.load_model(path)
+        models.append(model)
 
-    # # Assemble the frames into a movie.
-    # frame_pattern = os.path.join(frame_dir, f"BxBy-%06d.png")
-    # movie_file = os.path.join(output_path, "BxBy.mp4")
-    # args = [
-    #     "ffmpeg", "-r", "10", "-s", "1920x1080",
-    #     "-i", frame_pattern,
-    #     "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-    #     movie_file
-    # ]
-    # subprocess.run(args)
+    # Load the aggregate loss histories.
+    path = os.path.join(results_path, "L_res.dat")
+    L_res = np.loadtxt(path)
+    path = os.path.join(results_path, "L_data.dat")
+    L_dat = np.loadtxt(path)
+    path = os.path.join(results_path, "L.dat")
+    L = np.loadtxt(path)
 
-    # # ------------------------------------------------------------------------
+    # Load the per-model residual, data, and weighted loss histories.
+    Lm_res = []
+    Lm_dat = []
+    Lm = []
+    for iv in range(p.n_var):
+        variable_name = p.dependent_variable_names[iv]
+        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
+        Lm_res.append(np.loadtxt(path))
+        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
+        Lm_dat.append(np.loadtxt(path))
+        path = os.path.join(results_path, f"L_{variable_name}.dat")
+        Lm.append(np.loadtxt(path))
 
-    # # Make a movie of the magnetic field intensity.
+    # ------------------------------------------------------------------------
 
-    # # Plot parameters.
-    # plot_min = {
-    #     "B": 0.0,
-    # }
-    # plot_max = {
-    #     "B": 5e-3,
-    # }
-    # plot_err_min = {
-    #     "B": -1e-3,
-    # }
-    # plot_err_max = {
-    #     "B": 1e-3,
-    # }
+    # Compute derived values.
 
-    # if verbose:
-    #     print("Creating movie for magnetic field intensity.")
-    # frame_dir = os.path.join(output_path, "frames_B")
-    # os.mkdir(frame_dir)
-    # frames = []
-    # for it in range(nt):
-    #     i0 = it*nx*ny
-    #     i1 = i0 + nx*ny
-    #     txy = tf.Variable(X_train[i0:i1, :])
-    #     t = X_train[i0:i1, p.it]
-    #     x = X_train[i0:i1, p.ix]
-    #     y = X_train[i0:i1, p.iy]
-    #     Bx_act = p.Bx_analytical(t, x, y)
-    #     By_act = p.By_analytical(t, x, y)
-    #     B_act = np.flip(np.sqrt(Bx_act**2 + By_act**2).reshape(nx, ny).T, axis=0)
-    #     Bx_pred = models[p.iBx](txy).numpy()
-    #     By_pred = models[p.iBy](txy).numpy()
-    #     B_pred = np.flip(np.sqrt(Bx_pred**2 + By_pred**2).reshape(nx, ny).T, axis=0)
-    #     B_err = B_pred - B_act
-    #     title = f"Magnetic field intensity at t = {t[0]:.3e}"
-    #     pinn.standard_plots.plot_actual_predicted_error(
-    #         x, y, B_act, B_pred, B_err,
-    #         title=title,
-    #         vmin=plot_min['B'], vmax=plot_max['B'],
-    #         err_vmin=plot_err_min['B'], err_vmax=plot_err_max['B'],
-    #         x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-    #         y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-    #     )
-    #     path = os.path.join(frame_dir, f"B-{it:06}.png")
-    #     if verbose:
-    #         print(f"Saving {path}.")
-    #     plt.savefig(path)
-    #     frames.append(path)
-    #     plt.close()
+    # Extract the T, X, and Y values for the training points.
+    T = X_train[:, p.it].reshape(nt, nx, ny)
+    X = X_train[:, p.ix].reshape(nt, nx, ny)
+    Y = X_train[:, p.iy].reshape(nt, nx, ny)
 
-    # # Assemble the frames into a movie.
-    # frame_pattern = os.path.join(frame_dir, f"B-%06d.png")
-    # movie_file = os.path.join(output_path, "B.mp4")
-    # args = [
-    #     "ffmpeg", "-r", "10", "-s", "1920x1080",
-    #     "-i", frame_pattern,
-    #     "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-    #     movie_file
-    # ]
-    # subprocess.run(args)
+    # Compute predicted, analytical, and error values for each model at each
+    # training point. All are shape (nt, nx, ny).
+    predicted = {}
+    analytical = {}
+    error = {}
+    for iv in range(p.n_var):
+        variable_name = p.dependent_variable_names[iv]
+        _p = models[iv](X_train).numpy().reshape(nt, nx, ny)
+        predicted[variable_name] = _p
+        _a = p.analytical_solutions[iv](T, X, Y)
+        analytical[variable_name] = _a
+        _e = _p - _a
+        error[variable_name] = _e
 
-    # # ------------------------------------------------------------------------
+    # Magnetic energy
+    _p = predicted["Bx"]**2 + predicted["By"]**2
+    predicted["Eb"] = _p
+    _a = analytical["Bx"]**2 + analytical["By"]**2
+    analytical["Eb"] = _a
+    _e = _p - _a
+    error["Eb"] = _e
 
-    # # Make a movie of the magnetic field divergence.
+    # Magnetic field magnitude
+    _p = np.sqrt(predicted["Eb"])
+    predicted["B"] = _p
+    _a = np.sqrt(analytical["Eb"])
+    analytical["B"] = _a
+    _e = _p - _a
+    error["B"] = _e
 
-    # # Plot parameters.
-    # plot_min = {
-    #     "divB": -1e-3,
-    # }
-    # plot_max = {
-    #     "divB": 1e-3,
-    # }
-    # plot_err_min = {
-    #     "divB": -1e-3,
-    # }
-    # plot_err_max = {
-    #     "divB": 1e-3,
-    # }
+    # Compute predicted, analytical, and error values for required derivatives
+    # at each training point.
+    txyv = tf.Variable(X_train)
+    with tf.GradientTape(persistent=True) as tape1:
+        Bxp = models[p.iBx](txyv)
+        Byp = models[p.iBy](txyv)
+    dBxp_dx = tape1.gradient(Bxp, txyv)[:, p.ix].numpy().reshape(nt, nx, ny)
+    dByp_dy = tape1.gradient(Byp, txyv)[:, p.iy].numpy().reshape(nt, nx, ny)
+    _p = dBxp_dx + dByp_dy
+    predicted["divB"] = _p
+    _a = np.zeros(_p.shape)
+    analytical["divB"] = _a
+    _e = _p - _a
+    error["divB"] = _e
 
-    # if verbose:
-    #     print("Creating movie for magnetic field divergence.")
-    # frame_dir = os.path.join(output_path, "frames_divB")
-    # os.mkdir(frame_dir)
-    # frames = []
-    # for it in range(nt):
-    #     i0 = it*nx*ny
-    #     i1 = i0 + nx*ny
-    #     txy = tf.Variable(X_train[i0:i1, :])
-    #     t = X_train[i0:i1, p.it]
-    #     x = X_train[i0:i1, p.ix]
-    #     y = X_train[i0:i1, p.iy]
-    #     dBx_dx_act = p.dBx_dx_analytical(t, x, y)
-    #     dBy_dy_act = p.dBy_dy_analytical(t, x, y)
-    #     divB_act = dBx_dx_act + dBy_dy_act
-    #     divB_act = divB_act.reshape(nx, ny)
-    #     divB_act = np.flip(divB_act.T, axis=0)
-    #     with tf.GradientTape(persistent=True) as tape1:
-    #         Bx_pred = models[p.iBx](txy)
-    #         By_pred = models[p.iBy](txy)
-    #     dBx_dx_pred = tape1.gradient(Bx_pred, txy)[:, p.ix].numpy()
-    #     dBy_dy_pred = tape1.gradient(Bx_pred, txy)[:, p.iy].numpy()
-    #     divB_pred = dBx_dx_pred + dBy_dy_pred
-    #     divB_pred = divB_pred.reshape(nx, ny)
-    #     divB_pred = np.flip(divB_pred.T, axis=0)
-    #     divB_err = divB_pred - divB_act
-    #     title = f"Magnetic field divergence at t = {t[0]:.3e}"
-    #     pinn.standard_plots.plot_actual_predicted_error(
-    #         x, y, divB_act, divB_pred, divB_err,
-    #         title=title,
-    #         vmin=plot_min['divB'], vmax=plot_max['divB'],
-    #         err_vmin=plot_err_min['divB'], err_vmax=plot_err_max['divB'],
-    #         x_tick_pos=heatmap_x_tick_pos, x_tick_labels=heatmap_x_tick_labels,
-    #         y_tick_pos=heatmap_y_tick_pos, y_tick_labels=heatmap_y_tick_labels,
-    #     )
-    #     path = os.path.join(frame_dir, f"divB-{it:06}.png")
-    #     if verbose:
-    #         print(f"Saving {path}.")
-    #     plt.savefig(path)
-    #     frames.append(path)
-    #     plt.close()
+    # Compute RMS error values at each training time, and overall values.
+    rms = {}
+    RMS = {}
+    iv = 0
+    for (vname, _e) in error.items():
+        _rms = np.sqrt(np.sum(_e**2)/_e.size)
+        RMS[vname] = _rms
+        rms[vname] = np.zeros(_e.shape[0])
+        for it in range(_e.shape[0]):
+            _rms = np.sqrt(np.sum(_e[it]**2)/_e[it].size)
+            rms[vname][it] = _rms
 
-    # # Assemble the frames into a movie.
-    # frame_pattern = os.path.join(frame_dir, f"divB-%06d.png")
-    # movie_file = os.path.join(output_path, "divB.mp4")
-    # args = [
-    #     "ffmpeg", "-r", "10", "-s", "1920x1080",
-    #     "-i", frame_pattern,
-    #     "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p",
-    #     movie_file
-    # ]
-    # subprocess.run(args)
+    # Compute integrated magnetic energy over time.
+    Ebtot = np.zeros(predicted["Eb"].shape[0])
+    for it in range(predicted["Eb"].shape[0]):
+        _Eb = predicted["Eb"][it]
+        _Ebtot = np.sum(_Eb)
+        Ebtot[it] = _Ebtot
+
+    # ------------------------------------------------------------------------
+
+    # Create the plots in a memory buffer.
+    mpl.use("Agg")
+
+    # Use LaTex in plots if requested.
+    plt.rcParams.update({"text.usetex": args["usetex"]})
+
+    # ------------------------------------------------------------------------
+
+    # Plot the aggregate residual, data, and weighted loss histories.
+    if verbose:
+        print("Creating aggregate loss plot.")
+    fig = create_loss_plot(L_res, L_dat, L)
+    ax = fig.get_axes()[0]
+    ax.set_title("Aggregate residual, data, and weighted loss")
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "L.png")
+    fig.savefig(path)
+
+    # ------------------------------------------------------------------------
+
+    # Plot the per-model residual, data, and weighted loss histories.
+    for iv in range(p.n_var):
+        variable_name = p.dependent_variable_names[iv]
+        variable_label = p.dependent_variable_labels[iv]
+        if verbose:
+            print(f"Creating loss plot for {variable_name}.")
+
+        # Create the plot.
+        fig = create_loss_plot(Lm_res[iv], Lm_dat[iv], Lm[iv])
+        ax = fig.get_axes()[0]
+        ax.set_title(f"{variable_label} residual, data, and weighted loss")
+
+        # Save the plot to a PNG file.
+        path = os.path.join(output_path, f"L_{variable_name}.png")
+        fig.savefig(path)
+        plt.close(fig)
+
+    # ------------------------------------------------------------------------
+
+    variable_names = p.dependent_variable_names + ["Eb", "B", "divB"]
+    variable_labels = (
+        p.dependent_variable_labels + ["$E_b$", "B", "divB"]
+    )
+    n_var = len(variable_names)
+
+    # Create the predicted, analytical, and error movie for each variable.
+    for iv in range(n_var):
+        variable_name = variable_names[iv]
+        variable_label = variable_labels[iv]
+        if verbose:
+            print(f"Creating PAE movie for {variable_name}.")
+
+        # Create a directory for the PAE plots for this variable.
+        pae_path = os.path.join(output_path, f"PAE_{variable_name}")
+        os.mkdir(pae_path)
+
+        # Plot for each training grid time.
+        for it in range(nt):
+
+            # Fetch the frame time and grid coordinates.
+            t = T[it, 0, 0]
+            _X = X[it].T
+            _Y = Y[it].T
+
+            # To get the proper orientation, reshape, transpose.
+            P = predicted[variable_name][it].T
+            A = analytical[variable_name][it].T
+            E = error[variable_name][it].T
+
+            # Create the plot.
+            fig = create_PAE_plot(_X, _Y, P, A, E)
+
+            # Tweak the frame title and error plot title.
+            fig.suptitle(f"{variable_label}, t = {t:.2E} predicted, "
+                         "analytical, and error "
+                         f"(overall RMS={RMS[variable_name]:.2E})")
+            fig.axes[2].set_title("Error (RMS = "
+                                  f"{rms[variable_name][it]:.2E})")
+
+            # Save the plot to a PNG file.
+            path = os.path.join(pae_path, f"PAE_{variable_name}_{it:04d}.png")
+            fig.savefig(path)
+            plt.close(fig)
+
+        # Assemble the frames into a movie.
+        frame_pattern = os.path.join(pae_path, f"PAE_{variable_name}_%04d.png")
+        movie_file = os.path.join(pae_path, f"PAE_{variable_name}.mp4")
+        assemble_movie(frame_pattern, movie_file)
+
+    # ------------------------------------------------------------------------
+
+    # Make a PA movie of the magnetic field vectors.
+    if verbose:
+        print("Creating PA movie for magnetic field.")
+    pa_path = os.path.join(output_path, "PA_BxBy")
+    os.mkdir(pa_path)
+
+    # Compute the predicted and analytical magnetic field components.
+    Bxp = models[p.iBx](X_train).numpy().reshape(nt, nx, ny)
+    Byp = models[p.iBy](X_train).numpy().reshape(nt, nx, ny)
+    Bxa = p.analytical_solutions[p.iBx](
+            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+        ).reshape(nt, nx, ny)
+    Bya = p.analytical_solutions[p.iBy](
+            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+        ).reshape(nt, nx, ny)
+
+    # Plot the field at each time.
+    for it in range(nt):
+
+        # Compute the starting and ending index for this time.
+        i0 = it*nx*ny
+        i1 = i0 + nx*ny
+
+        # Fetch the frame time.
+        t = X_train[i0, p.it]
+
+        # Extract the X and Y values for this time.
+        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
+        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+
+        # To get the proper orientation, reshape, transpose.
+        Px = Bxp[it, :].T
+        Py = Byp[it, :].T
+        Ax = Bxa[it, :].T
+        Ay = Bya[it, :].T
+
+        # Create the plot.
+        fig = create_PA_BxBy_plot(X, Y, Px, Py, Ax, Ay)
+        fig.suptitle(f"Magnetic field, t = {t:.2E} predicted, analytical")
+
+        # Save the plot to a PNG file.
+        path = os.path.join(pa_path, f"PA_BxBy_{it:04d}.png")
+        fig.savefig(path)
+        plt.close(fig)
+
+    # Assemble the frames into a movie.
+    frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
+    movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
+    assemble_movie(frame_pattern, movie_file)
+
+    # ------------------------------------------------------------------------
+
+    # Plot the RMS error as a function of time for each variable.
+    t = T[:, 0, 0]
+    for (iv, vname) in enumerate(variable_names):
+        if verbose:
+            print(f"Creating RMS error plot for {vname}.")
+
+        # Create the plot.
+        fig = create_rms_error_plot(t, rms[vname])
+
+        # Tweak the title.
+        fig.axes[0].set_title(f"{variable_names[iv]} RMS Error "
+                              f"(overall = {RMS[vname]:.2E})")
+
+        # Save the plot to a PNG file.
+        path = os.path.join(output_path, f"RMS_{vname}.png")
+        fig.savefig(path)
+        plt.close(fig)
+
+    # ------------------------------------------------------------------------
+
+    # Plot the total magnetic energy as a function of time.
+    if verbose:
+        print("Creating total magnetic energy plot.")
+
+    # Create the plot.
+    fig = create_total_magnetic_energy_plot(t, Ebtot)
+
+    # Save the plot to a PNG file.
+    path = os.path.join(output_path, "Ebtot.png")
+    fig.savefig(path)
+    plt.close(fig)
+
+    # ------------------------------------------------------------------------
+
+    # Return normally.
+    return 0
 
 
-# if __name__ == "__main__":
-#     """Begin main program."""
-#     main()
+def main() -> None:
+    """Driver for command-line version of code.
+
+    This is the main function for the command-line version of this file. It
+    processes the command-line arguments and calls the primary script code.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    return_code : int
+        Return code from primary script code.
+
+    Raises
+    ------
+    None
+    """
+    # Create the command-line parser.
+    parser = create_command_line_parser()
+
+    # Parse the command-line arguments.
+    args = parser.parse_args()
+    if args.debug:
+        print(f"args = {args}")
+
+    # Convert the arguments from Namespace to dict.
+    args = vars(args)
+
+    # Call the main program code.
+    return_code = pinn1_plots(**args)
+    sys.exit(return_code)
+
+
+if __name__ == "__main__":
+    main()
