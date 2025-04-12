@@ -26,7 +26,6 @@ import tensorflow as tf
 
 # Import project modules.
 import pinn.common
-# import pinn.standard_plots
 
 
 # Program constants
