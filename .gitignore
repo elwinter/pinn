@@ -139,3 +139,4 @@ dmypy.json
 
 # Plot files
 pinn1_plots/
+gamera_plots/
