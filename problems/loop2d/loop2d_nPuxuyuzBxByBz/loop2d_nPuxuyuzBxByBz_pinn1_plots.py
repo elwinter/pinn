@@ -50,6 +50,9 @@ PROBLEM_NAME = "loop2d_nPuxuyuzBxByBz"
 # Name of directory to hold output plots
 OUTPUT_DIR = "pinn1_plots"
 
+# Figure size (width x height, in inches) for PAE plots.
+PAE_FIGSIZE = [18.0, 6.0]
+
 # Movie parameters
 FRAME_RATE = "10"  # Frames per second
 FRAME_SIZE = "1920x1080"
@@ -189,7 +192,7 @@ def create_PAE_plot(X: np.ndarray, Y: np.ndarray,
     # Create the figure.
     fig, axs = plt.subplots(
         nrows=1, ncols=3, sharey=True,
-        figsize=[18.0, 6.0]
+        figsize=PAE_FIGSIZE
         )
 
     # Predicted
@@ -629,7 +632,8 @@ def pinn1_plots(**kwargs) -> int:
         # Plot for each training grid time.
         for it in range(nt):
 
-            # Fetch the frame time and grid coordinates.
+            # Fetch the frame time and grid coordinates. Transpose to conform
+            # to shape (ny, nx).
             t = T[it, 0, 0]
             _X = X[it].T
             _Y = Y[it].T
