@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem.
+"""Create plots for gamera results for loop2d_nPuxuyuzBxByBz problem.
 
-Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem.
+Create plots for gamera results for loop2d_nPuxuyuzBxByBz problem.
 
 Author
 ------
@@ -19,21 +19,23 @@ import subprocess
 import sys
 
 # Import supplemental modules.
+import h5py
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
 # Import project modules.
+from kaipy import kaiH5
+from kaipy import kaiTools
 import pinn.common
-# import pinn.standard_plots
 
 
 # Program constants
 
 # Program description
 DESCRIPTION = (
-    "Create plots for pinn1 results for loop2d_nPuxuyuzBxByBz problem."
+    "Create plots for gamera results for loop2d_nPuxuyuzBxByBz problem."
 )
 
 # Default values for command-line arguments.
@@ -49,7 +51,7 @@ DEFAULT_ARGUMENTS = {
 PROBLEM_NAME = "loop2d_nPuxuyuzBxByBz"
 
 # Name of directory to hold output plots
-OUTPUT_DIR = "pinn1_plots"
+OUTPUT_DIR = "gamera_plots"
 
 # Movie parameters
 FRAME_RATE = "10"  # Frames per second
@@ -109,53 +111,144 @@ def create_command_line_parser():
         help="Print verbose output (default: %(default)s)."
     )
     parser.add_argument(
-        "results_path",
-        help="Path to directory containing results to plot."
+        "pinn1_results_path",
+        help="Path to directory containing pinn1 results."
+    )
+    parser.add_argument(
+        "gamera_results_path",
+        help="Path to file containing gamera results."
     )
     return parser
 
 
-def create_loss_plot(L_res: np.ndarray, L_dat: np.ndarray,
-                     L: np.ndarray) -> mpl.pyplot.Figure:
-    """Create a plot of residual, model, and weighted loss.
+def read_gamera_grid(path: str) -> np.ndarray:
+    """Read time and coordinate values from a gamera results file.
 
-    Create a plot of residual, model, and weighted loss.
+    Read time and coordinate values from a gamera results file.
+
+    Note that the values are combined and rearranged so that they are returned
+    in the same format as the pinn1 results read with np.loadtxt().
 
     Parameters
     ----------
-    L_res : np.ndarray, shape (n_epochs,)
-        Residual loss values
-    L_dat : np.ndarray, shape (n_epochs,)
-        Data loss values
-    L : np.ndarray, shape (n_epochs,)
-        Weighted loss values
+    path : str
+        Path to gamera results file.
 
     Returns
     -------
-    fig : mpl.pyplot.Figure
-        Figure object for current plot
+    TXY : np.ndarray, shape (nt*nx*ny, 3)
+        (t, x, y) values for each gamera time and grid point.
+    nt, nx, ny : int
+        Count of points in t, x, y dimensions.
 
     Raises
     ------
     None
     """
-    # Create the figure.
-    fig = plt.figure()
+    # Load the time steps.
+    t = kaiH5.getTs(path, "time")
+    nt = t.shape[0]
 
-    # Plot the residual, data, and weighted losses.
-    plt.semilogy(L_res, label="$L_{res}$")
-    plt.semilogy(L_dat, label="$L_{dat}$")
-    plt.semilogy(L, label="$L$")
+    # Load the locations of the GAMERA grid points. These are independent
+    # variables only.
+    with h5py.File(path, "r") as f:
+        Xg = f["X"][...]
+        Yg = f["Y"][...]
 
-    # Decorate the plot.
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.legend()
-    plt.title("Residual, data, and weighted loss")
-    plt.grid()
+    # Compute the coordinates of the grid cell centers.
+    Xc = kaiTools.to_center2D(Xg)
+    Yc = kaiTools.to_center2D(Yg)
 
-    # Return the figure.
-    return fig
+    # Are these right?
+    nx = Xc.shape[1]
+    ny = Yc.shape[0]
+
+    # Stack the arrays to form the same structure as pinn1 training data.
+    T = np.repeat(t, nx*ny)
+    X = np.tile(Xc.T.flatten(), nt)
+    Y = np.tile(Yc.T.flatten(), nt)
+    TXY = np.vstack([T, X, Y]).T
+
+    # Return the reshaped data.
+    return TXY, nt, nx, ny
+
+
+def load_gamera_variable(path: str, variable_name : str) -> np.ndarray:
+    """Read all values for a variable from a gamera results file.
+
+    Read all values for a variable from a gamera results file.
+
+    Note that the values are combined and rearranged so that they are returned
+    in the same format as the pinn1 results read with np.loadtxt().
+
+    Parameters
+    ----------
+    path : str
+        Path to gamera results file.
+    variable_name : str
+        Name of variable to load.
+
+    Returns
+    -------
+    gamera_values : nd.array of shape (nt, nx, ny)
+        Predicted variable values for each gamera time and grid point for the
+        requested variable.
+
+    Raises
+    ------
+    None
+    """
+    # Fetch the step IDs.
+    n_steps, step_ids = kaiH5.cntSteps(path)
+    gamera_values = []
+    for step in step_ids:
+        # NOTE: PullVar() does a transpose before returning data.
+        v = kaiH5.PullVar(path, variable_name, step)
+        gamera_values.append(v)
+    gamera_values = np.stack(gamera_values, axis=0)
+
+    # Return the variable.
+    return gamera_values
+
+
+def load_gamera_predicted(path: str) -> dict:
+    """Read predicted values from a gamera results file.
+
+    Read predicted values from a gamera results file.
+
+    Note that the values are combined and rearranged so that they are returned
+    in the same format as the pinn1 results read with np.loadtxt().
+
+    Parameters
+    ----------
+    path : str
+        Path to gamera results file.
+
+    Returns
+    -------
+    predicted : dict of nd.array of shape (nt, nx, ny)
+        Predicted variable values for each gamera time and grid point, key is
+        variable name. Gamera names are mapped to pinn names for the keys.
+
+    Raises
+    ------
+    None
+    """
+    # Initialize the dictionary.
+    predicted = {}
+
+    # Load the variables.
+    predicted["n"] = load_gamera_variable(path, "D")
+    predicted["P"] = load_gamera_variable(path, "P")
+    predicted["ux"] = load_gamera_variable(path, "Vx")
+    predicted["uy"] = load_gamera_variable(path, "Vy")
+    predicted["uz"] = load_gamera_variable(path, "Vz")
+    predicted["Bx"] = load_gamera_variable(path, "Bx")
+    predicted["By"] = load_gamera_variable(path, "By")
+    predicted["Bz"] = load_gamera_variable(path, "Bz")
+
+    # Return the predicted values.
+    return predicted
 
 
 def create_PAE_plot(X: np.ndarray, Y: np.ndarray,
@@ -225,132 +318,132 @@ def create_PAE_plot(X: np.ndarray, Y: np.ndarray,
     return fig
 
 
-def create_PA_BxBy_plot(X: np.ndarray, Y: np.ndarray,
-                        Px: np.ndarray, Py: np.ndarray,
-                        Ax: np.ndarray, Ay: np.ndarray) -> mpl.pyplot.Figure:
-    """Create a plot of predicted and analytical magnetic field.
+# def create_PA_BxBy_plot(X: np.ndarray, Y: np.ndarray,
+#                         Px: np.ndarray, Py: np.ndarray,
+#                         Ax: np.ndarray, Ay: np.ndarray) -> mpl.pyplot.Figure:
+#     """Create a plot of predicted and analytical magnetic field.
 
-    Create a plot of predicted and analytical magnetic field.
+#     Create a plot of predicted and analytical magnetic field.
 
-    Parameters
-    ----------
-    X : np.ndarray, shape (ny, nx)
-        X values
-    Y : np.ndarray, shape (ny, nx)
-        Y values
-    Px : np.ndarray, shape (ny, nx)
-        Predicted Bx values
-    Py : np.ndarray, shape (ny, nx)
-        Predicted By values
-    Ax : np.ndarray, shape (ny, nx)
-        Analytical Bx values
-    Ay : np.ndarray, shape (ny, nx)
-        Analytical By values
+#     Parameters
+#     ----------
+#     X : np.ndarray, shape (ny, nx)
+#         X values
+#     Y : np.ndarray, shape (ny, nx)
+#         Y values
+#     Px : np.ndarray, shape (ny, nx)
+#         Predicted Bx values
+#     Py : np.ndarray, shape (ny, nx)
+#         Predicted By values
+#     Ax : np.ndarray, shape (ny, nx)
+#         Analytical Bx values
+#     Ay : np.ndarray, shape (ny, nx)
+#         Analytical By values
 
-    Returns
-    -------
-    fig : mpl.pyplot.Figure
-        Figure object for current plot
+#     Returns
+#     -------
+#     fig : mpl.pyplot.Figure
+#         Figure object for current plot
 
-    Raises
-    ------
-    None
-    """
-    # Create the figure.
-    fig, axs = plt.subplots(
-        nrows=1, ncols=2, sharey=True,
-        figsize=[12.0, 6.0]
-        )
+#     Raises
+#     ------
+#     None
+#     """
+#     # Create the figure.
+#     fig, axs = plt.subplots(
+#         nrows=1, ncols=2, sharey=True,
+#         figsize=[12.0, 6.0]
+#         )
 
-    # Predicted
-    axs[0].quiver(X, Y, Px, Py)
-    axs[0].set_title("Predicted")
-    axs[0].set_aspect("equal")
+#     # Predicted
+#     axs[0].quiver(X, Y, Px, Py)
+#     axs[0].set_title("Predicted")
+#     axs[0].set_aspect("equal")
 
-    # Analytical
-    axs[1].quiver(X, Y, Ax, Ay)
-    axs[1].set_title("Analytical")
-    axs[1].set_aspect("equal")
+#     # Analytical
+#     axs[1].quiver(X, Y, Ax, Ay)
+#     axs[1].set_title("Analytical")
+#     axs[1].set_aspect("equal")
 
-    # Decorate the figure.
-    fig.suptitle("Predicted and analytical magnetic field")
+#     # Decorate the figure.
+#     fig.suptitle("Predicted and analytical magnetic field")
 
-    # Return the figure.
-    return fig
-
-
-def create_rms_error_plot(t: np.ndarray, rms: np.ndarray
-                          ) -> mpl.pyplot.Figure:
-    """Create a plot of RMS error over time.
-
-    Create a plot of RMS error over time.
-
-    Parameters
-    ----------
-    t : np.ndarray, shape (nt,)
-        Time values
-    rms : np.ndarray, shape (nt,)
-        RMS error values
-
-    Returns
-    -------
-    fig : mpl.pyplot.Figure
-        Figure object for current plot
-
-    Raises
-    ------
-    None
-    """
-    # Create the figure.
-    fig, ax = plt.subplots()
-
-    # Plot the RMS error over time.
-    ax.plot(t, rms)
-
-    # Decorate the figure.
-    ax.set_title("RMS Error")
-    ax.set_xlabel("t")
-    ax.set_ylabel("RMS error")
-
-    # Return the figure.
-    return fig
+#     # Return the figure.
+#     return fig
 
 
-def create_total_magnetic_energy_plot(
-        t: np.ndarray, Ebtot: np.ndarray) -> mpl.pyplot.Figure:
-    """Create a plot of total magnetic energy over time.
+# def create_rms_error_plot(t: np.ndarray, rms: np.ndarray
+#                           ) -> mpl.pyplot.Figure:
+#     """Create a plot of RMS error over time.
 
-    Create a plot of total magnetic energy over time.
+#     Create a plot of RMS error over time.
 
-    Parameters
-    ----------
-    t : np.ndarray, shape (nt,)
-        Time values
-    Ebtot : np.ndarray, shape (nt,)
-        Total magnetic energy values
+#     Parameters
+#     ----------
+#     t : np.ndarray, shape (nt,)
+#         Time values
+#     rms : np.ndarray, shape (nt,)
+#         RMS error values
 
-    Returns
-    -------
-    fig : mpl.pyplot.Figure
-        Figure object for current plot
+#     Returns
+#     -------
+#     fig : mpl.pyplot.Figure
+#         Figure object for current plot
 
-    Raises
-    ------
-    None
-    """
-    # Create the figure.
-    fig, ax = plt.subplots()
+#     Raises
+#     ------
+#     None
+#     """
+#     # Create the figure.
+#     fig, ax = plt.subplots()
 
-    # Plot the total magnetic energy over time.
-    ax.plot(t, Ebtot)
+#     # Plot the RMS error over time.
+#     ax.plot(t, rms)
 
-    # Decorate the figure.
-    ax.set_title("Total Magnetic Energy")
-    ax.set_xlabel("t")
-    ax.set_ylabel("$E_{btot}$")
+#     # Decorate the figure.
+#     ax.set_title("RMS Error")
+#     ax.set_xlabel("t")
+#     ax.set_ylabel("RMS error")
 
-    # Return the figure.
-    return fig
+#     # Return the figure.
+#     return fig
+
+
+# def create_total_magnetic_energy_plot(
+#         t: np.ndarray, Ebtot: np.ndarray) -> mpl.pyplot.Figure:
+#     """Create a plot of total magnetic energy over time.
+
+#     Create a plot of total magnetic energy over time.
+
+#     Parameters
+#     ----------
+#     t : np.ndarray, shape (nt,)
+#         Time values
+#     Ebtot : np.ndarray, shape (nt,)
+#         Total magnetic energy values
+
+#     Returns
+#     -------
+#     fig : mpl.pyplot.Figure
+#         Figure object for current plot
+
+#     Raises
+#     ------
+#     None
+#     """
+#     # Create the figure.
+#     fig, ax = plt.subplots()
+
+#     # Plot the total magnetic energy over time.
+#     ax.plot(t, Ebtot)
+
+#     # Decorate the figure.
+#     ax.set_title("Total Magnetic Energy")
+#     ax.set_xlabel("t")
+#     ax.set_ylabel("$E_{btot}$")
+
+#     # Return the figure.
+#     return fig
 
 
 def assemble_movie(frame_pattern: str, movie_file: str) -> None:
@@ -383,10 +476,10 @@ def assemble_movie(frame_pattern: str, movie_file: str) -> None:
     subprocess.run(args, check=True, capture_output=True)
 
 
-def pinn1_plots(**kwargs) -> int:
-    """Create pinn1 plots for the loop2d_nPuxuyuzBxByBz problem.
+def gamera_plots(**kwargs) -> int:
+    """Create gamera plots for the loop2d_nPuxuyuzBxByBz problem.
 
-    Create pinn1 plots for the loop2d_nPuxuyuzBxByBz problem.
+    Create gamera plots for the loop2d_nPuxuyuzBxByBz problem.
 
     Parameters
     ----------
@@ -409,18 +502,20 @@ def pinn1_plots(**kwargs) -> int:
     # Local convenience variables.
     debug = args["debug"]
     verbose = args["verbose"]
-    results_path = args["results_path"]
+    pinn1_results_path = args["pinn1_results_path"]
+    gamera_results_path = args["gamera_results_path"]
     if debug:
         print(f"debug = {debug}")
         print(f"verbose = {verbose}")
-        print(f"results_path = {results_path}")
+        print(f"pinn1_results_path = {pinn1_results_path}")
+        print(f"gamera_results_path = {gamera_results_path}")
 
     # ------------------------------------------------------------------------
 
-    # Add the run results directory to the module search path.
-    sys.path.append(results_path)
+    # Add the pinn1 results directory to the module search path.
+    sys.path.append(pinn1_results_path)
 
-    # Import the problem definition from the run results directory.
+    # Import the problem definition from the pinn1 results directory.
     p = importlib.import_module(PROBLEM_NAME)
 
     # Compute the path to the output directory to hold the plots. Then create
@@ -438,84 +533,37 @@ def pinn1_plots(**kwargs) -> int:
 
     # Load all data.
 
-    # Load the training points and description.
-    path = os.path.join(results_path, "X_train.dat")
-    X_train = np.loadtxt(path)
-    with open(path, "r", encoding="utf-8") as f:
-        line = f.readline()  # Skip 1st line - contains "# GRID"
-        line = f.readline()  # Grid description on this line
-        line = line[2:]
-        fields = line.split(" ")
-        tmin = float(fields[0])
-        tmax = float(fields[1])
-        nt = int(fields[2])
-        xmin = float(fields[3])
-        xmax = float(fields[4])
-        nx = int(fields[5])
-        ymin = float(fields[6])
-        ymax = float(fields[7])
-        ny = int(fields[8])
+    # Load the gamera grid.
+    TXY_gamera, nt, nx, ny = read_gamera_grid(gamera_results_path)
     if debug:
-        print(f"(tmin, tmax, nt) = ({tmin}, {tmax}, {nt})")
-        print(f"(xmin, xmax, nx) = ({xmin}, {xmax}, {nx})")
-        print(f"(ymin, ymax, ny) = ({ymin}, {ymax}, {ny})")
-
-    # Determine the epoch of the trained model to use.
-    if args["epoch"] == -1:
-        epoch = pinn.common.find_last_epoch(results_path)
-    else:
-        epoch = args["epoch"]
-
-    # Load the trained model for each variable.
-    models = []
-    for variable_name in p.dependent_variable_names:
-        path = os.path.join(results_path, "models", f"{epoch:06d}",
-                            f"model_{variable_name}")
-        model = tf.keras.models.load_model(path)
-        models.append(model)
-
-    # Load the aggregate loss histories.
-    path = os.path.join(results_path, "L_res.dat")
-    L_res = np.loadtxt(path)
-    path = os.path.join(results_path, "L_data.dat")
-    L_dat = np.loadtxt(path)
-    path = os.path.join(results_path, "L.dat")
-    L = np.loadtxt(path)
-
-    # Load the per-model residual, data, and weighted loss histories.
-    Lm_res = []
-    Lm_dat = []
-    Lm = []
-    for iv in range(p.n_var):
-        variable_name = p.dependent_variable_names[iv]
-        path = os.path.join(results_path, f"L_res_{variable_name}.dat")
-        Lm_res.append(np.loadtxt(path))
-        path = os.path.join(results_path, f"L_data_{variable_name}.dat")
-        Lm_dat.append(np.loadtxt(path))
-        path = os.path.join(results_path, f"L_{variable_name}.dat")
-        Lm.append(np.loadtxt(path))
+        print(f"TXY_gamera = {TXY_gamera}")
+        print(f"(nt, nx, ny) = ({nt}, {nx}, {ny})")
 
     # ------------------------------------------------------------------------
 
     # Compute derived values.
 
-    # Extract the T, X, and Y values for the training points.
-    T = X_train[:, p.it].reshape(nt, nx, ny)
-    X = X_train[:, p.ix].reshape(nt, nx, ny)
-    Y = X_train[:, p.iy].reshape(nt, nx, ny)
+    # Extract the T, X, and Y values for the gamera points.
+    T = TXY_gamera[:, p.it].reshape(nt, nx, ny)
+    X = TXY_gamera[:, p.ix].reshape(nt, nx, ny)
+    Y = TXY_gamera[:, p.iy].reshape(nt, nx, ny)
+    if debug:
+        print(f"T = {T}")
+        print(f"X = {X}")
+        print(f"Y = {Y}")
 
-    # Compute predicted, analytical, and error values for each model at each
-    # training point. All are shape (nt, nx, ny).
-    predicted = {}
+    # Load predicted variables at each time step.
+    predicted = load_gamera_predicted(gamera_results_path)
+
+    # Compute analytical, and error values for each variable at each grid
+    # point. All are shape (nt, nx, ny).
     analytical = {}
     error = {}
     for iv in range(p.n_var):
         variable_name = p.dependent_variable_names[iv]
-        _p = models[iv](X_train).numpy().reshape(nt, nx, ny)
-        predicted[variable_name] = _p
         _a = p.analytical_solutions[iv](T, X, Y)
         analytical[variable_name] = _a
-        _e = _p - _a
+        _e = predicted[variable_name] - _a
         error[variable_name] = _e
 
     # Magnetic energy
@@ -534,20 +582,32 @@ def pinn1_plots(**kwargs) -> int:
     _e = _p - _a
     error["B"] = _e
 
-    # Compute predicted, analytical, and error values for required derivatives
-    # at each training point.
-    txyv = tf.Variable(X_train)
-    with tf.GradientTape(persistent=True) as tape1:
-        Bxp = models[p.iBx](txyv)
-        Byp = models[p.iBy](txyv)
-    dBxp_dx = tape1.gradient(Bxp, txyv)[:, p.ix].numpy().reshape(nt, nx, ny)
-    dByp_dy = tape1.gradient(Byp, txyv)[:, p.iy].numpy().reshape(nt, nx, ny)
+    # Compute predicted values for required derivatives at each gamera point.
+    # Assume uniform spacing in each dimension.
+    dx = X[0, 1, 0] - X[0, 0, 0]
+    dy = Y[0, 0, 1] - Y[0, 0, 0]
+    dBxp_dx = []
+    dByp_dy = []
+    for it in range(nt):
+        _dBx_dx = np.gradient(predicted["Bx"][it], dy, dx)[1]
+        dBxp_dx.append(_dBx_dx)
+        _dBy_dy = np.gradient(predicted["By"][it], dy, dx)[0]
+        dByp_dy.append(_dBy_dy)
+    dBxp_dx = np.stack(dBxp_dx, axis=0)
+    dByp_dy = np.stack(dByp_dy, axis=0)
+
+    # Compute the predicted, analytical, and error magnetic divergence.
     _p = dBxp_dx + dByp_dy
     predicted["divB"] = _p
     _a = np.zeros(_p.shape)
     analytical["divB"] = _a
     _e = _p - _a
     error["divB"] = _e
+
+    if debug:
+        print(f"predicted = {predicted}")
+        print(f"analytical = {analytical}")
+        print(f"error = {error}")
 
     # Compute RMS error values at each training time, and overall values.
     rms = {}
@@ -573,40 +633,8 @@ def pinn1_plots(**kwargs) -> int:
     # Create the plots in a memory buffer.
     mpl.use("Agg")
 
-    # Use LaTex in plots if requested.
+    # Use LaTeX in plots if requested.
     plt.rcParams.update({"text.usetex": args["usetex"]})
-
-    # ------------------------------------------------------------------------
-
-    # Plot the aggregate residual, data, and weighted loss histories.
-    if verbose:
-        print("Creating aggregate loss plot.")
-    fig = create_loss_plot(L_res, L_dat, L)
-    ax = fig.get_axes()[0]
-    ax.set_title("Aggregate residual, data, and weighted loss")
-
-    # Save the plot to a PNG file.
-    path = os.path.join(output_path, "L.png")
-    fig.savefig(path)
-
-    # ------------------------------------------------------------------------
-
-    # Plot the per-model residual, data, and weighted loss histories.
-    for iv in range(p.n_var):
-        variable_name = p.dependent_variable_names[iv]
-        variable_label = p.dependent_variable_labels[iv]
-        if verbose:
-            print(f"Creating loss plot for {variable_name}.")
-
-        # Create the plot.
-        fig = create_loss_plot(Lm_res[iv], Lm_dat[iv], Lm[iv])
-        ax = fig.get_axes()[0]
-        ax.set_title(f"{variable_label} residual, data, and weighted loss")
-
-        # Save the plot to a PNG file.
-        path = os.path.join(output_path, f"L_{variable_name}.png")
-        fig.savefig(path)
-        plt.close(fig)
 
     # ------------------------------------------------------------------------
 
@@ -662,89 +690,89 @@ def pinn1_plots(**kwargs) -> int:
 
     # ------------------------------------------------------------------------
 
-    # Make a PA movie of the magnetic field vectors.
-    if verbose:
-        print("Creating PA movie for magnetic field.")
-    pa_path = os.path.join(output_path, "PA_BxBy")
-    os.mkdir(pa_path)
+#     # Make a PA movie of the magnetic field vectors.
+#     if verbose:
+#         print("Creating PA movie for magnetic field.")
+#     pa_path = os.path.join(output_path, "PA_BxBy")
+#     os.mkdir(pa_path)
 
-    # Compute the predicted and analytical magnetic field components.
-    Bxp = models[p.iBx](X_train).numpy().reshape(nt, nx, ny)
-    Byp = models[p.iBy](X_train).numpy().reshape(nt, nx, ny)
-    Bxa = p.analytical_solutions[p.iBx](
-            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
-        ).reshape(nt, nx, ny)
-    Bya = p.analytical_solutions[p.iBy](
-            X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
-        ).reshape(nt, nx, ny)
+#     # Compute the predicted and analytical magnetic field components.
+#     Bxp = models[p.iBx](X_train).numpy().reshape(nt, nx, ny)
+#     Byp = models[p.iBy](X_train).numpy().reshape(nt, nx, ny)
+#     Bxa = p.analytical_solutions[p.iBx](
+#             X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+#         ).reshape(nt, nx, ny)
+#     Bya = p.analytical_solutions[p.iBy](
+#             X_train[:, p.it], X_train[:, p.ix], X_train[:, p.iy]
+#         ).reshape(nt, nx, ny)
 
-    # Plot the field at each time.
-    for it in range(nt):
+#     # Plot the field at each time.
+#     for it in range(nt):
 
-        # Compute the starting and ending index for this time.
-        i0 = it*nx*ny
-        i1 = i0 + nx*ny
+#         # Compute the starting and ending index for this time.
+#         i0 = it*nx*ny
+#         i1 = i0 + nx*ny
 
-        # Fetch the frame time.
-        t = X_train[i0, p.it]
+#         # Fetch the frame time.
+#         t = X_train[i0, p.it]
 
-        # Extract the X and Y values for this time.
-        X = X_train[i0:i1, p.ix].reshape(nx, ny).T
-        Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
+#         # Extract the X and Y values for this time.
+#         X = X_train[i0:i1, p.ix].reshape(nx, ny).T
+#         Y = X_train[i0:i1, p.iy].reshape(nx, ny).T
 
-        # To get the proper orientation, reshape, transpose.
-        Px = Bxp[it, :].T
-        Py = Byp[it, :].T
-        Ax = Bxa[it, :].T
-        Ay = Bya[it, :].T
+#         # To get the proper orientation, reshape, transpose.
+#         Px = Bxp[it, :].T
+#         Py = Byp[it, :].T
+#         Ax = Bxa[it, :].T
+#         Ay = Bya[it, :].T
 
-        # Create the plot.
-        fig = create_PA_BxBy_plot(X, Y, Px, Py, Ax, Ay)
-        fig.suptitle(f"Magnetic field, t = {t:.2E} predicted, analytical")
+#         # Create the plot.
+#         fig = create_PA_BxBy_plot(X, Y, Px, Py, Ax, Ay)
+#         fig.suptitle(f"Magnetic field, t = {t:.2E} predicted, analytical")
 
-        # Save the plot to a PNG file.
-        path = os.path.join(pa_path, f"PA_BxBy_{it:04d}.png")
-        fig.savefig(path)
-        plt.close(fig)
+#         # Save the plot to a PNG file.
+#         path = os.path.join(pa_path, f"PA_BxBy_{it:04d}.png")
+#         fig.savefig(path)
+#         plt.close(fig)
 
-    # Assemble the frames into a movie.
-    frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
-    movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
-    assemble_movie(frame_pattern, movie_file)
+#     # Assemble the frames into a movie.
+#     frame_pattern = os.path.join(pa_path, "PA_BxBy_%04d.png")
+#     movie_file = os.path.join(pa_path, "PA_BxBy.mp4")
+#     assemble_movie(frame_pattern, movie_file)
 
-    # ------------------------------------------------------------------------
+#     # ------------------------------------------------------------------------
 
-    # Plot the RMS error as a function of time for each variable.
-    t = T[:, 0, 0]
-    for (iv, vname) in enumerate(variable_names):
-        if verbose:
-            print(f"Creating RMS error plot for {vname}.")
+#     # Plot the RMS error as a function of time for each variable.
+#     t = T[:, 0, 0]
+#     for (iv, vname) in enumerate(variable_names):
+#         if verbose:
+#             print(f"Creating RMS error plot for {vname}.")
 
-        # Create the plot.
-        fig = create_rms_error_plot(t, rms[vname])
+#         # Create the plot.
+#         fig = create_rms_error_plot(t, rms[vname])
 
-        # Tweak the title.
-        fig.axes[0].set_title(f"{variable_names[iv]} RMS Error "
-                              f"(overall = {RMS[vname]:.2E})")
+#         # Tweak the title.
+#         fig.axes[0].set_title(f"{variable_names[iv]} RMS Error "
+#                               f"(overall = {RMS[vname]:.2E})")
 
-        # Save the plot to a PNG file.
-        path = os.path.join(output_path, f"RMS_{vname}.png")
-        fig.savefig(path)
-        plt.close(fig)
+#         # Save the plot to a PNG file.
+#         path = os.path.join(output_path, f"RMS_{vname}.png")
+#         fig.savefig(path)
+#         plt.close(fig)
 
-    # ------------------------------------------------------------------------
+#     # ------------------------------------------------------------------------
 
-    # Plot the total magnetic energy as a function of time.
-    if verbose:
-        print("Creating total magnetic energy plot.")
+#     # Plot the total magnetic energy as a function of time.
+#     if verbose:
+#         print("Creating total magnetic energy plot.")
 
-    # Create the plot.
-    fig = create_total_magnetic_energy_plot(t, Ebtot)
+#     # Create the plot.
+#     fig = create_total_magnetic_energy_plot(t, Ebtot)
 
-    # Save the plot to a PNG file.
-    path = os.path.join(output_path, "Ebtot.png")
-    fig.savefig(path)
-    plt.close(fig)
+#     # Save the plot to a PNG file.
+#     path = os.path.join(output_path, "Ebtot.png")
+#     fig.savefig(path)
+#     plt.close(fig)
 
     # ------------------------------------------------------------------------
 
@@ -783,7 +811,7 @@ def main() -> None:
     args = vars(args)
 
     # Call the main program code.
-    return_code = pinn1_plots(**args)
+    return_code = gamera_plots(**args)
     sys.exit(return_code)
 
 
