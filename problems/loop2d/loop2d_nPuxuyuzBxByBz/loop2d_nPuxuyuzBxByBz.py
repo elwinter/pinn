@@ -130,6 +130,8 @@ I = 1e-3   # Normalized current
 C1 = μ0*I/(2*np.pi)  # Leading constant in analytical solutions for Bx, By.
 
 # Define the constant fluid flow field.
+xc0 = -0.69
+yc0 = x0/np.tan(np.radians(θ))
 θ = 60.0  # Angle in degrees clockwise from +y axis
 u0 = 1.0  # Flow speed
 u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
@@ -812,8 +814,8 @@ def Bx_analytical(t, x, y):
     Bx : np.array of float
         Value of Bx for each evaluation point, same shape as input arrays.
     """
-    xp = x - u0x*t
-    yp = y - u0y*t
+    xp = x - xc0 - u0x*t
+    yp = y - yc0 - u0y*t
     r = np.sqrt(xp**2 + yp**2)
     w = np.where(r < R0)
     Bx = np.zeros(t.shape)
@@ -845,8 +847,8 @@ def By_analytical(t, x, y):
     By : np.array of float
         Value of By for each evaluation point, same shape as input arrays.
     """
-    xp = x - u0x*t
-    yp = y - u0y*t
+    xp = x - xc0 - u0x*t
+    yp = y - yc0 - u0y*t
     r = np.sqrt(xp**2 + yp**2)
     w = np.where(r < R0)
     By = np.zeros(t.shape)
