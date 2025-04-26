@@ -130,13 +130,14 @@ I = 1e-3   # Normalized current
 C1 = μ0*I/(2*np.pi)  # Leading constant in analytical solutions for Bx, By.
 
 # Define the constant fluid flow field.
-xc0 = -0.69
-yc0 = x0/np.tan(np.radians(θ))
 θ = 60.0  # Angle in degrees clockwise from +y axis
 u0 = 1.0  # Flow speed
 u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
 u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
 
+# Define the initial position.
+xc0 = -0.69
+yc0 = xc0/np.tan(np.radians(θ))
 
 
 # NOTE: In the functions defined below for the differential equations, the
