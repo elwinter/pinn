@@ -598,6 +598,11 @@ def main():
             if debug:
                 print(f"L = {L}", flush=True)
 
+            # Abort if a NaN was produced.
+            if np.isnan(L):
+                print(f"Aborting at epoch {epoch}: loss is NaN!")
+                break
+
             # Save the losses for this epoch.
             for (i, v) in enumerate(p.dependent_variable_names):
                 loss[v]["residual"].append(L_res_per_model[i].numpy())
