@@ -92,18 +92,20 @@ def main():
     # Compute the initial conditions at spatial locations.
     # Each line is:
     # tg[0] x y n P ux uy uz Bx By Bz
-    t0 = np.array([tg[0]])
+    t = tg[0]
     for x in xg:
         for y in yg:
-            r = np.sqrt(x**2 + y**2)
+            xp = x - p.xc0 - p.u0x*t
+            yp = y - p.yc0 - p.u0y*t
+            r = np.sqrt(xp**2 + yp**2)
             n = p.n0
             P = p.P0
             ux = p.u0x
             uy = p.u0y
             uz = p.u0z
             if r < p.R0:
-                Bx = -p.A*y/r
-                By = p.A*x/r
+                Bx = -p.A*yp/r
+                By = p.A*xp/r
             else:
                 Bx = p.B0x
                 By = p.B0y
@@ -115,15 +117,17 @@ def main():
         # x = -1|1
         x = xg[0]
         for y in yg:
-            r = np.sqrt(x**2 + y**2)
+            xp = x - p.xc0 - p.u0x*t
+            yp = y - p.yc0 - p.u0y*t
+            r = np.sqrt(xp**2 + yp**2)
             n = p.n0
             P = p.P0
             ux = p.u0x
             uy = p.u0y
             uz = p.u0z
             if r < p.R0:
-                Bx = -p.A*y/r
-                By = p.A*x/r
+                Bx = -p.A*yp/r
+                By = p.A*xp/r
             else:
                 Bx = p.B0x
                 By = p.B0y
@@ -131,15 +135,17 @@ def main():
             print(t, x, y, n, P, ux, uy, uz, Bx, By, Bz)
         x = xg[-1]
         for y in yg:
-            r = np.sqrt(x**2 + y**2)
+            xp = x - p.xc0 - p.u0x*t
+            yp = y - p.yc0 - p.u0y*t
+            r = np.sqrt(xp**2 + yp**2)
             n = p.n0
             P = p.P0
             ux = p.u0x
             uy = p.u0y
             uz = p.u0z
             if r < p.R0:
-                Bx = -p.A*y/r
-                By = p.A*x/r
+                Bx = -p.A*yp/r
+                By = p.A*xp/r
             else:
                 Bx = p.B0x
                 By = p.B0y
@@ -148,15 +154,17 @@ def main():
         # y = -1|1
         y = yg[0]
         for x in xg[1:-1]:
-            r = np.sqrt(x**2 + y**2)
+            xp = x - p.xc0 - p.u0x*t
+            yp = y - p.yc0 - p.u0y*t
+            r = np.sqrt(xp**2 + yp**2)
             n = p.n0
             P = p.P0
             ux = p.u0x
             uy = p.u0y
             uz = p.u0z
             if r < p.R0:
-                Bx = -p.A*y/r
-                By = p.A*x/r
+                Bx = -p.A*yp/r
+                By = p.A*xp/r
             else:
                 Bx = p.B0x
                 By = p.B0y
@@ -164,15 +172,17 @@ def main():
             print(t, x, y, n, P, ux, uy, uz, Bx, By, Bz)
         y = yg[-1]
         for x in xg[1:-1]:
-            r = np.sqrt(x**2 + y**2)
+            xp = x - p.xc0 - p.u0x*t
+            yp = y - p.yc0 - p.u0y*t
+            r = np.sqrt(xp**2 + yp**2)
             n = p.n0
             P = p.P0
             ux = p.u0x
             uy = p.u0y
             uz = p.u0z
             if r < p.R0:
-                Bx = -p.A*y/r
-                By = p.A*x/r
+                Bx = -p.A*yp/r
+                By = p.A*xp/r
             else:
                 Bx = p.B0x
                 By = p.B0y
