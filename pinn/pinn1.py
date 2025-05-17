@@ -560,7 +560,8 @@ def main():
             # There are p.n_var Tensors in the list (one per model).
             # Each Tensor has shape () (scalar).
             L_data_per_model = [
-                tf.math.sqrt(tf.reduce_sum(E**2)/n_data) for E in E_data_per_model
+                tf.math.sqrt(tf.reduce_sum(E**2)/n_data)
+                for E in E_data_per_model
             ]
             if debug:
                 print(f'{L_data_per_model = }')
@@ -699,7 +700,8 @@ def main():
                 )
                 model.save(path)
                 variable_name = p.dependent_variable_names[i]
-                path = os.path.join(output_dir, 'models', f'model_{variable_name}.txt')
+                path = os.path.join(output_dir, 'models',
+                                    f'model_{variable_name}.txt')
                 old_stdout = sys.stdout
                 with open(path, 'w') as f:
                     sys.stdout = f
@@ -722,7 +724,8 @@ def main():
     )
     if use_constraints:
         np.savetxt(
-            os.path.join(output_dir, 'L_constraint.dat'), loss['aggregate']['constraint']
+            os.path.join(output_dir, 'L_constraint.dat'),
+                         loss['aggregate']['constraint']
         )
     np.savetxt(
         os.path.join(output_dir, 'L_data.dat'), loss['aggregate']['data']
