@@ -136,8 +136,8 @@ u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
 u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
 
 # Define the initial position.
-xc0 = -0.69
-yc0 = xc0/np.tan(np.radians(θ))
+xc0 = 0.0
+yc0 = 0.0
 
 
 # NOTE: In the functions defined below for the differential equations, the
