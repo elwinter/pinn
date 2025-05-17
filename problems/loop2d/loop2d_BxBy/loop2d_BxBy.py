@@ -118,6 +118,10 @@ u0 = 1.0  # Flow speed
 u0x = u0*np.sin(np.radians(θ))  # x-component of flow velocity
 u0y = u0*np.cos(np.radians(θ))  # y-component of flow velocity
 
+# Define the initial position.
+xc0 = 0.0
+yc0 = 0.0
+
 
 # @tf.function
 def pde_Bx(X, Y, del_Y):
@@ -230,11 +234,11 @@ def Bx_analytical(t, x, y):
     Bx : np.array of float, shape (n,)
         Value of Bx for each evaluation point.
     """
-    xp = x - u0x*t
-    yp = y - u0y*t
+    xp = x - xc0 - u0x*t
+    yp = y - yc0 - u0y*t
     r = np.sqrt(xp**2 + yp**2)
     w = np.where(r < R0)
-    Bx = np.zeros(t.shape[0])
+    Bx = np.zeros(t.shape)
     Bx[w] = -A*yp[w]/r[w]
     return Bx
 
@@ -261,11 +265,11 @@ def By_analytical(t, x, y):
     By : np.array of float, shape (n,)
         Value of By for each evaluation point.
     """
-    xp = x - u0x*t
-    yp = y - u0y*t
+    xp = x - xc0 - u0x*t
+    yp = y - yc0 - u0y*t
     r = np.sqrt(xp**2 + yp**2)
     w = np.where(r < R0)
-    By = np.zeros(t.shape[0])
+    By = np.zeros(t.shape)
     By[w] = A*xp[w]/r[w]
     return By
 
