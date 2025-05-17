@@ -113,17 +113,10 @@ def main():
     # -------------------------------------------------------------------------
 
     # Plot the total residual, data, and weighted loss histories.
-    # Also plot the constraint loss, if available.
 
     # Load the data.
     path = os.path.join(results_path, "L_res.dat")
     L_res = np.loadtxt(path)
-    path = os.path.join(results_path, "L_constraint.dat")
-    use_constraints = False
-    L_constraint = None
-    if os.path.exists(path):
-        use_constraints = True
-        L_constraint = np.loadtxt(path)
     path = os.path.join(results_path, "L_data.dat")
     L_dat = np.loadtxt(path)
     path = os.path.join(results_path, "L.dat")
@@ -132,18 +125,13 @@ def main():
     # Create the plot.
     plt.clf()
     plt.semilogy(L_res, label="$L_{res}$")
-    if use_constraints:
-        plt.semilogy(L_constraint, label="$L_{constraint}$")
     plt.semilogy(L_dat, label="$L_{dat}$")
     plt.semilogy(L, label="$L$")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.ylim(ylim["L"])
     plt.legend()
-    if use_constraints:
-        plt.title(f"Total residual, constraint, data, and weighted loss")
-    else:
-        plt.title(f"Total residual, data, and weighted loss")
+    plt.title(f"Total residual, data, and weighted loss")
     plt.grid()
 
     # Save the plot to a PNG file.
