@@ -165,8 +165,7 @@ def main():
 
     # Parse the command-line arguments.
     args = parser.parse_args()
-    if args.debug:
-        print(f'args = {args}')
+    if args.debug: print(f'args = {args}')
     activation = args.activation
     debug = args.debug
     learning_rate = args.learning_rate
@@ -213,15 +212,13 @@ def main():
     if verbose:
         print(f'Importing python module for problem {problem_path}.')
     p = common.import_problem(problem_path)
-    if debug:
-        print(f'{p = }')
+    if debug: print(f'{p = }')
 
     # Set up the output directory under the current directory.
     # The name of the output directory is the name of the problem python
     # module, with '-pinn1' appended to the end of the name.
     output_dir = os.path.join('.', f'{p.__name__}-pinn1')
-    if debug:
-        print(f'{output_dir = }')
+    if debug: print(f'{output_dir = }')
     os.mkdir(output_dir)
 
     # Record system information, model parameters, and problem definition,
@@ -244,8 +241,7 @@ def main():
         print(f'Reading training points from {training_path}.')
     # X_train is np.ndarray of shape (n_train, p.n_dim) OR (n_train,) for 1D.
     X_train = np.loadtxt(training_path, dtype=precision)
-    if debug:
-        print(f'{X_train = }')
+    if debug: print(f'{X_train = }')
 
     # If the data shape is 1-D (only one dimension), reshape to 2-D,
     # (n_train, 1) to make compatible with later TensorFlow calls, which
@@ -254,16 +250,14 @@ def main():
         if verbose:
             print('Training points are 1-D, reshaping to 2-D.')
         X_train = X_train.reshape(X_train.shape[0], 1)
-        if debug:
-            print(f'Reshaped X_train = {X_train}')
+        if debug: print(f'Reshaped X_train = {X_train}')
 
     # Save a copy of the training data in the output directory.
     shutil.copy(training_path, os.path.join(output_dir, 'X_train.dat'))
 
     # Count the training points.
     n_train = X_train.shape[0]
-    if debug:
-        print(f'{n_train = }')
+    if debug: print(f'{n_train = }')
 
     # -------------------------------------------------------------------------
 
@@ -276,8 +270,7 @@ def main():
         print(f'Reading training data from {data_path}.')
     # Shape is (n_data, p.n_dim + p.n_var)
     XY_data = np.loadtxt(data_path, dtype=precision)
-    if debug:
-        print(f'{XY_data = }')
+    if debug: print(f'{XY_data = }')
 
     # If the data shape is 1-D (only one dimension), reshape to 2-D,
     # (n_train, 1) to make compatible with later TensorFlow calls, which
@@ -286,28 +279,24 @@ def main():
         if verbose:
             print('Additional data is 1-D, reshaping to 2-D.')
         XY_data = XY_data.reshape(1, XY_data.shape[0])
-        if debug:
-            print(f'Reshaped XY_data = {XY_data}')
+        if debug: print(f'Reshaped XY_data = {XY_data}')
 
     # Save a copy of the additional data in the output directory.
     shutil.copy(data_path, os.path.join(output_dir, 'XY_data.dat'))
 
     # Get the count of training data points.
     n_data = XY_data.shape[0]
-    if debug:
-        print(f'{n_data = }')
+    if debug: print(f'{n_data = }')
 
     # Extract the *locations* of the supplied data points.
     # Shape is (n_data, p.n_dim)
     X_data = XY_data[:, :p.n_dim]
-    if debug:
-        print(f'{X_data = }')
+    if debug: print(f'{X_data = }')
 
     # Extract the *values* of the supplied data points.
     # Shape is (n_data, p.n_var)
     Y_data = XY_data[:, p.n_dim:]
-    if debug:
-        print(f'{Y_data = }')
+    if debug: print(f'{Y_data = }')
 
     # -------------------------------------------------------------------------
 
@@ -334,8 +323,7 @@ def main():
                 print('Creating untrained multi-output model.')
             model = common.build_multi_output_model(n_layers, H, activation,
                                                     p.n_var)
-            if debug:
-                print(f'{model = }')
+            if debug: print(f'{model = }')
             models.append(model)
     else:
         if load_model:
@@ -345,11 +333,9 @@ def main():
                 if verbose:
                     print(f'Loading model for {v}.')
                 path = os.path.join(load_model, f'model_{v}')
-                if debug:
-                    print(f'{path = }')
+                if debug: print(f'{path = }')
                 model = tf.keras.models.load_model(path)
-                if debug:
-                    print(f'{model = }')
+                if debug: print(f'{model = }')
                 models.append(model)
         else:
             if verbose:
@@ -358,11 +344,9 @@ def main():
                 if verbose:
                     print(f'Creating model for {v}.')
                 model = common.build_model(n_layers, H, activation)
-                if debug:
-                    print(f'{model = }')
+                if debug: print(f'{model = }')
                 models.append(model)
-        if debug:
-            print(f'{models = }')
+        if debug: print(f'{models = }')
 
     # -------------------------------------------------------------------------
 
@@ -370,8 +354,7 @@ def main():
     if verbose:
         print('Creating Adam optimizer.')
     optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=learning_rate)
-    if debug:
-        print(f'{optimizer = }')
+    if debug: print(f'{optimizer = }')
 
     # -------------------------------------------------------------------------
 
@@ -381,22 +364,19 @@ def main():
     if verbose:
         print('Converting training points to TensorFlow Variable')
     X_train_tf = tf.Variable(X_train)
-    if debug:
-        print(f'{X_train_tf = }')
+    if debug: print(f'{X_train_tf = }')
 
     # Convert data locations to tf.Variable.
     if verbose:
         print('Converting data locations to TensorFlow Variable')
     X_data_tf = tf.Variable(X_data)
-    if debug:
-        print(f'{X_data_tf = }')
+    if debug: print(f'{X_data_tf = }')
 
     # Convert data values to tf.Variable.
     if verbose:
         print('Converting data values to TensorFlow Variable')
     Y_data_tf = tf.Variable(Y_data)
-    if debug:
-        print(f'{Y_data_tf = }')
+    if debug: print(f'{Y_data_tf = }')
 
     # -------------------------------------------------------------------------
 
@@ -426,8 +406,7 @@ def main():
 
     # Main training loop
     for epoch in range(max_epochs):
-        if debug:
-            print(f'Starting epoch {epoch}.')
+        if debug: print(f'Starting epoch {epoch}.')
 
         # --------------------------------------------------------------------
 
@@ -455,8 +434,7 @@ def main():
                                      for i in range(p.n_var)]
                 else:
                     Y_train_model = [model(X_train_tf) for model in models]
-                if debug:
-                    print(f'{Y_train_model = }')
+                if debug: print(f'{Y_train_model = }')
 
                 # Compute the network outputs at all data points. These
                 # are the values of the dependent variables Y to use when
@@ -471,8 +449,7 @@ def main():
                                      for i in range(p.n_var)]
                 else:
                     Y_data_model = [model(X_data_tf) for model in models]
-                if debug:
-                    print(f'{Y_data_model = }')
+                if debug: print(f'{Y_data_model = }')
 
             # Compute the gradients of the network outputs wrt inputs for
             # the training points. These are the values of the partial
@@ -482,8 +459,7 @@ def main():
             # Each Tensor has shape (n_train, p.n_dim).
             dY_dX_train_model = [tape1.gradient(Y, X_train_tf)
                                  for Y in Y_train_model]
-            if debug:
-                print(f'{dY_dX_train_model = }')
+            if debug: print(f'{dY_dX_train_model = }')
 
             # Compute the values of the differential equations at all
             # training points.
@@ -492,8 +468,7 @@ def main():
             # Each Tensor has shape (n_train, 1).
             G_train_model = [f(X_train_tf, Y_train_model, dY_dX_train_model)
                              for f in p.de]
-            if debug:
-                print(f'{G_train_model = }')
+            if debug: print(f'{G_train_model = }')
 
             # -----------------------------------------------------------------
 
@@ -506,8 +481,7 @@ def main():
                 tf.math.sqrt(tf.reduce_sum(G**2)/n_train)
                 for G in G_train_model
             ]
-            if debug:
-                print(f'{L_res_per_model = }')
+            if debug: print(f'{L_res_per_model = }')
 
             # Compute the errors in the predicted values at the data points.
             # E_data_per_model is a list of tf.Tensor objects.
@@ -517,8 +491,7 @@ def main():
                 Y_data_model[i] - tf.reshape(Y_data_tf[:, i], (n_data, 1))
                 for i in range(p.n_var)
             ]
-            if debug:
-                print(f'{E_data_per_model = }')
+            if debug: print(f'{E_data_per_model = }')
 
             # Compute the loss functions for the data points for each
             # model.
@@ -529,31 +502,26 @@ def main():
                 tf.math.sqrt(tf.reduce_sum(E**2)/n_data)
                 for E in E_data_per_model
             ]
-            if debug:
-                print(f'{L_data_per_model = }')
+            if debug: print(f'{L_data_per_model = }')
 
             # Compute the weighted aggregate loss function per model.
             L_per_model = [
                 w_res*L1 + w_data*L2 for (L1, L2)
                 in zip(L_res_per_model, L_data_per_model)
             ]
-            if debug:
-                print(f'{L_per_model = }')
+            if debug: print(f'{L_per_model = }')
 
             # Compute the aggregated residual loss function.
             L_res = tf.math.reduce_sum(L_res_per_model)
-            if debug:
-                print(f'{L_res = }')
+            if debug: print(f'{L_res = }')
 
             # Compute the aggregated data loss function.
             L_data = tf.math.reduce_sum(L_data_per_model)
-            if debug:
-                print(f'{L_data = }')
+            if debug: print(f'{L_data = }')
 
             # Compute the weighted aggregate loss function.
             L = w_res*L_res + w_data*L_data
-            if debug:
-                print(f'{L = }')
+            if debug: print(f'{L = }')
 
             # Abort if a NaN was produced.
             if np.isnan(L):
@@ -568,8 +536,7 @@ def main():
             loss['aggregate']['residual'].append(L_res.numpy())
             loss['aggregate']['data'].append(L_data.numpy())
             loss['aggregate']['total'].append(L.numpy())
-            if debug:
-                print(f'{loss = }')
+            if debug: print(f'{loss = }')
 
         # Compute the gradient of the weighted aggregate loss function wrt
         # the network parameters.
@@ -585,8 +552,7 @@ def main():
             tape0.gradient(L, model.trainable_variables)
             for model in models
         ]
-        if debug:
-            print(f'{pgrad = }')
+        if debug: print(f'{pgrad = }')
 
         # Update the parameters for this epoch.
         for (g, m) in zip(pgrad, models):
@@ -613,13 +579,11 @@ def main():
                     )
                     model.save(path)
 
-        if debug:
-            print(f'Ending epoch {epoch}.')
+        if debug: print(f'Ending epoch {epoch}.')
 
     # Count the last epoch.
     n_epochs = epoch + 1
-    if debug:
-        print(f'{n_epochs = }')
+    if debug: print(f'{n_epochs = }')
 
     # Record the training end time.
     t_stop = datetime.datetime.now()
