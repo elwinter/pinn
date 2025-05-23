@@ -12,3 +12,8 @@ loop2d/loop2d_BxBy
 ------------------
 n_layers = 4, n_hid = 100, w_dat = 0.95, max_epochs = 25000
 Takes ~ 23 minutes on mollie.
+
+loop2d/loop2d_nPuxuyuzBxByBz
+----------------------------
+n_layers = 4, n_hid = 100, w_dat = 0.95, max_epochs = 50000
+Takes ~ 3.5-4 hours on mollie.
